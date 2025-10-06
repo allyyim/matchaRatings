@@ -65,7 +65,7 @@ body {
 .container {
   max-width: 400px;
   margin: 2rem auto;
-  background: url('https://i.pinimg.com/736x/9d/9f/5b/9d9f5b5d839198e76855cca5aafbe740.jpg') center/cover no-repeat;
+  background: url('background.jpg') center/cover no-repeat;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   padding: 1.5rem;
