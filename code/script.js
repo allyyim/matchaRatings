@@ -109,8 +109,11 @@ function analyzeGreenness(dataUrl) {
         pixelCount++;
       }
     }
-    matchaGreenness = pixelCount ? Math.round(greenSum / pixelCount) : 0;
-    greennessResult.textContent = `Greenness Score: ${matchaGreenness}`;
+  // Normalize greenness to a 0-10 scale (0 = not green, 10 = very green)
+  // Green channel ranges 0-255, so map average green to 0-10
+  const avgGreen = pixelCount ? (greenSum / pixelCount) : 0;
+  matchaGreenness = Math.round((avgGreen / 255) * 10);
+  greennessResult.textContent = `Greenness (out of 10): ${matchaGreenness}`;
   };
   img.src = dataUrl;
 }
@@ -150,7 +153,7 @@ function renderLog() {
       <img src="${entry.photo}" alt="Matcha" />
       <div>
         <div>Rating: ${'★'.repeat(entry.rating)}${'☆'.repeat(5-entry.rating)}</div>
-        <div>Greenness: ${entry.greenness}</div>
+  <div>Greenness (out of 10): ${entry.greenness}</div>
         <div>Date: ${entry.date}</div>
       </div>
     `;

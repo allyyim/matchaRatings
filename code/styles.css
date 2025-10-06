@@ -93,12 +93,24 @@ body {
 }
 .star {
   font-size: 2rem;
-  color: #ccc;
+  color: #fff;
   cursor: pointer;
   transition: color 0.2s;
+  image-rendering: pixelated;
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000;
+  border-radius: 2px;
 }
 .star.selected {
-  color: #4caf50;
+  color: #ffd600;
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000;
 }
 #save-btn {
   width: 100%;
