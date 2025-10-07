@@ -321,14 +321,14 @@ body {
     height: 70vw;
     max-width: 320px;
     max-height: 320px;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     border-radius: 50%;
     overflow: hidden;
     background: #fffbe6;
     border: 2px solid #3c5c2c;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   .circle-mask {
     width: 100%;
