@@ -112,6 +112,12 @@ photoInput.addEventListener('change', (e) => {
     photoDataUrl = evt.target.result;
     previewImg.src = photoDataUrl;
     previewImg.style.display = 'block';
+    previewImg.style.objectFit = 'cover';
+    previewImg.style.width = '100%';
+    previewImg.style.height = '100%';
+    previewImg.style.position = 'absolute';
+    previewImg.style.left = '0';
+    previewImg.style.top = '0';
     analyzeGreenness(photoDataUrl);
   };
   reader.readAsDataURL(file);

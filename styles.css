@@ -29,9 +29,7 @@ body.pixel-bg {
   overflow: hidden;
   background: #fffbe6;
   border: 2px solid #3c5c2c;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
   margin-bottom: 0.5rem;
 }
 .pixel-photo {
@@ -40,6 +38,9 @@ body.pixel-bg {
   object-fit: cover;
   border-radius: 50%;
   box-shadow: 0 2px 8px #6d3b2c44;
+  position: absolute;
+  left: 0;
+  top: 0;
 }
 
 .pixel-btn {
