@@ -3,7 +3,7 @@ const starRating = document.getElementById('star-rating');
 let currentRating = 0;
 const pixelStarUrl = 'blank.png'; // Unselected
 const pixelStarFilledUrl = 'filled.png'; // Rated star
-for (let i = 1; i <= 10; i++) {
+for (let i = 1; i <= 5; i++) {
   const star = document.createElement('img');
   star.classList.add('star');
   star.src = pixelStarUrl;
@@ -45,7 +45,10 @@ let photoboothStream = null;
 // Start camera automatically and enable capture only when ready
 function startPhotoboothCamera() {
   captureBtn.disabled = true;
-  navigator.mediaDevices.getUserMedia({ video: true })
+  // Try to use back camera on mobile, fallback to any camera on desktop
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { ideal: "environment" } }
+  })
     .then(stream => {
       photoboothStream = stream;
       photoboothVideo.srcObject = stream;
@@ -55,12 +58,24 @@ function startPhotoboothCamera() {
       };
     })
     .catch(() => {
-      captureBtn.disabled = true;
-      photoboothVideo.style.display = 'none';
-      const errorMsg = document.createElement('div');
-      errorMsg.textContent = 'Unable to access camera.';
-      errorMsg.style.color = 'red';
-      photoboothVideo.parentNode.appendChild(errorMsg);
+      // Fallback: try default camera
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          photoboothStream = stream;
+          photoboothVideo.srcObject = stream;
+          photoboothVideo.onloadedmetadata = () => {
+            photoboothVideo.play();
+            captureBtn.disabled = false;
+          };
+        })
+        .catch(() => {
+          captureBtn.disabled = true;
+          photoboothVideo.style.display = 'none';
+          const errorMsg = document.createElement('div');
+          errorMsg.textContent = 'Unable to access camera.';
+          errorMsg.style.color = 'red';
+          photoboothVideo.parentNode.appendChild(errorMsg);
+        });
     });
 }
 startPhotoboothCamera();
@@ -171,11 +186,13 @@ saveBtn.addEventListener('click', () => {
     return;
   }
   const location = document.getElementById('matcha-location')?.value?.trim() || '';
+  const thoughts = document.getElementById('matcha-thoughts')?.value?.trim() || '';
   const entry = {
     photo: photoDataUrl || '',
     rating: currentRating,
     greenness: matchaGreenness,
     location: location,
+    thoughts: thoughts,
     date: new Date().toLocaleDateString()
   };
   saveEntry(entry);
@@ -231,8 +248,9 @@ function renderLog() {
               <strong style="font-size:1.1em;">${entry.location || 'N/A'}</strong>
               <span style="font-size:0.95em;font-style:italic;margin-left:8px;">${entry.date}</span>
             </div>
-            <div>Rating: ${entry.rating}/10</div>
+            <div>Rating: ${entry.rating}/5</div>
             <div>Greenness: ${entry.greenness}/100</div>
+            <div style="margin-top:0.5em;font-family:'Press Start 2P',Arial,sans-serif;font-size:0.95em;color:#3c5c2c;">${entry.thoughts ? entry.thoughts : ''}</div>
           </div>
         `;
         ratingsLog.appendChild(div);
@@ -249,6 +267,10 @@ function resetForm() {
   updateStars();
   matchaGreenness = null;
   photoDataUrl = null;
+  const locationInput = document.getElementById('matcha-location');
+  if (locationInput) locationInput.value = '';
+  const thoughtsInput = document.getElementById('matcha-thoughts');
+  if (thoughtsInput) thoughtsInput.value = '';
 }
 
 // Initial render

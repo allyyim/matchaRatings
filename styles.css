@@ -1,3 +1,116 @@
+body.pixel-bg {
+  background: linear-gradient(180deg, #b6e2b6 0%, #e6f7e6 100%);
+  min-height: 100vh;
+}
+.pixel-title {
+  font-family: 'Press Start 2P', 'Sansita Swashed', system-ui;
+  font-size: 2.2rem;
+  color: #3c5c2c;
+  text-shadow: 2px 2px 0 #fffbe6, 4px 4px 8px #6d3b2c44;
+  background: none;
+  margin-bottom: 1rem;
+}
+.pixel-card {
+  background: #d6f5d6;
+  border: 3px solid #3c5c2c;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px #6d3b2c22;
+  padding: 1.2rem;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+.pixel-photo-wrapper {
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #fffbe6;
+  border: 2px solid #3c5c2c;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+}
+.pixel-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px #6d3b2c44;
+}
+
+.pixel-btn {
+  font-family: 'VT323', 'Press Start 2P', monospace, Arial, sans-serif;
+  font-size: 1.5rem;
+  background: #c7e97b;
+  color: #222;
+  border: 4px solid #222;
+  border-radius: 0;
+  padding: 0.7rem 2.5rem;
+  box-shadow:
+    0 2px 0 #fffbe6,
+    2px 4px 0 #222,
+    0 0 0 2px #fffbe6;
+  text-align: center;
+  letter-spacing: 2px;
+  font-weight: bold;
+  image-rendering: pixelated;
+  text-shadow: none;
+  cursor: pointer;
+  margin-bottom: 0.5rem;
+  outline: none;
+  transition: background 0.1s, box-shadow 0.1s;
+}
+.pixel-btn:active {
+  background: #eafcbe;
+  box-shadow:
+    0 1px 0 #fffbe6,
+    1px 2px 0 #222,
+    0 0 0 2px #fffbe6;
+}
+.pixel-btn.pixel-save {
+  background: #c7e97b;
+  color: #222;
+  border: 4px solid #222;
+}
+.pixel-label {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 1rem;
+  color: #3c5c2c;
+  margin-bottom: 0.5rem;
+}
+.pixel-stars {
+  display: flex;
+  gap: 0.3rem;
+  margin: 0.5rem 0;
+}
+.pixel-thoughts {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 8px;
+  border: 2px solid #3c5c2c;
+  font-size: 1rem;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  background: #fffbe6;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+.pixel-greenness {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #388e3c;
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+.pixel-log-title {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #3c5c2c;
+  font-size: 1.2rem;
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+}
 @import url('https://fonts.googleapis.com/css2?family=Sansita+Swashed:wght@700&display=swap');
 
 body {
@@ -61,7 +174,7 @@ body {
   cursor: pointer;
 }
   margin: 0;
-  font-family: Arial, sans-serif;
+  font-family: 'Segoe UI', Arial, sans-serif;
   background: #f5f5f5;
 }
 .container {

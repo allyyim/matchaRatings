@@ -9,32 +9,30 @@
   <link href="https://fonts.googleapis.com/css2?family=Sansita+Swashed:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    <h1 class="sansita-swashed-cafe">Rate My Matcha</h1>
-    <div class="location-section">
-      <label for="matcha-location" class="location-label">Location</label>
-      <input type="text" id="matcha-location" placeholder="Enter location (e.g. cafe name, city)">
-    </div>
-    <div class="camera-section">
-      <div class="photobooth-inline">
-      <label for="matcha-photo" class="camera-label">Snap a picture</label>
-        <video id="photobooth-video" autoplay playsinline></video>
-        <button id="capture-btn">Capture</button>
+  <div class="container pixel-bg">
+    <h1 class="sansita-swashed-cafe pixel-title">Rate My Matcha</h1>
+    <div class="pixel-card">
+      <div class="pixel-photo-wrapper">
+        <img id="preview" class="pixel-photo" alt="Matcha Preview" style="display:none;" />
+        <canvas id="photo-canvas" style="display:none;"></canvas>
+        <video id="photobooth-video" autoplay playsinline style="display:none;"></video>
+      </div>
+      <button id="capture-btn" class="pixel-btn">Capture</button>
+      <div class="location-section">
+        <label for="matcha-location" class="location-label">Location</label>
+        <input type="text" id="matcha-location" placeholder="Enter location (e.g. cafe name, city)">
       </div>
       <label for="matcha-photo" class="camera-label">Or upload a picture</label>
       <input type="file" id="matcha-photo" accept="image/*,.jpg,.jpeg,.png,.jfif,.webp" capture="environment">
-      <canvas id="photo-canvas" style="display:none;"></canvas>
-      <img id="preview" alt="Matcha Preview" style="display:none;" />
-      <div id="greenness-result"></div>
-    </div>
-    <div class="rating-section">
-      <span>Rate your matcha:</span>
-      <div id="star-rating">
-        <!-- Stars will be rendered by JS -->
+      <div id="greenness-result" class="pixel-greenness"></div>
+      <div class="rating-section">
+        <span class="pixel-label">Your matcha rating:</span>
+        <div id="star-rating" class="pixel-stars"></div>
       </div>
+      <textarea id="matcha-thoughts" class="pixel-thoughts" placeholder="Share your thoughts about this matcha..."></textarea>
+      <button id="save-btn" class="pixel-btn pixel-save">Save Rating</button>
     </div>
-    <button id="save-btn">Rate</button>
-    <h2>Ratings Log</h2>
+    <h2 class="pixel-log-title">Ratings Log</h2>
     <div id="ratings-log"></div>
   </div>
   <script src="script.js"></script>
