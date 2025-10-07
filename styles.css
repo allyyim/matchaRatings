@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Sansita+Swashed:wght@700&display=swap');
+
 body {
 .location-section {
   margin-bottom: 1.5rem;
@@ -169,4 +171,20 @@ body {
   .star {
     font-size: 1.5rem;
   }
+}
+.sansita-swashed-cafe {
+  font-family: "Sansita Swashed", system-ui;
+  font-optical-sizing: auto;
+  font-weight: 700;
+  font-style: normal;
+  font-size: 2.8rem;
+  color: #fffbe6;
+  text-shadow:
+    2px 2px 0 #6d3b2c,
+    4px 4px 8px #6d3b2c44;
+  letter-spacing: 2px;
+  padding: 0.3em 0.1em;
+  border-radius: 12px;
+  background: none;
+  font-weight: bold;
 }
