@@ -52,6 +52,7 @@ function startPhotoboothCamera() {
     .then(stream => {
       photoboothStream = stream;
       photoboothVideo.srcObject = stream;
+      photoboothVideo.style.display = 'block';
       photoboothVideo.onloadedmetadata = () => {
         photoboothVideo.play();
         captureBtn.disabled = false;
@@ -63,6 +64,7 @@ function startPhotoboothCamera() {
         .then(stream => {
           photoboothStream = stream;
           photoboothVideo.srcObject = stream;
+          photoboothVideo.style.display = 'block';
           photoboothVideo.onloadedmetadata = () => {
             photoboothVideo.play();
             captureBtn.disabled = false;
