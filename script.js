@@ -119,6 +119,11 @@ photoInput.addEventListener('change', (e) => {
     previewImg.style.left = '0';
     previewImg.style.top = '0';
     photoboothVideo.style.display = 'none';
+    // Stop camera stream when a file is uploaded
+    if (photoboothStream) {
+      photoboothStream.getTracks().forEach(track => track.stop());
+      photoboothStream = null;
+    }
     analyzeGreenness(photoDataUrl);
   };
   reader.readAsDataURL(file);
