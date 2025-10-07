@@ -221,7 +221,7 @@ function renderLog() {
           <img src="${entry.photo}" alt="Matcha" />
           <div>
             <div>Rating: ${'★'.repeat(entry.rating)}${'☆'.repeat(5-entry.rating)}</div>
-            <div>Greenness (out of 10): ${entry.greenness}</div>
+            <div>Greenness (out of 100): ${entry.greenness}</div>
             <div>Date: ${entry.date}</div>
           </div>
         `;
