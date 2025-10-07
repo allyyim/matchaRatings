@@ -13,9 +13,11 @@
     <h1 class="sansita-swashed-cafe pixel-title">Rate My Matcha</h1>
     <div class="pixel-card">
       <div class="pixel-photo-wrapper" style="position:relative;">
-        <img id="preview" class="pixel-photo" alt="Matcha Preview" style="display:none; position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover;" />
+        <div class="circle-mask">
+          <video id="photobooth-video" autoplay playsinline></video>
+          <img id="preview" class="pixel-photo" alt="Matcha Preview" style="display:none; position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover;" />
+        </div>
         <canvas id="photo-canvas" style="display:none;"></canvas>
-        <video id="photobooth-video" autoplay playsinline></video>
       </div>
       <button id="capture-btn" class="pixel-btn">Capture</button>
       <div class="location-section">
