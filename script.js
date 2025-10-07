@@ -3,7 +3,7 @@ const starRating = document.getElementById('star-rating');
 let currentRating = 0;
 const pixelStarUrl = 'blank.png'; // Unselected
 const pixelStarFilledUrl = 'filled.png'; // Rated star
-for (let i = 1; i <= 5; i++) {
+for (let i = 1; i <= 10; i++) {
   const star = document.createElement('img');
   star.classList.add('star');
   star.src = pixelStarUrl;
@@ -170,11 +170,13 @@ saveBtn.addEventListener('click', () => {
     alert('Missing: ' + missing.join(', ') + '. Please analyze greenness and select a rating.');
     return;
   }
+  const location = document.getElementById('matcha-location')?.value?.trim() || '';
   const entry = {
     photo: photoDataUrl || '',
     rating: currentRating,
     greenness: matchaGreenness,
-    date: new Date().toLocaleString()
+    location: location,
+    date: new Date().toLocaleDateString()
   };
   saveEntry(entry);
   renderLog();
@@ -212,7 +214,12 @@ function renderLog() {
     const store = tx.objectStore('logs');
     const request = store.getAll();
     request.onsuccess = function() {
-      const log = request.result.sort((a, b) => new Date(b.date) - new Date(a.date));
+      const log = request.result.sort((a, b) => {
+        if (b.rating !== a.rating) {
+          return b.rating - a.rating;
+        }
+        return b.greenness - a.greenness;
+      });
       ratingsLog.innerHTML = '';
       log.forEach(entry => {
         const div = document.createElement('div');
@@ -220,9 +227,12 @@ function renderLog() {
         div.innerHTML = `
           <img src="${entry.photo}" alt="Matcha" />
           <div>
-            <div>Rating: ${'★'.repeat(entry.rating)}${'☆'.repeat(5-entry.rating)}</div>
-            <div>Greenness (out of 100): ${entry.greenness}</div>
-            <div>Date: ${entry.date}</div>
+            <div>
+              <strong style="font-size:1.1em;">${entry.location || 'N/A'}</strong>
+              <span style="font-size:0.95em;font-style:italic;margin-left:8px;">${entry.date}</span>
+            </div>
+            <div>Rating: ${entry.rating}/10</div>
+            <div>Greenness: ${entry.greenness}/100</div>
           </div>
         `;
         ratingsLog.appendChild(div);
