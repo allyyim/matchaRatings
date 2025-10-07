@@ -118,6 +118,7 @@ photoInput.addEventListener('change', (e) => {
     previewImg.style.position = 'absolute';
     previewImg.style.left = '0';
     previewImg.style.top = '0';
+    photoboothVideo.style.display = 'none';
     analyzeGreenness(photoDataUrl);
   };
   reader.readAsDataURL(file);
@@ -275,6 +276,7 @@ function resetForm() {
   updateStars();
   matchaGreenness = null;
   photoDataUrl = null;
+  photoboothVideo.style.display = 'block';
   const locationInput = document.getElementById('matcha-location');
   if (locationInput) locationInput.value = '';
   const thoughtsInput = document.getElementById('matcha-thoughts');
