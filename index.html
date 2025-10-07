@@ -4,14 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Matcha Ratings Log</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🍵</text></svg>">
   <link rel="stylesheet" href="styles.css">
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAxRrHXYYWkbVYRvdUNOR1gN-PpViZ9oUU&libraries=places"></script>
 </head>
 <body>
   <div class="container">
     <h1>Matcha Ratings Log</h1>
     <div class="location-section">
       <label for="matcha-location" class="location-label">Matcha Location</label>
-      <input type="text" id="matcha-location" placeholder="Enter location (e.g. cafe name, city)">
+      <input type="text" id="matcha-location" placeholder="Enter location (e.g. cafe name, city)" autocomplete="off">
     </div>
     <div class="camera-section">
       <div class="photobooth-inline">
@@ -20,7 +22,7 @@
         <button id="capture-btn">Capture</button>
       </div>
       <label for="matcha-photo" class="camera-label">Or upload a picture</label>
-      <input type="file" id="matcha-photo" accept="image/*" capture="environment">
+      <input type="file" id="matcha-photo" accept="image/*,.jpg,.jpeg,.png,.jfif,.webp" capture="environment">
       <canvas id="photo-canvas" style="display:none;"></canvas>
       <img id="preview" alt="Matcha Preview" style="display:none;" />
       <div id="greenness-result"></div>
@@ -36,5 +38,74 @@
     <div id="ratings-log"></div>
   </div>
   <script src="script.js"></script>
+  <script>
+    function initLocationAutocomplete() {
+      const input = document.getElementById('matcha-location');
+      if (!input) return;
+      const autocomplete = new google.maps.places.Autocomplete(input);
+      autocomplete.addListener('place_changed', function() {
+        const place = autocomplete.getPlace();
+        if (place && place.name) {
+          input.value = place.name;
+        }
+      });
+    }
+    window.addEventListener('DOMContentLoaded', initLocationAutocomplete);
+  </script>
+  <script type="module">
+    window.initPlaceAutocomplete = function() {
+      const autocompleteEl = document.getElementById('matcha-location-autocomplete');
+      if (!autocompleteEl) return;
+      autocompleteEl.addEventListener('gmp-placeautocomplete-placeviewed', (event) => {
+        // You can access the selected place details here
+        const place = event.detail;
+        // For example, set the value to the place name
+        // autocompleteEl.value = place.displayName.text;
+      });
+    };
+  </script>
+  <script>
+      const locationInput = document.getElementById('matcha-location');
+      const suggestionsList = document.getElementById('location-suggestions');
+      let debounceTimeout;
+      locationInput.addEventListener('input', function() {
+        clearTimeout(debounceTimeout);
+        const query = locationInput.value.trim();
+        if (query.length < 2) {
+          suggestionsList.style.display = 'none';
+          return;
+        }
+        // Add restaurant/cafe keywords to improve results
+        const searchQuery = `${query} restaurant OR cafe OR tea`;
+        debounceTimeout = setTimeout(() => {
+          fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&addressdetails=1&limit=10`)
+            .then(res => res.json())
+            .then(results => {
+              suggestionsList.innerHTML = '';
+              if (results.length === 0) {
+                suggestionsList.style.display = 'none';
+                return;
+              }
+              results.forEach(place => {
+                const li = document.createElement('li');
+                li.textContent = place.display_name;
+                li.style.padding = '8px';
+                li.style.cursor = 'pointer';
+                li.addEventListener('mousedown', () => {
+                  locationInput.value = place.display_name;
+                  suggestionsList.style.display = 'none';
+                });
+                suggestionsList.appendChild(li);
+              });
+              suggestionsList.style.display = 'block';
+            });
+        }, 300);
+      });
+      document.addEventListener('mousedown', function(e) {
+        if (!locationInput.contains(e.target) && !suggestionsList.contains(e.target)) {
+          suggestionsList.style.display = 'none';
+        }
+      });
+    </script>
 </body>
 </html>

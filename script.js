@@ -1,11 +1,17 @@
 // Star rating logic
 const starRating = document.getElementById('star-rating');
 let currentRating = 0;
+const pixelStarUrl = 'blank.png'; // Unselected
+const pixelStarFilledUrl = 'filled.png'; // Rated star
 for (let i = 1; i <= 5; i++) {
-  const star = document.createElement('span');
+  const star = document.createElement('img');
   star.classList.add('star');
-  star.innerHTML = '★';
+  star.src = pixelStarUrl;
+  star.alt = 'star';
   star.dataset.value = i;
+  star.style.width = '32px';
+  star.style.height = '32px';
+  star.style.cursor = 'pointer';
   star.addEventListener('click', () => {
     currentRating = i;
     updateStars();
@@ -14,7 +20,11 @@ for (let i = 1; i <= 5; i++) {
 }
 function updateStars() {
   document.querySelectorAll('.star').forEach(star => {
-    star.classList.toggle('selected', parseInt(star.dataset.value) <= currentRating);
+    if (parseInt(star.dataset.value) <= currentRating) {
+      star.src = pixelStarFilledUrl;
+    } else {
+      star.src = pixelStarUrl;
+    }
   });
 }
 
@@ -98,22 +108,53 @@ function analyzeGreenness(dataUrl) {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(img, 0, 0);
     const imageData = ctx.getImageData(0, 0, img.width, img.height).data;
-    let greenSum = 0, pixelCount = 0;
-    for (let i = 0; i < imageData.length; i += 4) {
-      const r = imageData[i];
-      const g = imageData[i+1];
-      const b = imageData[i+2];
-      // Only count pixels that are not white-ish
-      if (r < 240 || g < 240 || b < 240) {
-        greenSum += g;
-        pixelCount++;
+    let emeraldCount = 0, pixelCount = 0;
+    // Wider mask: use almost full image
+    const cx = Math.floor(img.width / 2);
+    const cy = Math.floor(img.height / 2);
+    const radius = Math.floor(Math.min(img.width, img.height) / 1.5);
+    for (let y = 0; y < img.height; y++) {
+      for (let x = 0; x < img.width; x++) {
+        const dx = x - cx;
+        const dy = y - cy;
+        if (dx*dx + dy*dy > radius*radius) continue;
+        const i = (y * img.width + x) * 4;
+        const r = imageData[i];
+        const g = imageData[i+1];
+        const b = imageData[i+2];
+        // Ignore highlights/reflections
+        if (r > 230 && g > 230 && b > 230) continue;
+        // Only count pixels where green is dominant and not too dark
+        if (
+          g > r + 5 && g > b + 5 &&
+          g > 30 && r > 10 && b > 10 &&
+          g < 255 && r < 255 && b < 255
+        ) {
+          pixelCount++;
+          // Color analysis
+          const maxRGB = Math.max(r, g, b);
+          const minRGB = Math.min(r, g, b);
+          const saturation = maxRGB ? (maxRGB - minRGB) / maxRGB : 0;
+          // Penalize pale/yellow dullness
+          let scoreBoost = 1;
+          if (saturation < 0.15) scoreBoost -= 0.5; // pale
+          if (r > 80 && g - r < 30) scoreBoost -= 0.5; // yellowish
+          // Super emerald: high green, moderate blue, low red, good saturation
+          if (
+            g > 120 && b > 20 && b < g && r < 150 && saturation > 0.08
+          ) {
+            emeraldCount += 2 * scoreBoost; // double count for super emerald
+          } else if (
+            g > 60 && b > 10 && b < g && r < 180 && saturation > 0.05
+          ) {
+            emeraldCount += scoreBoost;
+          }
+        }
       }
     }
-  // Normalize greenness to a 0-10 scale (0 = not green, 10 = very green)
-  // Green channel ranges 0-255, so map average green to 0-10
-  const avgGreen = pixelCount ? (greenSum / pixelCount) : 0;
-  matchaGreenness = Math.round((avgGreen / 255) * 10);
-  greennessResult.textContent = `Greenness (out of 10): ${matchaGreenness}`;
+    // Score is percent of emerald pixels in mask, scaled to 100
+    matchaGreenness = pixelCount ? Math.min(100, Math.round((emeraldCount / pixelCount) * 100)) : 0;
+    greennessResult.textContent = `Greenness (out of 100): ${matchaGreenness}`;
   };
   img.src = dataUrl;
 }
@@ -122,12 +163,15 @@ function analyzeGreenness(dataUrl) {
 const saveBtn = document.getElementById('save-btn');
 const ratingsLog = document.getElementById('ratings-log');
 saveBtn.addEventListener('click', () => {
-  if (!photoDataUrl || !currentRating || matchaGreenness === null) {
-    alert('Please upload a photo, analyze greenness, and select a rating.');
+  if (!currentRating || matchaGreenness === null) {
+    let missing = [];
+    if (!currentRating) missing.push('rating');
+    if (matchaGreenness === null) missing.push('greenness');
+    alert('Missing: ' + missing.join(', ') + '. Please analyze greenness and select a rating.');
     return;
   }
   const entry = {
-    photo: photoDataUrl,
+    photo: photoDataUrl || '',
     rating: currentRating,
     greenness: matchaGreenness,
     date: new Date().toLocaleString()
@@ -137,27 +181,53 @@ saveBtn.addEventListener('click', () => {
   resetForm();
 });
 
+// IndexedDB helpers
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = window.indexedDB.open('matchaRatingsDB', 1);
+    request.onupgradeneeded = function(e) {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('logs')) {
+        db.createObjectStore('logs', { keyPath: 'date' });
+      }
+    };
+    request.onsuccess = function(e) { resolve(e.target.result); };
+    request.onerror = function(e) { reject(e); };
+  });
+}
+
 function saveEntry(entry) {
-  const log = JSON.parse(localStorage.getItem('matchaLog') || '[]');
-  log.unshift(entry);
-  localStorage.setItem('matchaLog', JSON.stringify(log));
+  openDB().then(db => {
+    const tx = db.transaction('logs', 'readwrite');
+    const store = tx.objectStore('logs');
+    store.put(entry);
+    tx.oncomplete = function() { renderLog(); };
+    tx.onerror = function(e) { alert('Failed to save log: ' + e.target.error); };
+  });
 }
 
 function renderLog() {
-  const log = JSON.parse(localStorage.getItem('matchaLog') || '[]');
-  ratingsLog.innerHTML = '';
-  log.forEach(entry => {
-    const div = document.createElement('div');
-    div.className = 'rating-entry';
-    div.innerHTML = `
-      <img src="${entry.photo}" alt="Matcha" />
-      <div>
-        <div>Rating: ${'★'.repeat(entry.rating)}${'☆'.repeat(5-entry.rating)}</div>
-  <div>Greenness (out of 10): ${entry.greenness}</div>
-        <div>Date: ${entry.date}</div>
-      </div>
-    `;
-    ratingsLog.appendChild(div);
+  openDB().then(db => {
+    const tx = db.transaction('logs', 'readonly');
+    const store = tx.objectStore('logs');
+    const request = store.getAll();
+    request.onsuccess = function() {
+      const log = request.result.sort((a, b) => new Date(b.date) - new Date(a.date));
+      ratingsLog.innerHTML = '';
+      log.forEach(entry => {
+        const div = document.createElement('div');
+        div.className = 'rating-entry';
+        div.innerHTML = `
+          <img src="${entry.photo}" alt="Matcha" />
+          <div>
+            <div>Rating: ${'★'.repeat(entry.rating)}${'☆'.repeat(5-entry.rating)}</div>
+            <div>Greenness (out of 10): ${entry.greenness}</div>
+            <div>Date: ${entry.date}</div>
+          </div>
+        `;
+        ratingsLog.appendChild(div);
+      });
+    };
   });
 }
 
