@@ -9,17 +9,20 @@
   <link href="https://fonts.googleapis.com/css2?family=Sansita+Swashed:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    <h1 class="sansita-swashed-cafe">Rate My Matcha</h1>
-    <div class="location-section">
-      <label for="matcha-location" class="location-label">Matcha Location</label>
-      <input type="text" id="matcha-location" placeholder="Enter location (e.g. cafe name, city)" autocomplete="off">
-    </div>
-    <div class="camera-section">
-      <div class="photobooth-inline">
-      <label for="matcha-photo" class="camera-label">Snap a picture</label>
-        <video id="photobooth-video" autoplay playsinline></video>
-        <button id="capture-btn">Capture</button>
+  <div class="container pixel-bg">
+    <h1 class="sansita-swashed-cafe pixel-title">Rate My Matcha</h1>
+    <div class="pixel-card">
+  <div class="pixel-photo-wrapper">
+        <div class="circle-mask">
+          <video id="photobooth-video" autoplay playsinline></video>
+          <img id="preview" class="pixel-photo" alt="Matcha Preview" style="display:none; position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover;" />
+        </div>
+        <canvas id="photo-canvas" style="display:none;"></canvas>
+      </div>
+      <button id="capture-btn" class="pixel-btn">Capture</button>
+      <div class="location-section">
+        <label for="matcha-location" class="location-label">Location</label>
+        <input type="text" id="matcha-location" placeholder="Enter location (e.g. cafe name, city)">
       </div>
       <label for="matcha-photo" class="camera-label">Or upload a picture</label>
       <input type="file" id="matcha-photo" accept="image/*,.jpg,.jpeg,.png,.jfif,.webp" capture="environment">
@@ -33,81 +36,13 @@
       <div id="star-rating">
         <!-- Stars will be rendered by JS -->
       </div>
+      <textarea id="matcha-thoughts" class="pixel-thoughts" placeholder="Share your thoughts about this matcha..."></textarea>
+      <button id="save-btn" class="pixel-btn pixel-save">Save Rating</button>
     </div>
-    <button id="save-btn">Rate</button>
-    <h2>Ratings Log</h2>
+    <h2 class="pixel-log-title">Ratings Log</h2>
     <div id="ratings-log"></div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
   <script src="script.js"></script>
-  <script>
-    function initLocationAutocomplete() {
-      const input = document.getElementById('matcha-location');
-      if (!input) return;
-      const autocomplete = new google.maps.places.Autocomplete(input);
-      autocomplete.addListener('place_changed', function() {
-        const place = autocomplete.getPlace();
-        if (place && place.name) {
-          input.value = place.name;
-        }
-      });
-    }
-    window.addEventListener('DOMContentLoaded', initLocationAutocomplete);
-  </script>
-  <script type="module">
-    window.initPlaceAutocomplete = function() {
-      const autocompleteEl = document.getElementById('matcha-location-autocomplete');
-      if (!autocompleteEl) return;
-      autocompleteEl.addEventListener('gmp-placeautocomplete-placeviewed', (event) => {
-        // You can access the selected place details here
-        const place = event.detail;
-        // For example, set the value to the place name
-        // autocompleteEl.value = place.displayName.text;
-      });
-    };
-  </script>
-  <script>
-      const locationInput = document.getElementById('matcha-location');
-      const suggestionsList = document.getElementById('location-suggestions');
-      let debounceTimeout;
-      locationInput.addEventListener('input', function() {
-        clearTimeout(debounceTimeout);
-        const query = locationInput.value.trim();
-        if (query.length < 2) {
-          suggestionsList.style.display = 'none';
-          return;
-        }
-        // Add restaurant/cafe keywords to improve results
-        const searchQuery = `${query} restaurant OR cafe OR tea`;
-        debounceTimeout = setTimeout(() => {
-          fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&addressdetails=1&limit=10`)
-            .then(res => res.json())
-            .then(results => {
-              suggestionsList.innerHTML = '';
-              if (results.length === 0) {
-                suggestionsList.style.display = 'none';
-                return;
-              }
-              results.forEach(place => {
-                const li = document.createElement('li');
-                li.textContent = place.display_name;
-                li.style.padding = '8px';
-                li.style.cursor = 'pointer';
-                li.addEventListener('mousedown', () => {
-                  locationInput.value = place.display_name;
-                  suggestionsList.style.display = 'none';
-                });
-                suggestionsList.appendChild(li);
-              });
-              suggestionsList.style.display = 'block';
-            });
-        }, 300);
-      });
-      document.addEventListener('mousedown', function(e) {
-        if (!locationInput.contains(e.target) && !suggestionsList.contains(e.target)) {
-          suggestionsList.style.display = 'none';
-        }
-      });
-    </script>
 </body>
 </html>

@@ -191,22 +191,39 @@ let photoboothStream = null;
 // Start camera automatically and enable capture only when ready
 function startPhotoboothCamera() {
   captureBtn.disabled = true;
-  navigator.mediaDevices.getUserMedia({ video: true })
+  // Try to use back camera on mobile, fallback to any camera on desktop
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: { ideal: "environment" } }
+  })
     .then(stream => {
       photoboothStream = stream;
       photoboothVideo.srcObject = stream;
+      photoboothVideo.style.display = 'block';
       photoboothVideo.onloadedmetadata = () => {
         photoboothVideo.play();
         captureBtn.disabled = false;
       };
     })
     .catch(() => {
-      captureBtn.disabled = true;
-      photoboothVideo.style.display = 'none';
-      const errorMsg = document.createElement('div');
-      errorMsg.textContent = 'Unable to access camera.';
-      errorMsg.style.color = 'red';
-      photoboothVideo.parentNode.appendChild(errorMsg);
+      // Fallback: try default camera
+      navigator.mediaDevices.getUserMedia({ video: true })
+        .then(stream => {
+          photoboothStream = stream;
+          photoboothVideo.srcObject = stream;
+          photoboothVideo.style.display = 'block';
+          photoboothVideo.onloadedmetadata = () => {
+            photoboothVideo.play();
+            captureBtn.disabled = false;
+          };
+        })
+        .catch(() => {
+          captureBtn.disabled = true;
+          photoboothVideo.style.display = 'none';
+          const errorMsg = document.createElement('div');
+          errorMsg.textContent = 'Unable to access camera.';
+          errorMsg.style.color = 'red';
+          photoboothVideo.parentNode.appendChild(errorMsg);
+        });
     });
 }
 startPhotoboothCamera();
@@ -241,6 +258,18 @@ photoInput.addEventListener('change', (e) => {
     photoDataUrl = evt.target.result;
     previewImg.src = photoDataUrl;
     previewImg.style.display = 'block';
+    previewImg.style.objectFit = 'cover';
+    previewImg.style.width = '100%';
+    previewImg.style.height = '100%';
+    previewImg.style.position = 'absolute';
+    previewImg.style.left = '0';
+    previewImg.style.top = '0';
+    photoboothVideo.style.display = 'none';
+    // Stop camera stream when a file is uploaded
+    if (photoboothStream) {
+      photoboothStream.getTracks().forEach(track => track.stop());
+      photoboothStream = null;
+    }
     analyzeGreenness(photoDataUrl);
   };
   reader.readAsDataURL(file);
@@ -313,11 +342,15 @@ saveBtn.addEventListener('click', () => {
     alert('Missing: ' + missing.join(', ') + '. Please analyze greenness and select a rating.');
     return;
   }
+  const location = document.getElementById('matcha-location')?.value?.trim() || '';
+  const thoughts = document.getElementById('matcha-thoughts')?.value?.trim() || '';
   const entry = {
     photo: photoDataUrl || '',
     rating: currentRating,
     greenness: matchaGreenness,
-    date: new Date().toLocaleString()
+    location: location,
+    thoughts: thoughts,
+    date: new Date().toLocaleDateString()
   };
   saveEntry(entry);
   renderLog();
@@ -355,7 +388,12 @@ function renderLog() {
     const store = tx.objectStore('logs');
     const request = store.getAll();
     request.onsuccess = function() {
-      const log = request.result.sort((a, b) => new Date(b.date) - new Date(a.date));
+      const log = request.result.sort((a, b) => {
+        if (b.rating !== a.rating) {
+          return b.rating - a.rating;
+        }
+        return b.greenness - a.greenness;
+      });
       ratingsLog.innerHTML = '';
       log.forEach(entry => {
         const div = document.createElement('div');
@@ -363,9 +401,13 @@ function renderLog() {
         div.innerHTML = `
           <img src="${entry.photo}" alt="Matcha" />
           <div>
-            <div>Rating: ${'★'.repeat(entry.rating)}${'☆'.repeat(5-entry.rating)}</div>
-            <div>Greenness (out of 100): ${entry.greenness}</div>
-            <div>Date: ${entry.date}</div>
+            <div>
+              <strong style="font-size:1.1em;">${entry.location || 'N/A'}</strong>
+              <span style="font-size:0.95em;font-style:italic;margin-left:8px;">${entry.date}</span>
+            </div>
+            <div>Rating: ${entry.rating}/5</div>
+            <div>Greenness: ${entry.greenness}/100</div>
+            <div style="margin-top:0.5em;font-family:'Press Start 2P',Arial,sans-serif;font-size:0.95em;color:#3c5c2c;">${entry.thoughts ? entry.thoughts : ''}</div>
           </div>
         `;
         ratingsLog.appendChild(div);
@@ -382,6 +424,11 @@ function resetForm() {
   updateStars();
   matchaGreenness = null;
   photoDataUrl = null;
+  photoboothVideo.style.display = 'block';
+  const locationInput = document.getElementById('matcha-location');
+  if (locationInput) locationInput.value = '';
+  const thoughtsInput = document.getElementById('matcha-thoughts');
+  if (thoughtsInput) thoughtsInput.value = '';
 }
 
 // Initial render
