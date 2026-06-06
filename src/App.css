@@ -1,0 +1,132 @@
+.matcha-shell {
+  background: linear-gradient(155deg, #f4ffe8 0%, #e8f8de 45%, #f9ffef 100%);
+  border-radius: 1rem;
+}
+
+.soft-nav {
+  backdrop-filter: blur(8px);
+}
+
+.preview-wrap {
+  width: 100%;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  border: 1px solid #d6e9c8;
+}
+
+.camera-wrap {
+  width: min(100%, 18rem);
+  margin: 0 auto;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 1px solid #d6e9c8;
+  background: #122018;
+  aspect-ratio: 1 / 1;
+}
+
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 50%;
+}
+
+.preview-image {
+  width: 100%;
+  max-height: 22rem;
+  object-fit: cover;
+  display: block;
+}
+
+.detector-chip {
+  border: 1px solid #c9e5b9;
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  background: rgba(57, 130, 74, 0.08);
+  color: #1f5f34;
+  display: inline-block;
+}
+
+.detector-metrics {
+  margin-top: 0.15rem;
+  opacity: 0.9;
+}
+
+.star {
+  position: relative;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.star img {
+  width: 2rem;
+  height: 2rem;
+  display: block;
+  image-rendering: pixelated;
+}
+
+.star-base,
+.star-fill-clip {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.star-fill-clip {
+  width: 0;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.star-fill {
+  max-width: none;
+}
+
+.entry-thumb {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 0.5rem;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 576px) {
+  .camera-wrap {
+    width: min(100%, 15rem);
+  }
+
+  .star {
+    width: 1.8rem;
+    height: 1.8rem;
+  }
+
+  .star img {
+    width: 1.8rem;
+    height: 1.8rem;
+  }
+
+  .entry-thumb {
+    width: 3.25rem;
+    height: 3.25rem;
+  }
+
+  .card-body {
+    padding: 1rem !important;
+  }
+
+  .navbar .badge {
+    white-space: normal;
+  }
+
+  .form-control,
+  .btn {
+    width: 100%;
+  }
+}
