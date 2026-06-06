@@ -102,6 +102,15 @@ body {
   margin-top: 0.5rem;
   margin-bottom: 0.5rem;
 }
+#ml-status {
+  margin-top: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(76, 175, 80, 0.12);
+  color: #214d26;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
 #star-rating {
   display: flex;
   gap: 0.5rem;

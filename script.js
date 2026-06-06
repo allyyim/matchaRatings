@@ -34,8 +34,154 @@ const photoInput = document.getElementById('matcha-photo');
 const previewImg = document.getElementById('preview');
 const canvas = document.getElementById('photo-canvas');
 const greennessResult = document.getElementById('greenness-result');
+const mlStatus = document.getElementById('ml-status');
 let matchaGreenness = null;
 let photoDataUrl = null;
+
+const drinkAreaModelConfig = {
+  modelUrl: './ml/drink-area/model.json',
+  inputSize: 224,
+  maskThreshold: 0.45
+};
+
+let drinkAreaModelPromise = null;
+let mlStatusMessage = 'Using heuristic drink area detection.';
+
+function updateMlStatus(message) {
+  mlStatusMessage = message;
+  if (mlStatus) {
+    mlStatus.textContent = message;
+  }
+}
+
+async function loadDrinkAreaModel() {
+  if (drinkAreaModelPromise) {
+    return drinkAreaModelPromise;
+  }
+
+  if (!window.tf) {
+    updateMlStatus('TensorFlow.js unavailable. Using heuristic drink area detection.');
+    return null;
+  }
+
+  updateMlStatus('Loading drink area model...');
+  drinkAreaModelPromise = (async () => {
+    try {
+      try {
+        const graphModel = await window.tf.loadGraphModel(drinkAreaModelConfig.modelUrl);
+        updateMlStatus('ML drink area detector loaded.');
+        return graphModel;
+      } catch (graphError) {
+        const layersModel = await window.tf.loadLayersModel(drinkAreaModelConfig.modelUrl);
+        updateMlStatus('ML drink area detector loaded.');
+        return layersModel;
+      }
+    } catch (error) {
+      updateMlStatus('ML model not found. Using heuristic drink area detection.');
+      return null;
+    }
+  })();
+
+  return drinkAreaModelPromise;
+}
+
+function createFallbackRegion(width, height) {
+  const centerX = Math.floor(width / 2);
+  const centerY = Math.floor(height / 2);
+  const radius = Math.floor(Math.min(width, height) / 1.5);
+  const radiusSquared = radius * radius;
+
+  return {
+    source: 'heuristic',
+    contains(x, y) {
+      const dx = x - centerX;
+      const dy = y - centerY;
+      return dx * dx + dy * dy <= radiusSquared;
+    }
+  };
+}
+
+function normalizeMaskTensor(rawPrediction) {
+  const prediction = Array.isArray(rawPrediction) ? rawPrediction[0] : rawPrediction;
+  if (!prediction || typeof prediction.squeeze !== 'function') {
+    return null;
+  }
+
+  const squeezed = prediction.squeeze();
+  if (squeezed.rank !== 2) {
+    squeezed.dispose();
+    return null;
+  }
+
+  return squeezed;
+}
+
+async function detectDrinkAreaRegion(img) {
+  const fallbackRegion = createFallbackRegion(img.width, img.height);
+  const model = await loadDrinkAreaModel();
+
+  if (!model || !window.tf) {
+    return fallbackRegion;
+  }
+
+  const inputTensor = window.tf.tidy(() => {
+    const pixels = window.tf.browser.fromPixels(img);
+    const resized = window.tf.image.resizeBilinear(pixels, [drinkAreaModelConfig.inputSize, drinkAreaModelConfig.inputSize]);
+    return resized.toFloat().div(255).expandDims(0);
+  });
+
+  let maskTensor;
+  try {
+    const rawPrediction = model.predict(inputTensor);
+    maskTensor = normalizeMaskTensor(rawPrediction);
+    if (Array.isArray(rawPrediction)) {
+      rawPrediction.forEach(tensor => {
+        if (tensor && typeof tensor.dispose === 'function') {
+          tensor.dispose();
+        }
+      });
+    } else if (rawPrediction && typeof rawPrediction.dispose === 'function') {
+      rawPrediction.dispose();
+    }
+  } catch (error) {
+    inputTensor.dispose();
+    updateMlStatus('Drink area model failed at runtime. Using heuristic drink area detection.');
+    return fallbackRegion;
+  }
+
+  inputTensor.dispose();
+
+  if (!maskTensor) {
+    updateMlStatus('Drink area model output was incompatible. Using heuristic drink area detection.');
+    return fallbackRegion;
+  }
+
+  const [maskHeight, maskWidth] = maskTensor.shape;
+  const resizedMask = window.tf.tidy(() => window.tf.image.resizeBilinear(maskTensor.expandDims(-1), [img.height, img.width]).squeeze());
+  const maskValues = await resizedMask.data();
+  maskTensor.dispose();
+  resizedMask.dispose();
+
+  let activePixels = 0;
+  for (let index = 0; index < maskValues.length; index++) {
+    if (maskValues[index] >= drinkAreaModelConfig.maskThreshold) {
+      activePixels++;
+    }
+  }
+
+  if (!activePixels) {
+    updateMlStatus('Drink area model found no drink region. Using heuristic drink area detection.');
+    return fallbackRegion;
+  }
+
+  updateMlStatus('ML drink area detector active. Greenness is scored inside the learned drink region.');
+  return {
+    source: 'ml-mask',
+    contains(x, y) {
+      return maskValues[y * img.width + x] >= drinkAreaModelConfig.maskThreshold;
+    }
+  };
+}
 
 // Photobooth elements
 const photoboothVideo = document.getElementById('photobooth-video');
@@ -102,22 +248,17 @@ photoInput.addEventListener('change', (e) => {
 
 function analyzeGreenness(dataUrl) {
   const img = new Image();
-  img.onload = function() {
+  img.onload = async function() {
     canvas.width = img.width;
     canvas.height = img.height;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(img, 0, 0);
     const imageData = ctx.getImageData(0, 0, img.width, img.height).data;
+    const drinkRegion = await detectDrinkAreaRegion(img);
     let emeraldCount = 0, pixelCount = 0;
-    // Wider mask: use almost full image
-    const cx = Math.floor(img.width / 2);
-    const cy = Math.floor(img.height / 2);
-    const radius = Math.floor(Math.min(img.width, img.height) / 1.5);
     for (let y = 0; y < img.height; y++) {
       for (let x = 0; x < img.width; x++) {
-        const dx = x - cx;
-        const dy = y - cy;
-        if (dx*dx + dy*dy > radius*radius) continue;
+        if (!drinkRegion.contains(x, y)) continue;
         const i = (y * img.width + x) * 4;
         const r = imageData[i];
         const g = imageData[i+1];
@@ -158,6 +299,8 @@ function analyzeGreenness(dataUrl) {
   };
   img.src = dataUrl;
 }
+
+loadDrinkAreaModel();
 
 // Save rating and log
 const saveBtn = document.getElementById('save-btn');

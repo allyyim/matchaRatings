@@ -26,6 +26,7 @@
       <canvas id="photo-canvas" style="display:none;"></canvas>
       <img id="preview" alt="Matcha Preview" style="display:none;" />
       <div id="greenness-result"></div>
+      <div id="ml-status">Using heuristic drink area detection.</div>
     </div>
     <div class="rating-section">
       <span>Rate your matcha:</span>
@@ -37,6 +38,7 @@
     <h2>Ratings Log</h2>
     <div id="ratings-log"></div>
   </div>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
   <script src="script.js"></script>
   <script>
     function initLocationAutocomplete() {
