@@ -4,27 +4,48 @@ let currentRating = 0;
 const pixelStarUrl = 'blank.png'; // Unselected
 const pixelStarFilledUrl = 'filled.png'; // Rated star
 for (let i = 1; i <= 5; i++) {
-  const star = document.createElement('img');
+  const star = document.createElement('button');
+  const emptyLayer = document.createElement('img');
+  const fillClip = document.createElement('span');
+  const fillLayer = document.createElement('img');
+
   star.classList.add('star');
-  star.src = pixelStarUrl;
-  star.alt = 'star';
+  star.type = 'button';
   star.dataset.value = i;
-  star.style.width = '32px';
-  star.style.height = '32px';
-  star.style.cursor = 'pointer';
-  star.addEventListener('click', () => {
-    currentRating = i;
+  star.setAttribute('aria-label', `Rate ${i} stars`);
+
+  emptyLayer.classList.add('star-base');
+  emptyLayer.src = pixelStarUrl;
+  emptyLayer.alt = '';
+
+  fillClip.classList.add('star-fill-clip');
+
+  fillLayer.classList.add('star-fill');
+  fillLayer.src = pixelStarFilledUrl;
+  fillLayer.alt = '';
+
+  fillClip.appendChild(fillLayer);
+  star.appendChild(emptyLayer);
+  star.appendChild(fillClip);
+
+  star.addEventListener('click', (event) => {
+    const bounds = star.getBoundingClientRect();
+    const clickX = event.clientX - bounds.left;
+    const step = clickX < bounds.width / 2 ? 0.5 : 1;
+    currentRating = (i - 1) + step;
     updateStars();
   });
+
   starRating.appendChild(star);
 }
 function updateStars() {
   document.querySelectorAll('.star').forEach(star => {
-    if (parseInt(star.dataset.value) <= currentRating) {
-      star.src = pixelStarFilledUrl;
-    } else {
-      star.src = pixelStarUrl;
-    }
+    const starValue = Number(star.dataset.value);
+    const fillClip = star.querySelector('.star-fill-clip');
+    if (!fillClip) return;
+
+    const fillAmount = Math.max(0, Math.min(1, currentRating - (starValue - 1)));
+    fillClip.style.width = `${fillAmount * 100}%`;
   });
 }
 

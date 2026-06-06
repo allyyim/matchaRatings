@@ -268,25 +268,35 @@ body {
   margin: 0.5rem 0;
 }
 .star {
-  font-size: 2rem;
-  color: #fff;
+  position: relative;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
   cursor: pointer;
-  transition: color 0.2s;
-  image-rendering: pixelated;
-  text-shadow:
-    -1px -1px 0 #000,
-    1px -1px 0 #000,
-    -1px 1px 0 #000,
-    1px 1px 0 #000;
-  border-radius: 2px;
+  overflow: hidden;
 }
-.star.selected {
-  color: #ffd600;
-  text-shadow:
-    -1px -1px 0 #000,
-    1px -1px 0 #000,
-    -1px 1px 0 #000,
-    1px 1px 0 #000;
+.star img {
+  display: block;
+  width: 32px;
+  height: 32px;
+  image-rendering: pixelated;
+}
+.star-base,
+.star-fill-clip {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+.star-fill-clip {
+  width: 0;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+.star-fill {
+  max-width: none;
 }
 #save-btn {
   width: 100%;
@@ -360,7 +370,12 @@ body {
     border-radius: 50%;
   }
   .star {
-    font-size: 1.5rem;
+    width: 28px;
+    height: 28px;
+  }
+  .star img {
+    width: 28px;
+    height: 28px;
   }
 }
 .sansita-swashed-cafe {
