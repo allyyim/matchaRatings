@@ -2,6 +2,29 @@
 
 React + TypeScript + Vite app for rating matcha with half-star support, camera capture, and optional ML drink-area detection.
 
+## Technical Architecture
+
+This app is a client-side React single-page application built with Vite and TypeScript. The UI is rendered in the browser, the rating log is stored locally in `localStorage`, and optional TensorFlow.js inference is used to estimate the drink region before greenness scoring runs.
+
+```mermaid
+flowchart TD
+   A[User opens app] --> B[React UI in browser]
+   B --> C[Camera capture or image upload]
+   C --> D[Optional TensorFlow.js drink-area detection]
+   D --> E[Greenness scoring on selected region]
+   E --> F[Save rating entry in localStorage]
+   F --> G[Render ratings log]
+   B --> H[GitHub Pages deployment]
+```
+
+### System Design
+
+- Presentation layer: React components in `src/App.tsx` and global styles in `src/App.css` and `src/index.css`.
+- Image pipeline: camera capture or file upload produces a data URL, which is analyzed for matcha greenness.
+- ML layer: TensorFlow.js loads an optional drink-area model from `public/ml/drink-area/model.json`; if it is missing, the app falls back to a heuristic mask.
+- Persistence layer: ratings, photos, and notes are stored in browser `localStorage`.
+- Deployment layer: Vite builds the app into `dist`, and GitHub Actions publishes it to GitHub Pages on each push to `main`.
+
 ## Local Development
 
 1. Install dependencies:
