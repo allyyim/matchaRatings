@@ -653,7 +653,6 @@ function App() {
                   type="file"
                   className="form-control"
                   accept="image/*,.jpg,.jpeg,.png,.jfif,.webp"
-                  capture="environment"
                   onChange={handlePhotoSelection}
                 />
               </div>
