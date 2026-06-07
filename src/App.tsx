@@ -288,6 +288,12 @@ function App() {
 
   const [currentRating, setCurrentRating] = useState(0)
   const [location, setLocation] = useState('')
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([])
+  const [isLocationLookupPending, setIsLocationLookupPending] = useState(false)
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false)
+  const locationDebounceRef = useRef<number | null>(null)
+  const locationBlurTimeoutRef = useRef<number | null>(null)
+  const locationLookupSequenceRef = useRef(0)
   const [thoughts, setThoughts] = useState('')
   const [photoDataUrl, setPhotoDataUrl] = useState('')
   const [matchaGreenness, setMatchaGreenness] = useState<number | null>(null)
@@ -384,6 +390,79 @@ function App() {
 
     void loadMyRatings()
   }, [isUserReady, currentUserName])
+
+  useEffect(() => {
+    const query = location.trim()
+
+    if (locationDebounceRef.current !== null) {
+      window.clearTimeout(locationDebounceRef.current)
+      locationDebounceRef.current = null
+    }
+
+    if (query.length < 2) {
+      setLocationSuggestions([])
+      setIsLocationLookupPending(false)
+      return
+    }
+
+    const lookupId = ++locationLookupSequenceRef.current
+    const controller = new AbortController()
+    setIsLocationLookupPending(true)
+
+    locationDebounceRef.current = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&addressdetails=1&q=${encodeURIComponent(query)}`,
+            {
+              signal: controller.signal,
+              headers: {
+                'Accept-Language': 'en'
+              }
+            }
+          )
+
+          if (!response.ok) {
+            throw new Error('Location lookup failed')
+          }
+
+          const payload = (await response.json()) as Array<{ display_name: string }>
+          if (lookupId !== locationLookupSequenceRef.current) return
+
+          const deduped = Array.from(
+            new Set(
+              payload
+                .map((item) => String(item.display_name || '').trim())
+                .filter(Boolean)
+            )
+          )
+          setLocationSuggestions(deduped)
+        } catch {
+          if (lookupId !== locationLookupSequenceRef.current) return
+          setLocationSuggestions([])
+        } finally {
+          if (lookupId === locationLookupSequenceRef.current) {
+            setIsLocationLookupPending(false)
+          }
+        }
+      })()
+    }, 350)
+
+    return () => {
+      controller.abort()
+    }
+  }, [location])
+
+  useEffect(() => {
+    return () => {
+      if (locationDebounceRef.current !== null) {
+        window.clearTimeout(locationDebounceRef.current)
+      }
+      if (locationBlurTimeoutRef.current !== null) {
+        window.clearTimeout(locationBlurTimeoutRef.current)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     let mounted = true
@@ -531,6 +610,12 @@ function App() {
     setFriendEntries(response.ratings)
   }
 
+  function applyLocationSuggestion(value: string) {
+    setLocation(value)
+    setShowLocationSuggestions(false)
+    setLocationSuggestions([])
+  }
+
   function openEntryOverlay(entry: RatingEntry) {
     setSelectedEntryId(entry.id)
     setIsEditingEntry(false)
@@ -625,13 +710,57 @@ function App() {
 
               <div className="mb-3">
                 <label className="form-label fw-semibold">Location</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={location}
-                  onChange={(event) => setLocation(event.target.value)}
-                  placeholder="Location"
-                />
+                <div className="location-autocomplete">
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={location}
+                    onChange={(event) => {
+                      setLocation(event.target.value)
+                      setShowLocationSuggestions(true)
+                    }}
+                    onFocus={() => {
+                      if (locationSuggestions.length > 0 || isLocationLookupPending) {
+                        setShowLocationSuggestions(true)
+                      }
+                    }}
+                    onBlur={() => {
+                      if (locationBlurTimeoutRef.current !== null) {
+                        window.clearTimeout(locationBlurTimeoutRef.current)
+                      }
+                      locationBlurTimeoutRef.current = window.setTimeout(() => {
+                        setShowLocationSuggestions(false)
+                      }, 120)
+                    }}
+                    placeholder="Location"
+                    autoComplete="off"
+                  />
+
+                  {showLocationSuggestions && location.trim().length >= 2 && (
+                    <div className="location-dropdown border rounded shadow-sm bg-white">
+                      {isLocationLookupPending && <div className="location-item muted">Searching locations...</div>}
+
+                      {!isLocationLookupPending && locationSuggestions.length === 0 && (
+                        <div className="location-item muted">No matching places found.</div>
+                      )}
+
+                      {!isLocationLookupPending &&
+                        locationSuggestions.map((suggestion) => (
+                          <button
+                            type="button"
+                            key={suggestion}
+                            className="location-item"
+                            onMouseDown={(event) => {
+                              event.preventDefault()
+                              applyLocationSuggestion(suggestion)
+                            }}
+                          >
+                            {suggestion}
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="mb-3">
