@@ -92,6 +92,68 @@ app.post('/api/ratings', async (req, res) => {
   return res.status(201).json({ rating: mapRatingRow(inserted.rows[0]) })
 })
 
+app.put('/api/ratings/:id', async (req, res) => {
+  const id = Number(req.params.id)
+  const userName = String(req.body?.userName || '').trim()
+  const rating = Number(req.body?.rating)
+  const location = String(req.body?.location || '').trim()
+  const thoughts = String(req.body?.thoughts || '').trim()
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'Valid rating id is required' })
+  }
+
+  if (!userName || Number.isNaN(rating)) {
+    return res.status(400).json({ error: 'userName and rating are required' })
+  }
+
+  const updated = await pool.query(
+    `
+      UPDATE ratings
+      SET rating = $3,
+          location = $4,
+          thoughts = $5
+      WHERE id = $1 AND user_name = $2
+      RETURNING *
+    `,
+    [id, userName, rating, location, thoughts]
+  )
+
+  if (updated.rowCount === 0) {
+    return res.status(404).json({ error: 'Rating not found for this user' })
+  }
+
+  return res.json({ rating: mapRatingRow(updated.rows[0]) })
+})
+
+app.delete('/api/ratings/:id', async (req, res) => {
+  const id = Number(req.params.id)
+  const userName = String(req.query.userName || '').trim()
+
+  if (!Number.isInteger(id) || id <= 0) {
+    return res.status(400).json({ error: 'Valid rating id is required' })
+  }
+
+  if (!userName) {
+    return res.status(400).json({ error: 'userName query parameter is required' })
+  }
+
+  const deleted = await pool.query(
+    `
+      DELETE FROM ratings
+      WHERE id = $1 AND user_name = $2
+      RETURNING id
+    `,
+    [id, userName]
+  )
+
+  if (deleted.rowCount === 0) {
+    return res.status(404).json({ error: 'Rating not found for this user' })
+  }
+
+  return res.json({ deletedId: Number(deleted.rows[0].id) })
+})
+
 app.get('/api/ratings', async (req, res) => {
   const userName = String(req.query.userName || '').trim()
   if (!userName) {

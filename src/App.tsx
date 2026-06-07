@@ -298,6 +298,11 @@ function App() {
   const cameraStreamRef = useRef<MediaStream | null>(null)
 
   const [myEntries, setMyEntries] = useState<RatingEntry[]>([])
+  const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null)
+  const [isEditingEntry, setIsEditingEntry] = useState(false)
+  const [editRating, setEditRating] = useState(0)
+  const [editLocation, setEditLocation] = useState('')
+  const [editThoughts, setEditThoughts] = useState('')
   const [friendQuery, setFriendQuery] = useState('')
   const [friendSuggestions, setFriendSuggestions] = useState<string[]>([])
   const [selectedFriend, setSelectedFriend] = useState('')
@@ -524,6 +529,56 @@ function App() {
     setFriendEntries(response.ratings)
   }
 
+  function openEntryOverlay(entry: RatingEntry) {
+    setSelectedEntryId(entry.id)
+    setIsEditingEntry(false)
+    setEditRating(entry.rating)
+    setEditLocation(entry.location)
+    setEditThoughts(entry.thoughts)
+  }
+
+  function startEntryEdit(entry: RatingEntry) {
+    setSelectedEntryId(entry.id)
+    setIsEditingEntry(true)
+    setEditRating(entry.rating)
+    setEditLocation(entry.location)
+    setEditThoughts(entry.thoughts)
+  }
+
+  async function saveEntryEdit(entryId: number) {
+    if (!currentUserName || !editRating) {
+      alert('Please choose a rating before saving.')
+      return
+    }
+
+    await apiFetch<{ rating: RatingEntry }>(`/ratings/${entryId}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        userName: currentUserName,
+        rating: editRating,
+        location: editLocation.trim(),
+        thoughts: editThoughts.trim()
+      })
+    })
+
+    const updated = await apiFetch<{ ratings: RatingEntry[] }>(`/ratings?userName=${encodeURIComponent(currentUserName)}`)
+    setMyEntries(updated.ratings)
+    setIsEditingEntry(false)
+    setSelectedEntryId(null)
+  }
+
+  async function deleteEntry(entryId: number) {
+    if (!currentUserName) return
+
+    await apiFetch<{ deletedId: number }>(`/ratings/${entryId}?userName=${encodeURIComponent(currentUserName)}`, {
+      method: 'DELETE'
+    })
+
+    setMyEntries((prev) => prev.filter((entry) => entry.id !== entryId))
+    setIsEditingEntry(false)
+    setSelectedEntryId(null)
+  }
+
   if (!isUserReady) {
     return (
       <main className="container py-5">
@@ -665,12 +720,12 @@ function App() {
           </div>
 
           <section className="mt-4 mb-5">
-            <h2 className="h4 fw-bold text-success mb-3">Your Ratings Log</h2>
+            <h2 className="h4 fw-bold text-success mb-3">Your Ratings Log (tap any entry to edit or delete)</h2>
             <div className="d-flex flex-column gap-3">
               {sortedMine.length === 0 && <div className="alert alert-light border">No ratings yet.</div>}
 
               {sortedMine.map((entry) => (
-                <article key={entry.id} className="card border-0 shadow-sm">
+                <article key={entry.id} className="card border-0 shadow-sm entry-card" onClick={() => openEntryOverlay(entry)}>
                   <div className="card-body d-flex gap-3 align-items-start">
                     <img src={entry.photo} alt="Matcha" className="entry-thumb" />
                     <div className="flex-grow-1">
@@ -684,6 +739,97 @@ function App() {
                       {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
                     </div>
                   </div>
+
+                  {selectedEntryId === entry.id && (
+                    <div className="entry-overlay" onClick={(event) => event.stopPropagation()}>
+                      {!isEditingEntry && (
+                        <div className="entry-overlay-actions d-flex gap-2">
+                          <button type="button" className="btn btn-light btn-sm" onClick={() => startEntryEdit(entry)} aria-label="Edit rating">
+                            ✏️ Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-sm"
+                            onClick={() => {
+                              if (window.confirm('Delete this rating entry?')) {
+                                void deleteEntry(entry.id)
+                              }
+                            }}
+                            aria-label="Delete rating"
+                          >
+                            🗑️ Delete
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-outline-light btn-sm"
+                            onClick={() => {
+                              setSelectedEntryId(null)
+                              setIsEditingEntry(false)
+                            }}
+                          >
+                            Close
+                          </button>
+                        </div>
+                      )}
+
+                      {isEditingEntry && (
+                        <div className="entry-edit-panel p-3 bg-white rounded shadow-sm">
+                          <label className="form-label fw-semibold mb-1">Edit rating</label>
+                          <div className="d-flex gap-2 mb-2">
+                            {Array.from({ length: 5 }, (_, idx) => {
+                              const starIndex = idx + 1
+                              const fillAmount = Math.max(0, Math.min(1, editRating - idx))
+                              return (
+                                <button
+                                  type="button"
+                                  key={`edit-${entry.id}-${starIndex}`}
+                                  className="star"
+                                  onClick={(event) => {
+                                    event.stopPropagation()
+                                    const bounds = event.currentTarget.getBoundingClientRect()
+                                    const clickX = event.clientX - bounds.left
+                                    const step = clickX < bounds.width / 2 ? 0.5 : 1
+                                    setEditRating((starIndex - 1) + step)
+                                  }}
+                                  aria-label={`Edit to ${starIndex} stars`}
+                                >
+                                  <img className="star-base" src={pixelStarUrl} alt="" />
+                                  <span className="star-fill-clip" style={{ width: `${fillAmount * 100}%` }}>
+                                    <img className="star-fill" src={pixelStarFilledUrl} alt="" />
+                                  </span>
+                                </button>
+                              )
+                            })}
+                          </div>
+
+                          <input
+                            type="text"
+                            className="form-control mb-2"
+                            value={editLocation}
+                            onChange={(event) => setEditLocation(event.target.value)}
+                            placeholder="Location"
+                          />
+
+                          <textarea
+                            className="form-control mb-2"
+                            rows={2}
+                            value={editThoughts}
+                            onChange={(event) => setEditThoughts(event.target.value)}
+                            placeholder="Thoughts"
+                          />
+
+                          <div className="d-flex gap-2">
+                            <button type="button" className="btn btn-success btn-sm" onClick={() => void saveEntryEdit(entry.id)}>
+                              Save
+                            </button>
+                            <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setIsEditingEntry(false)}>
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </article>
               ))}
             </div>

@@ -101,6 +101,32 @@
   flex: 0 0 auto;
 }
 
+.entry-card {
+  position: relative;
+  cursor: pointer;
+}
+
+.entry-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 18, 12, 0.45);
+  border-radius: inherit;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 2;
+}
+
+.entry-overlay-actions {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.entry-edit-panel {
+  width: min(28rem, 100%);
+}
+
 @media (max-width: 576px) {
   .camera-wrap {
     width: min(100%, 15rem);
