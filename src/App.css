@@ -7,19 +7,6 @@
   backdrop-filter: blur(8px);
 }
 
-.brand-lockup {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.app-logo {
-  width: 2.75rem;
-  height: 2.75rem;
-  display: block;
-  flex: 0 0 auto;
-}
-
 .preview-wrap {
   width: 100%;
   border-radius: 0.75rem;
@@ -111,15 +98,6 @@
 }
 
 @media (max-width: 576px) {
-  .brand-lockup {
-    gap: 0.55rem;
-  }
-
-  .app-logo {
-    width: 2.25rem;
-    height: 2.25rem;
-  }
-
   .camera-wrap {
     width: min(100%, 15rem);
   }
