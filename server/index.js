@@ -11,6 +11,10 @@ const port = Number(process.env.PORT || 4000)
 app.use(cors())
 app.use(express.json({ limit: '15mb' }))
 
+app.get('/', (_req, res) => {
+  res.status(200).send('Matcha Ratings API is running. Use /api/health for health checks.')
+})
+
 function mapRatingRow(row) {
   const rating = Number(row.rating)
   const greenness = Number(row.greenness)
