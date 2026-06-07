@@ -33,6 +33,8 @@ type DetectResult = {
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
 const pixelStarUrl = `${import.meta.env.BASE_URL}blank.png`
 const pixelStarFilledUrl = `${import.meta.env.BASE_URL}filled.png`
+const pencilIconUrl = `${import.meta.env.BASE_URL}pencil.svg`
+const trashIconUrl = `${import.meta.env.BASE_URL}trash.svg`
 
 const drinkAreaModelConfig = {
   modelUrl: `${import.meta.env.BASE_URL}ml/drink-area/model.json`,
@@ -619,7 +621,7 @@ function App() {
         <main className="container py-3 py-md-5 px-3 px-md-4">
           <div className="card shadow-sm border-0 matcha-shell">
             <div className="card-body p-3 p-md-4">
-              <h1 className="display-6 fw-bold mb-3 text-success">Rate &amp; Log Your Matcha Reviews</h1>
+              <h1 className="display-6 fw-bold mb-3 text-success">Rate &amp; Log Your Matcha!</h1>
 
               <div className="mb-3">
                 <label className="form-label fw-semibold">Location</label>
@@ -628,7 +630,7 @@ function App() {
                   className="form-control"
                   value={location}
                   onChange={(event) => setLocation(event.target.value)}
-                  placeholder="Cafe name or city"
+                  placeholder="Location"
                 />
               </div>
 
@@ -720,7 +722,7 @@ function App() {
           </div>
 
           <section className="mt-4 mb-5">
-            <h2 className="h4 fw-bold text-success mb-3">Your Ratings Log (tap any entry to edit or delete)</h2>
+            <h2 className="h4 fw-bold text-success mb-3">My Log (tap to edit or delete)</h2>
             <div className="d-flex flex-column gap-3">
               {sortedMine.length === 0 && <div className="alert alert-light border">No ratings yet.</div>}
 
@@ -745,7 +747,10 @@ function App() {
                       {!isEditingEntry && (
                         <div className="entry-overlay-actions d-flex gap-2">
                           <button type="button" className="btn btn-light btn-sm" onClick={() => startEntryEdit(entry)} aria-label="Edit rating">
-                            ✏️ Edit
+                            <span className="action-icon-wrap">
+                              <img src={pencilIconUrl} alt="" className="action-icon" />
+                            </span>
+                            Edit
                           </button>
                           <button
                             type="button"
@@ -757,7 +762,10 @@ function App() {
                             }}
                             aria-label="Delete rating"
                           >
-                            🗑️ Delete
+                            <span className="action-icon-wrap">
+                              <img src={trashIconUrl} alt="" className="action-icon" />
+                            </span>
+                            Delete
                           </button>
                           <button
                             type="button"
