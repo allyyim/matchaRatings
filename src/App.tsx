@@ -412,9 +412,8 @@ function App() {
     locationDebounceRef.current = window.setTimeout(() => {
       void (async () => {
         try {
-          const venueBiasedQuery = `${query} cafe restaurant coffee shop`
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&addressdetails=1&namedetails=1&q=${encodeURIComponent(venueBiasedQuery)}`,
+          const photonResponse = await fetch(
+            `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8&osm_tag=amenity:cafe&osm_tag=amenity:restaurant&osm_tag=amenity:fast_food&osm_tag=shop:coffee`,
             {
               signal: controller.signal,
               headers: {
@@ -423,55 +422,75 @@ function App() {
             }
           )
 
-          if (!response.ok) {
-            throw new Error('Location lookup failed')
+          let suggestionList: string[] = []
+
+          if (photonResponse.ok) {
+            const photonPayload = (await photonResponse.json()) as {
+              features?: Array<{
+                properties?: {
+                  name?: string
+                  city?: string
+                  state?: string
+                  country?: string
+                }
+              }>
+            }
+
+            suggestionList = (photonPayload.features || [])
+              .map((feature) => {
+                const name = String(feature.properties?.name || '').trim()
+                const locality = String(feature.properties?.city || feature.properties?.state || feature.properties?.country || '').trim()
+                if (name && locality) return `${name}, ${locality}`
+                return name
+              })
+              .filter(Boolean)
           }
 
-          const payload = (await response.json()) as Array<{
-            class?: string
-            type?: string
-            name?: string
-            display_name: string
-            address?: {
-              city?: string
-              town?: string
-              village?: string
-              state?: string
-              country?: string
-            }
-          }>
-          if (lookupId !== locationLookupSequenceRef.current) return
+          if (suggestionList.length === 0) {
+            const venueBiasedQuery = `${query} cafe restaurant coffee shop`
+            const nominatimResponse = await fetch(
+              `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&addressdetails=1&namedetails=1&q=${encodeURIComponent(venueBiasedQuery)}`,
+              {
+                signal: controller.signal,
+                headers: {
+                  'Accept-Language': 'en'
+                }
+              }
+            )
 
-          const venueTypes = new Set([
-            'cafe',
-            'restaurant',
-            'fast_food',
-            'food_court',
-            'coffee',
-            'tea',
-            'bubble_tea'
-          ])
+            if (nominatimResponse.ok) {
+              const payload = (await nominatimResponse.json()) as Array<{
+                class?: string
+                type?: string
+                name?: string
+                display_name: string
+                address?: {
+                  city?: string
+                  town?: string
+                  village?: string
+                  state?: string
+                  country?: string
+                }
+              }>
 
-          const venueFirst = [...payload].sort((a, b) => {
-            const aIsVenue = (a.class === 'amenity' || a.class === 'shop') && venueTypes.has(String(a.type || ''))
-            const bIsVenue = (b.class === 'amenity' || b.class === 'shop') && venueTypes.has(String(b.type || ''))
-            if (aIsVenue === bIsVenue) return 0
-            return aIsVenue ? -1 : 1
-          })
+              const venueTypes = new Set(['cafe', 'restaurant', 'fast_food', 'food_court', 'coffee', 'tea', 'bubble_tea'])
 
-          const deduped = Array.from(
-            new Set(
-              venueFirst
+              suggestionList = payload
+                .filter((item) => (item.class === 'amenity' || item.class === 'shop') && venueTypes.has(String(item.type || '')))
                 .map((item) => {
                   const placeName = String(item.name || '').trim()
-                  const locality = String(item.address?.city || item.address?.town || item.address?.village || item.address?.state || '').trim()
+                  const locality = String(item.address?.city || item.address?.town || item.address?.village || item.address?.state || item.address?.country || '').trim()
                   if (placeName && locality) return `${placeName}, ${locality}`
                   if (placeName) return placeName
                   return String(item.display_name || '').trim()
                 })
                 .filter(Boolean)
-            )
-          ).slice(0, 5)
+            }
+          }
+
+          if (lookupId !== locationLookupSequenceRef.current) return
+
+          const deduped = Array.from(new Set(suggestionList)).slice(0, 5)
           setLocationSuggestions(deduped)
         } catch {
           if (lookupId !== locationLookupSequenceRef.current) return
