@@ -7,6 +7,10 @@
   backdrop-filter: blur(8px);
 }
 
+.nav-actions .btn {
+  white-space: nowrap;
+}
+
 .preview-wrap {
   width: 100%;
   border-radius: 0.75rem;
@@ -128,5 +132,9 @@
   .form-control,
   .btn {
     width: 100%;
+  }
+
+  .nav-actions .btn {
+    width: auto;
   }
 }

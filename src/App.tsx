@@ -4,23 +4,19 @@ import * as tf from '@tensorflow/tfjs'
 import './App.css'
 
 type RatingEntry = {
-  id: string
+  id: number
+  userName: string
   photo: string
   rating: number
   greenness: number
   location: string
   thoughts: string
   date: string
+  createdAt: string
+  comboScore: number
 }
 
-const pixelStarUrl = `${import.meta.env.BASE_URL}blank.png`
-const pixelStarFilledUrl = `${import.meta.env.BASE_URL}filled.png`
-
-const drinkAreaModelConfig = {
-  modelUrl: `${import.meta.env.BASE_URL}ml/drink-area/model.json`,
-  inputSize: 224,
-  maskThreshold: 0.45
-}
+type Page = 'home' | 'friends'
 
 type DrinkRegion = {
   source: 'heuristic' | 'ml-mask'
@@ -32,6 +28,16 @@ type DetectResult = {
   statusMessage: string
   coveragePercent: number | null
   confidencePercent: number | null
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const pixelStarUrl = `${import.meta.env.BASE_URL}blank.png`
+const pixelStarFilledUrl = `${import.meta.env.BASE_URL}filled.png`
+
+const drinkAreaModelConfig = {
+  modelUrl: `${import.meta.env.BASE_URL}ml/drink-area/model.json`,
+  inputSize: 224,
+  maskThreshold: 0.45
 }
 
 let drinkAreaModelPromise: Promise<tf.GraphModel | tf.LayersModel | null> | null = null
@@ -246,7 +252,38 @@ function analyzeGreennessFromDataUrl(dataUrl: string): Promise<{
   })
 }
 
+function getBrowserId() {
+  const existing = localStorage.getItem('matchaBrowserId')
+  if (existing) return existing
+  const generated = crypto.randomUUID()
+  localStorage.setItem('matchaBrowserId', generated)
+  return generated
+}
+
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers || {})
+    },
+    ...init
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(text || `Request failed with status ${response.status}`)
+  }
+
+  return response.json() as Promise<T>
+}
+
 function App() {
+  const [activePage, setActivePage] = useState<Page>('home')
+  const [browserId] = useState(() => getBrowserId())
+  const [currentUserName, setCurrentUserName] = useState('')
+  const [isUserReady, setIsUserReady] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState('Connecting to ratings service...')
+
   const [currentRating, setCurrentRating] = useState(0)
   const [location, setLocation] = useState('')
   const [thoughts, setThoughts] = useState('')
@@ -259,22 +296,19 @@ function App() {
   const [cameraError, setCameraError] = useState('')
   const videoRef = useRef<HTMLVideoElement>(null)
   const cameraStreamRef = useRef<MediaStream | null>(null)
-  const [entries, setEntries] = useState<RatingEntry[]>(() => {
-    const saved = localStorage.getItem('matchaRatingsLogV2')
-    if (!saved) return []
-    try {
-      return JSON.parse(saved) as RatingEntry[]
-    } catch {
-      return []
-    }
-  })
 
-  const sortedEntries = useMemo(() => {
-    return [...entries].sort((a, b) => {
+  const [myEntries, setMyEntries] = useState<RatingEntry[]>([])
+  const [friendQuery, setFriendQuery] = useState('')
+  const [friendSuggestions, setFriendSuggestions] = useState<string[]>([])
+  const [selectedFriend, setSelectedFriend] = useState('')
+  const [friendEntries, setFriendEntries] = useState<RatingEntry[]>([])
+
+  const sortedMine = useMemo(() => {
+    return [...myEntries].sort((a, b) => {
       if (b.rating !== a.rating) return b.rating - a.rating
       return b.greenness - a.greenness
     })
-  }, [entries])
+  }, [myEntries])
 
   useEffect(() => {
     loadDrinkAreaModel()
@@ -289,6 +323,60 @@ function App() {
         setMlStatus('ML initialization failed. Using heuristic drink area.')
       })
   }, [])
+
+  useEffect(() => {
+    let mounted = true
+
+    async function initUserSession() {
+      try {
+        const savedName = localStorage.getItem('matchaUserName') || ''
+        let candidate = savedName.trim()
+
+        if (!candidate) {
+          candidate = window.prompt('Enter your name to create your ratings log:')?.trim() || ''
+        }
+
+        while (!candidate) {
+          candidate = window.prompt('Name is required. Enter your name to continue:')?.trim() || ''
+        }
+
+        const session = await apiFetch<{ requiresName: boolean; userName: string }>('/users/session', {
+          method: 'POST',
+          body: JSON.stringify({ browserId, userName: candidate })
+        })
+
+        if (!mounted) return
+
+        localStorage.setItem('matchaUserName', session.userName)
+        setCurrentUserName(session.userName)
+        setIsUserReady(true)
+        setLoadingMessage('')
+      } catch {
+        if (!mounted) return
+        setLoadingMessage('Unable to connect to API. Start PostgreSQL API server and refresh.')
+      }
+    }
+
+    void initUserSession()
+    return () => {
+      mounted = false
+    }
+  }, [browserId])
+
+  useEffect(() => {
+    if (!isUserReady || !currentUserName) return
+
+    async function loadMyRatings() {
+      try {
+        const response = await apiFetch<{ ratings: RatingEntry[] }>(`/ratings?userName=${encodeURIComponent(currentUserName)}`)
+        setMyEntries(response.ratings)
+      } catch {
+        setMyEntries([])
+      }
+    }
+
+    void loadMyRatings()
+  }, [isUserReady, currentUserName])
 
   useEffect(() => {
     let mounted = true
@@ -387,25 +475,26 @@ function App() {
     reader.readAsDataURL(file)
   }
 
-  function saveEntry() {
-    if (!currentRating || matchaGreenness === null) {
-      alert('Please upload a photo and choose a rating first.')
+  async function saveEntry() {
+    if (!currentRating || matchaGreenness === null || !photoDataUrl || !currentUserName) {
+      alert('Please upload/capture a photo, analyze greenness, and choose a rating first.')
       return
     }
 
-    const nextEntry: RatingEntry = {
-      id: crypto.randomUUID(),
-      photo: photoDataUrl,
-      rating: currentRating,
-      greenness: matchaGreenness,
-      location: location.trim(),
-      thoughts: thoughts.trim(),
-      date: new Date().toLocaleDateString()
-    }
+    await apiFetch<{ rating: RatingEntry }>('/ratings', {
+      method: 'POST',
+      body: JSON.stringify({
+        userName: currentUserName,
+        photo: photoDataUrl,
+        rating: currentRating,
+        greenness: matchaGreenness,
+        location: location.trim(),
+        thoughts: thoughts.trim()
+      })
+    })
 
-    const nextEntries = [nextEntry, ...entries]
-    setEntries(nextEntries)
-    localStorage.setItem('matchaRatingsLogV2', JSON.stringify(nextEntries))
+    const updated = await apiFetch<{ ratings: RatingEntry[] }>(`/ratings?userName=${encodeURIComponent(currentUserName)}`)
+    setMyEntries(updated.ratings)
 
     setCurrentRating(0)
     setLocation('')
@@ -416,144 +505,262 @@ function App() {
     setMlConfidencePercent(null)
   }
 
+  async function searchFriends(query: string) {
+    setFriendQuery(query)
+    if (!query.trim()) {
+      setFriendSuggestions([])
+      return
+    }
+
+    const response = await apiFetch<{ friends: string[] }>(`/friends/search?q=${encodeURIComponent(query.trim())}`)
+    setFriendSuggestions(response.friends)
+  }
+
+  async function openFriendRatings(friendName: string) {
+    if (!friendName.trim()) return
+    setSelectedFriend(friendName)
+    setActivePage('friends')
+    const response = await apiFetch<{ friendName: string; ratings: RatingEntry[] }>(`/friends/${encodeURIComponent(friendName)}/ratings`)
+    setFriendEntries(response.ratings)
+  }
+
+  if (!isUserReady) {
+    return (
+      <main className="container py-5">
+        <div className="alert alert-warning border">{loadingMessage}</div>
+      </main>
+    )
+  }
+
   return (
     <>
       <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top soft-nav">
-        <div className="container d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
-          <span className="navbar-brand fw-semibold text-success">Sip & Score</span>
-          <span className="badge rounded-pill text-bg-success-subtle border border-success-subtle">React + TypeScript + Bootstrap</span>
+        <div className="container d-flex justify-content-between align-items-center">
+          <div className="d-flex flex-column">
+            <span className="navbar-brand fw-semibold text-success mb-0">Sip &amp; Score</span>
+            <small className="text-muted">Logged in as {currentUserName}</small>
+          </div>
+
+          <div className="d-flex align-items-center gap-2 nav-actions">
+            <button
+              type="button"
+              className={`btn btn-sm ${activePage === 'home' ? 'btn-success' : 'btn-outline-success'}`}
+              onClick={() => setActivePage('home')}
+            >
+              🏠 Home
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm ${activePage === 'friends' ? 'btn-success' : 'btn-outline-success'}`}
+              onClick={() => setActivePage('friends')}
+            >
+              👥 Friends Ratings
+            </button>
+          </div>
         </div>
       </nav>
 
-      <main className="container py-3 py-md-5 px-3 px-md-4">
-        <div className="card shadow-sm border-0 matcha-shell">
-        <div className="card-body p-3 p-md-4">
-          <h1 className="display-6 fw-bold mb-3 text-success">Rate & Log Your Matcha Reviews</h1>
+      {activePage === 'home' && (
+        <main className="container py-3 py-md-5 px-3 px-md-4">
+          <div className="card shadow-sm border-0 matcha-shell">
+            <div className="card-body p-3 p-md-4">
+              <h1 className="display-6 fw-bold mb-3 text-success">Rate &amp; Log Your Matcha Reviews</h1>
 
-          <div className="mb-3">
-            <label className="form-label fw-semibold">Location</label>
-            <input
-              type="text"
-              className="form-control"
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-              placeholder="Cafe name or city"
-            />
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label fw-semibold">Camera capture</label>
-            <div className="camera-wrap mb-2">
-              <video ref={videoRef} className="camera-video" autoPlay playsInline muted />
-            </div>
-            <div className="d-flex gap-2 flex-wrap align-items-center justify-content-center justify-content-md-start">
-              <button type="button" className="btn btn-outline-success" onClick={captureFromCamera} disabled={!cameraReady}>
-                Capture photo
-              </button>
-              {cameraError && <span className="small text-danger align-self-center">{cameraError}</span>}
-            </div>
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label fw-semibold">Upload matcha photo</label>
-            <input
-              type="file"
-              className="form-control"
-              accept="image/*,.jpg,.jpeg,.png,.jfif,.webp"
-              capture="environment"
-              onChange={handlePhotoSelection}
-            />
-          </div>
-
-          {photoDataUrl && (
-            <div className="preview-wrap mb-3">
-              <img src={photoDataUrl} alt="Matcha preview" className="preview-image" />
-            </div>
-          )}
-
-          <div className="mb-3 text-success fw-semibold">
-            {matchaGreenness !== null ? `Greenness (out of 100): ${matchaGreenness}` : 'Greenness score will appear after upload.'}
-          </div>
-
-          {mlCoveragePercent !== null && mlConfidencePercent !== null && (
-            <div className="mb-3 small detector-chip">
-              <div>{mlStatus}</div>
-              <div className="detector-metrics">
-                Coverage: {mlCoveragePercent.toFixed(1)}%
-                {' | '}
-                Confidence: {mlConfidencePercent.toFixed(1)}%
+              <div className="mb-3">
+                <label className="form-label fw-semibold">Location</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={location}
+                  onChange={(event) => setLocation(event.target.value)}
+                  placeholder="Cafe name or city"
+                />
               </div>
-            </div>
-          )}
 
-          <div className="mb-3">
-            <label className="form-label fw-semibold d-block">Rating (half stars allowed)</label>
-            <div id="star-rating" className="d-flex gap-2">
-              {Array.from({ length: 5 }, (_, idx) => {
-                const starIndex = idx + 1
-                const fillAmount = Math.max(0, Math.min(1, currentRating - idx))
-                return (
-                  <button
-                    type="button"
-                    key={starIndex}
-                    className="star"
-                    onClick={(event) => updateRatingFromClick(starIndex, event)}
-                    aria-label={`Rate ${starIndex} stars`}
-                  >
-                    <img className="star-base" src={pixelStarUrl} alt="" />
-                    <span className="star-fill-clip" style={{ width: `${fillAmount * 100}%` }}>
-                      <img className="star-fill" src={pixelStarFilledUrl} alt="" />
-                    </span>
+              <div className="mb-3">
+                <label className="form-label fw-semibold">Camera capture</label>
+                <div className="camera-wrap mb-2">
+                  <video ref={videoRef} className="camera-video" autoPlay playsInline muted />
+                </div>
+                <div className="d-flex gap-2 flex-wrap align-items-center justify-content-center justify-content-md-start">
+                  <button type="button" className="btn btn-outline-success" onClick={captureFromCamera} disabled={!cameraReady}>
+                    Capture photo
                   </button>
-                )
-              })}
-            </div>
-            <div className="small text-muted mt-1">Selected: {currentRating.toFixed(1)} / 5</div>
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label fw-semibold">Thoughts</label>
-            <textarea
-              className="form-control"
-              rows={3}
-              placeholder="What did you like about this matcha?"
-              value={thoughts}
-              onChange={(event) => setThoughts(event.target.value)}
-            />
-          </div>
-
-          <button type="button" className="btn btn-success w-100" onClick={saveEntry}>
-            Save Rating
-          </button>
-        </div>
-      </div>
-
-      <section className="mt-4 mb-5">
-        <h2 className="h4 fw-bold text-success mb-3">Ratings Log</h2>
-        <div className="d-flex flex-column gap-3">
-          {sortedEntries.length === 0 && (
-            <div className="alert alert-light border">No ratings yet.</div>
-          )}
-
-          {sortedEntries.map((entry) => (
-            <article key={entry.id} className="card border-0 shadow-sm">
-              <div className="card-body d-flex gap-3 align-items-start">
-                <img src={entry.photo} alt="Matcha" className="entry-thumb" />
-                <div className="flex-grow-1">
-                  <div className="d-flex justify-content-between flex-wrap gap-2">
-                    <strong>{entry.location || 'Unknown location'}</strong>
-                    <span className="text-muted small">{entry.date}</span>
-                  </div>
-                  <div>Rating: {entry.rating.toFixed(1)} / 5</div>
-                  <div>Greenness: {entry.greenness} / 100</div>
-                  {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
+                  {cameraError && <span className="small text-danger align-self-center">{cameraError}</span>}
                 </div>
               </div>
-            </article>
-          ))}
-        </div>
-      </section>
-      </main>
+
+              <div className="mb-3">
+                <label className="form-label fw-semibold">Upload matcha photo</label>
+                <input
+                  type="file"
+                  className="form-control"
+                  accept="image/*,.jpg,.jpeg,.png,.jfif,.webp"
+                  capture="environment"
+                  onChange={handlePhotoSelection}
+                />
+              </div>
+
+              {photoDataUrl && (
+                <div className="preview-wrap mb-3">
+                  <img src={photoDataUrl} alt="Matcha preview" className="preview-image" />
+                </div>
+              )}
+
+              <div className="mb-3 text-success fw-semibold">
+                {matchaGreenness !== null ? `Greenness (out of 100): ${matchaGreenness}` : 'Greenness score will appear after upload.'}
+              </div>
+
+              {mlCoveragePercent !== null && mlConfidencePercent !== null && (
+                <div className="mb-3 small detector-chip">
+                  <div>{mlStatus}</div>
+                  <div className="detector-metrics">
+                    Coverage: {mlCoveragePercent.toFixed(1)}%
+                    {' | '}
+                    Confidence: {mlConfidencePercent.toFixed(1)}%
+                  </div>
+                </div>
+              )}
+
+              <div className="mb-3">
+                <label className="form-label fw-semibold d-block">Rating (half stars allowed)</label>
+                <div id="star-rating" className="d-flex gap-2">
+                  {Array.from({ length: 5 }, (_, idx) => {
+                    const starIndex = idx + 1
+                    const fillAmount = Math.max(0, Math.min(1, currentRating - idx))
+                    return (
+                      <button
+                        type="button"
+                        key={starIndex}
+                        className="star"
+                        onClick={(event) => updateRatingFromClick(starIndex, event)}
+                        aria-label={`Rate ${starIndex} stars`}
+                      >
+                        <img className="star-base" src={pixelStarUrl} alt="" />
+                        <span className="star-fill-clip" style={{ width: `${fillAmount * 100}%` }}>
+                          <img className="star-fill" src={pixelStarFilledUrl} alt="" />
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+                <div className="small text-muted mt-1">Selected: {currentRating.toFixed(1)} / 5</div>
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label fw-semibold">Thoughts</label>
+                <textarea
+                  className="form-control"
+                  rows={3}
+                  placeholder="What did you like about this matcha?"
+                  value={thoughts}
+                  onChange={(event) => setThoughts(event.target.value)}
+                />
+              </div>
+
+              <button type="button" className="btn btn-success w-100" onClick={() => void saveEntry()}>
+                Save Rating
+              </button>
+            </div>
+          </div>
+
+          <section className="mt-4 mb-5">
+            <h2 className="h4 fw-bold text-success mb-3">Your Ratings Log</h2>
+            <div className="d-flex flex-column gap-3">
+              {sortedMine.length === 0 && <div className="alert alert-light border">No ratings yet.</div>}
+
+              {sortedMine.map((entry) => (
+                <article key={entry.id} className="card border-0 shadow-sm">
+                  <div className="card-body d-flex gap-3 align-items-start">
+                    <img src={entry.photo} alt="Matcha" className="entry-thumb" />
+                    <div className="flex-grow-1">
+                      <div className="d-flex justify-content-between flex-wrap gap-2">
+                        <strong>{entry.location || 'Unknown location'}</strong>
+                        <span className="text-muted small">{entry.date}</span>
+                      </div>
+                      <div>Rating: {entry.rating.toFixed(1)} / 5</div>
+                      <div>Greenness: {entry.greenness} / 100</div>
+                      <div>Combined score: {entry.comboScore.toFixed(1)}</div>
+                      {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        </main>
+      )}
+
+      {activePage === 'friends' && (
+        <main className="container py-3 py-md-5 px-3 px-md-4">
+          <section className="card border-0 shadow-sm matcha-shell mb-4">
+            <div className="card-body p-3 p-md-4">
+              <h2 className="h3 fw-bold text-success mb-3">Friends Ratings</h2>
+              <div className="row g-2 align-items-end">
+                <div className="col-12 col-md-8">
+                  <label className="form-label fw-semibold">Search friend by name</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={friendQuery}
+                    placeholder="Type a friend's name"
+                    onChange={(event) => void searchFriends(event.target.value)}
+                  />
+                </div>
+                <div className="col-12 col-md-4">
+                  <button
+                    type="button"
+                    className="btn btn-success w-100"
+                    onClick={() => void openFriendRatings(friendQuery.trim())}
+                    disabled={!friendQuery.trim()}
+                  >
+                    Open Friend Log
+                  </button>
+                </div>
+              </div>
+
+              {friendSuggestions.length > 0 && (
+                <div className="mt-3 d-flex flex-wrap gap-2">
+                  {friendSuggestions.map((friend) => (
+                    <button key={friend} type="button" className="btn btn-outline-success btn-sm" onClick={() => void openFriendRatings(friend)}>
+                      {friend}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section>
+            <h3 className="h4 fw-bold text-success mb-3">
+              {selectedFriend ? `${selectedFriend}'s ratings (best to worst)` : 'Select a friend to view their log'}
+            </h3>
+            <div className="d-flex flex-column gap-3">
+              {selectedFriend && friendEntries.length === 0 && (
+                <div className="alert alert-light border">No ratings found for this friend.</div>
+              )}
+
+              {friendEntries.map((entry) => (
+                <article key={entry.id} className="card border-0 shadow-sm">
+                  <div className="card-body d-flex gap-3 align-items-start">
+                    <img src={entry.photo} alt="Friend's matcha" className="entry-thumb" />
+                    <div className="flex-grow-1">
+                      <div className="d-flex justify-content-between flex-wrap gap-2">
+                        <strong>{entry.location || 'Unknown location'}</strong>
+                        <span className="text-muted small">{entry.date}</span>
+                      </div>
+                      <div>Rating: {entry.rating.toFixed(1)} / 5</div>
+                      <div>Greenness: {entry.greenness} / 100</div>
+                      <div>Combined score: {entry.comboScore.toFixed(1)}</div>
+                      {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </section>
+        </main>
+      )}
     </>
   )
 }

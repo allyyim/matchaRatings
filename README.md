@@ -4,7 +4,7 @@ React + TypeScript + Vite app for rating matcha with half-star support, camera c
 
 ## Technical Architecture
 
-This app is a client-side React single-page application built with Vite and TypeScript. The UI is rendered in the browser, the rating log is stored locally in `localStorage`, and optional TensorFlow.js inference is used to estimate the drink region before greenness scoring runs.
+This app is a React + TypeScript frontend with a lightweight Express API backed by PostgreSQL. The UI runs in the browser, ratings are persisted in Postgres, and optional TensorFlow.js inference estimates drink regions before greenness scoring.
 
 ```mermaid
 flowchart TD
@@ -12,9 +12,9 @@ flowchart TD
    B --> C[Camera capture or image upload]
    C --> D[Optional TensorFlow.js drink-area detection]
    D --> E[Greenness scoring on selected region]
-   E --> F[Save rating entry in localStorage]
-   F --> G[Render ratings log]
-   B --> H[GitHub Pages deployment]
+   E --> F[POST rating to API]
+   F --> G[Store and query PostgreSQL]
+   G --> H[Render your or friend's ratings]
 ```
 
 ### System Design
@@ -22,7 +22,8 @@ flowchart TD
 - Presentation layer: React components in `src/App.tsx` and global styles in `src/App.css` and `src/index.css`.
 - Image pipeline: camera capture or file upload produces a data URL, which is analyzed for matcha greenness.
 - ML layer: TensorFlow.js loads an optional drink-area model from `public/ml/drink-area/model.json`; if it is missing, the app falls back to a heuristic mask.
-- Persistence layer: ratings, photos, and notes are stored in browser `localStorage`.
+- API layer: Node.js + Express endpoints in `server/index.js` provide session user, save rating, and friend search/query operations.
+- Persistence layer: PostgreSQL tables (`browser_users`, `ratings`) store browser-to-user mapping and all rating logs.
 - Deployment layer: Vite builds the app into `dist`, and GitHub Actions publishes it to GitHub Pages on each push to `main`.
 
 ## Local Development
@@ -31,11 +32,22 @@ flowchart TD
    ```bash
    npm install
    ```
-2. Start the dev server:
+2. Copy environment template and set your Postgres connection:
    ```bash
-   npm run dev
+   copy .env.example .env
    ```
-3. Open the local URL printed by Vite, usually `http://localhost:5173`.
+3. Start frontend + API together:
+   ```bash
+   npm run dev:full
+   ```
+4. Open the local URL printed by Vite, usually `http://localhost:5173`.
+
+If you only want frontend or backend individually:
+
+```bash
+npm run dev      # frontend only
+npm run server   # backend API only
+```
 
 ## Production Build
 
