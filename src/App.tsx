@@ -15,6 +15,7 @@ type RatingEntry = {
 
 const pixelStarUrl = `${import.meta.env.BASE_URL}blank.png`
 const pixelStarFilledUrl = `${import.meta.env.BASE_URL}filled.png`
+const appLogoUrl = `${import.meta.env.BASE_URL}logo.svg`
 
 const drinkAreaModelConfig = {
   modelUrl: `${import.meta.env.BASE_URL}ml/drink-area/model.json`,
@@ -420,7 +421,10 @@ function App() {
     <>
       <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top soft-nav">
         <div className="container d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
-          <span className="navbar-brand fw-semibold text-success">Sip & Score</span>
+          <div className="brand-lockup">
+            <img className="app-logo" src={appLogoUrl} alt="Sip & Score logo" />
+            <span className="navbar-brand fw-semibold text-success mb-0">Sip & Score</span>
+          </div>
           <span className="badge rounded-pill text-bg-success-subtle border border-success-subtle">React + TypeScript + Bootstrap</span>
         </div>
       </nav>
@@ -428,7 +432,7 @@ function App() {
       <main className="container py-3 py-md-5 px-3 px-md-4">
         <div className="card shadow-sm border-0 matcha-shell">
         <div className="card-body p-3 p-md-4">
-          <h1 className="display-6 fw-bold mb-3 text-success">Rate & Log Your Matcha Reviews</h1>
+          <h1 className="display-6 fw-bold mb-3 text-success">Rate & Log Matcha</h1>
 
           <div className="mb-3">
             <label className="form-label fw-semibold">Location</label>
