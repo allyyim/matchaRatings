@@ -4,27 +4,36 @@ React + TypeScript + Vite app for rating matcha with half-star support, camera c
 
 ## Technical Architecture
 
-This app is a React + TypeScript frontend with a lightweight Express API backed by PostgreSQL. The UI runs in the browser, ratings are persisted in Postgres, and optional TensorFlow.js inference estimates drink regions before greenness scoring.
+This project uses a split frontend/backend architecture. The frontend is a React + TypeScript SPA built with Vite and hosted on GitHub Pages. The backend is an Express API hosted on Render and connected to Supabase PostgreSQL via a pooled connection string. Optional TensorFlow.js inference runs in the browser to detect drink regions before greenness scoring.
 
 ```mermaid
 flowchart TD
-   A[User opens app] --> B[React UI in browser]
-   B --> C[Camera capture or image upload]
-   C --> D[Optional TensorFlow.js drink-area detection]
-   D --> E[Greenness scoring on selected region]
-   E --> F[POST rating to API]
-   F --> G[Store and query PostgreSQL]
-   G --> H[Render your or friend's ratings]
+   A[GitHub Pages Frontend]
+   B[React + TypeScript + Vite SPA]
+   C[Image Upload or Camera Capture]
+   D[Optional TensorFlow.js Drink-Area Detection]
+   E[Greenness + Half-Star Scoring]
+   F[Express API on Render]
+   G[Supabase PostgreSQL]
+   H[Home Ratings + Friends Ratings]
+
+   A --> B
+   B --> C
+   C --> D
+   D --> E
+   E --> F
+   F --> G
+   G --> H
 ```
 
 ### System Design
 
-- Presentation layer: React components in `src/App.tsx` and global styles in `src/App.css` and `src/index.css`.
-- Image pipeline: camera capture or file upload produces a data URL, which is analyzed for matcha greenness.
-- ML layer: TensorFlow.js loads an optional drink-area model from `public/ml/drink-area/model.json`; if it is missing, the app falls back to a heuristic mask.
-- API layer: Node.js + Express endpoints in `server/index.js` provide session user, save rating, and friend search/query operations.
-- Persistence layer: PostgreSQL tables (`browser_users`, `ratings`) store browser-to-user mapping and all rating logs.
-- Deployment layer: Vite builds the app into `dist`, and GitHub Actions publishes it to GitHub Pages on each push to `main`.
+- Frontend layer: `src/App.tsx` renders the main app and Friends Ratings page, while `src/App.css` and `src/index.css` provide responsive styling.
+- Client scoring pipeline: camera capture or file upload generates an image payload; optional TensorFlow.js model inference (`public/ml/drink-area/model.json`) narrows the drink region before greenness scoring.
+- API layer: `server/index.js` exposes REST endpoints for health checks, browser-to-user session mapping, rating creation, personal rating retrieval, friend search, and friend ranking retrieval.
+- Data layer: `server/db.js` initializes and connects to PostgreSQL tables (`browser_users`, `ratings`) and indexes query paths used by ratings and friend lookup.
+- Ranking logic: friend logs are ordered by a combined score formula `(rating * 20 + greenness)` to blend star rating and color quality.
+- Deployment layer: GitHub Actions builds and deploys the SPA to GitHub Pages, and production API traffic is routed via `VITE_API_BASE_URL` to the Render-hosted backend.
 
 ## Local Development
 
