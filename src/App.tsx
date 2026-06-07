@@ -420,7 +420,7 @@ function App() {
     <>
       <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top soft-nav">
         <div className="container d-flex flex-column flex-sm-row align-items-start align-items-sm-center gap-2">
-          <span className="navbar-brand fw-semibold text-success">Matcha Ratings</span>
+          <span className="navbar-brand fw-semibold text-success">Sip & Score</span>
           <span className="badge rounded-pill text-bg-success-subtle border border-success-subtle">React + TypeScript + Bootstrap</span>
         </div>
       </nav>
@@ -428,7 +428,7 @@ function App() {
       <main className="container py-3 py-md-5 px-3 px-md-4">
         <div className="card shadow-sm border-0 matcha-shell">
         <div className="card-body p-3 p-md-4">
-          <h1 className="display-6 fw-bold mb-3 text-success">Rate My Matcha</h1>
+          <h1 className="display-6 fw-bold mb-3 text-success">Rate & Log Your Matcha Reviews</h1>
 
           <div className="mb-3">
             <label className="form-label fw-semibold">Location</label>
@@ -487,7 +487,7 @@ function App() {
           )}
 
           <div className="mb-3">
-            <label className="form-label fw-semibold d-block">Rating (half stars enabled)</label>
+            <label className="form-label fw-semibold d-block">Rating (half stars allowed)</label>
             <div id="star-rating" className="d-flex gap-2">
               {Array.from({ length: 5 }, (_, idx) => {
                 const starIndex = idx + 1

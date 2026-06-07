@@ -1,4 +1,4 @@
-# Matcha Ratings
+# Sip & Score - Matcha Log
 
 React + TypeScript + Vite app for rating matcha with half-star support, camera capture, and optional ML drink-area detection.
 
