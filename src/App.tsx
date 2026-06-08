@@ -425,6 +425,7 @@ function App() {
 
   const sortedMine = useMemo(() => {
     let sorted = [...myEntries].sort((a, b) => {
+      if (b.comboScore !== a.comboScore) return b.comboScore - a.comboScore
       if (b.rating !== a.rating) return b.rating - a.rating
       return b.greenness - a.greenness
     })
@@ -1128,7 +1129,7 @@ function App() {
                 type="text"
                 className="form-control"
                 style={{ maxWidth: '200px' }}
-                placeholder="search ratings"
+                placeholder="Search by Location"
                 value={myLogsSearchTerm}
                 onChange={(event) => setMyLogsSearchTerm(event.target.value)}
               />
@@ -1145,9 +1146,9 @@ function App() {
                         <strong>{entry.location || 'Unknown location'}</strong>
                         <span className="text-muted small">{entry.date}</span>
                       </div>
-                      <div>Rating: {entry.rating.toFixed(1)} / 5</div>
+                      <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
                       <div>Greenness: {entry.greenness} / 100</div>
-                      <div>Combined score: {entry.comboScore.toFixed(1)} / 200</div>
+                      <div>Total score: {entry.comboScore.toFixed(1)} / 200</div>
                       {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
                     </div>
                   </div>
@@ -1343,7 +1344,7 @@ function App() {
                       </div>
                       <div>Rating: {entry.rating.toFixed(1)} / 5</div>
                       <div>Greenness: {entry.greenness} / 100</div>
-                      <div>Combined score: {entry.comboScore.toFixed(1)} / 200</div>
+                      <div>Total score: {entry.comboScore.toFixed(1)} / 200</div>
                       {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
                     </div>
                   </div>

@@ -219,6 +219,10 @@
   width: 9rem;
   height: 11.2rem;
   position: relative;
+  transform: scale(0.5);
+  transform-origin: center center;
+  margin-top: -2.8rem;
+  margin-bottom: -2.8rem;
 }
 
 .cup-straw {
