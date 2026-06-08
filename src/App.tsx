@@ -205,12 +205,60 @@ function analyzeGreennessFromDataUrl(dataUrl: string): Promise<{
       ctx.drawImage(img, 0, 0)
       const imageData = ctx.getImageData(0, 0, img.width, img.height).data
       const { region, statusMessage, coveragePercent, confidencePercent } = await detectDrinkAreaRegion(img)
-      let emeraldCount = 0
-      let pixelCount = 0
+      const visited = new Uint8Array(img.width * img.height)
+
+      function getPixelIndex(x: number, y: number) {
+        return y * img.width + x
+      }
+
+      function classifyMatchaPixel(r: number, g: number, b: number) {
+        const brightness = (r + g + b) / (255 * 3)
+        const maxRGB = Math.max(r, g, b)
+        const minRGB = Math.min(r, g, b)
+        const saturation = maxRGB ? (maxRGB - minRGB) / maxRGB : 0
+        const greenDominance = g - Math.max(r, b)
+        const darkLighting = brightness < 0.35
+
+        const emeraldThreshold = darkLighting ? 7 : 15
+        const paleThreshold = darkLighting ? 0 : 5
+
+        if (
+          greenDominance >= emeraldThreshold &&
+          g >= r + (darkLighting ? 3 : 7) &&
+          g >= b + (darkLighting ? 3 : 7) &&
+          saturation >= (darkLighting ? 0.04 : 0.08)
+        ) {
+          return { bucket: 'emerald' as const, weight: 1 }
+        }
+
+        if (
+          g + (darkLighting ? 8 : 4) >= r &&
+          g + (darkLighting ? 6 : 3) >= b &&
+          greenDominance >= paleThreshold &&
+          saturation >= (darkLighting ? 0.02 : 0.04)
+        ) {
+          return { bucket: 'pale' as const, weight: darkLighting ? 0.7 : 0.55 }
+        }
+
+        return { bucket: 'none' as const, weight: 0 }
+      }
+
+      function isInside(x: number, y: number) {
+        return x >= 0 && y >= 0 && x < img.width && y < img.height
+      }
+
+      let totalWeightedScore = 0
+      let totalBucketPixels = 0
+      let emeraldPixelCount = 0
+      let palePixelCount = 0
+      let matchaLikePixelCount = 0
 
       for (let y = 0; y < img.height; y++) {
         for (let x = 0; x < img.width; x++) {
           if (!region.contains(x, y)) continue
+
+          const index = getPixelIndex(x, y)
+          if (visited[index]) continue
 
           const i = (y * img.width + x) * 4
           const r = imageData[i]
@@ -219,34 +267,82 @@ function analyzeGreennessFromDataUrl(dataUrl: string): Promise<{
 
           if (r > 230 && g > 230 && b > 230) continue
 
-          if (
-            g > r + 5 &&
-            g > b + 5 &&
-            g > 30 &&
-            r > 10 &&
-            b > 10 &&
-            g < 255 &&
-            r < 255 &&
-            b < 255
-          ) {
-            pixelCount++
-            const maxRGB = Math.max(r, g, b)
-            const minRGB = Math.min(r, g, b)
-            const saturation = maxRGB ? (maxRGB - minRGB) / maxRGB : 0
-            let scoreBoost = 1
-            if (saturation < 0.15) scoreBoost -= 0.5
-            if (r > 80 && g - r < 30) scoreBoost -= 0.5
+          const seedClassification = classifyMatchaPixel(r, g, b)
+          if (seedClassification.bucket === 'none') continue
 
-            if (g > 120 && b > 20 && b < g && r < 150 && saturation > 0.08) {
-              emeraldCount += 2 * scoreBoost
-            } else if (g > 60 && b > 10 && b < g && r < 180 && saturation > 0.05) {
-              emeraldCount += scoreBoost
+          const stack: Array<[number, number]> = [[x, y]]
+          let componentPixels = 0
+          let componentScore = 0
+
+          visited[index] = 1
+
+          while (stack.length > 0) {
+            const current = stack.pop()
+            if (!current) continue
+
+            const [currentX, currentY] = current
+            if (!isInside(currentX, currentY) || !region.contains(currentX, currentY)) continue
+
+            const currentIndex = getPixelIndex(currentX, currentY)
+            if (visited[currentIndex] !== 1) {
+              visited[currentIndex] = 1
             }
+
+            const pixelOffset = (currentY * img.width + currentX) * 4
+            const pixelR = imageData[pixelOffset]
+            const pixelG = imageData[pixelOffset + 1]
+            const pixelB = imageData[pixelOffset + 2]
+
+            if (pixelR > 230 && pixelG > 230 && pixelB > 230) continue
+
+            const pixelClassification = classifyMatchaPixel(pixelR, pixelG, pixelB)
+            if (pixelClassification.bucket === 'none') continue
+
+            componentPixels++
+            matchaLikePixelCount++
+            componentScore += pixelClassification.weight
+            if (pixelClassification.bucket === 'emerald') {
+              emeraldPixelCount++
+            } else if (pixelClassification.bucket === 'pale') {
+              palePixelCount++
+            }
+
+            const neighbors: Array<[number, number]> = [
+              [currentX + 1, currentY],
+              [currentX - 1, currentY],
+              [currentX, currentY + 1],
+              [currentX, currentY - 1]
+            ]
+
+            for (const [nextX, nextY] of neighbors) {
+              if (!isInside(nextX, nextY)) continue
+              const nextIndex = getPixelIndex(nextX, nextY)
+              if (visited[nextIndex]) continue
+              if (!region.contains(nextX, nextY)) continue
+
+              const nextOffset = (nextY * img.width + nextX) * 4
+              const nextR = imageData[nextOffset]
+              const nextG = imageData[nextOffset + 1]
+              const nextB = imageData[nextOffset + 2]
+              if (nextR > 230 && nextG > 230 && nextB > 230) continue
+
+              if (classifyMatchaPixel(nextR, nextG, nextB).bucket !== 'none') {
+                visited[nextIndex] = 1
+                stack.push([nextX, nextY])
+              }
+            }
+          }
+
+          if (componentPixels > 8) {
+            totalWeightedScore += componentScore
+            totalBucketPixels += componentPixels
           }
         }
       }
 
-      const score = pixelCount ? Math.min(100, Math.round((emeraldCount / pixelCount) * 100)) : 0
+      const score = totalBucketPixels
+        ? Math.min(100, Math.round((totalWeightedScore / totalBucketPixels) * 100))
+        : 0
       resolve({ score, statusMessage, coveragePercent, confidencePercent })
     }
     img.onerror = () => resolve({ score: 0, statusMessage: 'Failed to load image.', coveragePercent: null, confidencePercent: null })
@@ -787,7 +883,7 @@ function App() {
                         setShowLocationSuggestions(false)
                       }, 120)
                     }}
-                    placeholder="Location"
+                    placeholder="Location (e.g. cafe name)"
                     autoComplete="off"
                   />
 
@@ -998,7 +1094,7 @@ function App() {
                             className="form-control mb-2"
                             value={editLocation}
                             onChange={(event) => setEditLocation(event.target.value)}
-                            placeholder="Location"
+                            placeholder="Location (e.g. cafe name)"
                           />
 
                           <textarea
