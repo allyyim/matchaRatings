@@ -411,6 +411,7 @@ function App() {
   const [friendSuggestions, setFriendSuggestions] = useState<string[]>([])
   const [selectedFriend, setSelectedFriend] = useState('')
   const [friendEntries, setFriendEntries] = useState<RatingEntry[]>([])
+  const [isSavingEntry, setIsSavingEntry] = useState(false)
   const [isMyLogsExpanded, setIsMyLogsExpanded] = useState(false)
   const [myLogsSearchTerm, setMyLogsSearchTerm] = useState('')
   const [isFriendLogsExpanded, setIsFriendLogsExpanded] = useState(false)
@@ -751,28 +752,33 @@ function App() {
       return
     }
 
-    await apiFetch<{ rating: RatingEntry }>('/ratings', {
-      method: 'POST',
-      body: JSON.stringify({
-        userName: currentUserName,
-        photo: photoDataUrl,
-        rating: currentRating,
-        greenness: matchaGreenness,
-        location: location.trim(),
-        thoughts: thoughts.trim()
+    setIsSavingEntry(true)
+    try {
+      await apiFetch<{ rating: RatingEntry }>('/ratings', {
+        method: 'POST',
+        body: JSON.stringify({
+          userName: currentUserName,
+          photo: photoDataUrl,
+          rating: currentRating,
+          greenness: matchaGreenness,
+          location: location.trim(),
+          thoughts: thoughts.trim()
+        })
       })
-    })
 
-    const updated = await apiFetch<{ ratings: RatingEntry[] }>(`/ratings?userName=${encodeURIComponent(currentUserName)}`)
-    setMyEntries(updated.ratings)
+      const updated = await apiFetch<{ ratings: RatingEntry[] }>(`/ratings?userName=${encodeURIComponent(currentUserName)}`)
+      setMyEntries(updated.ratings)
 
-    setCurrentRating(0)
-    setLocation('')
-    setThoughts('')
-    setPhotoDataUrl('')
-    setMatchaGreenness(null)
-    setMlCoveragePercent(null)
-    setMlConfidencePercent(null)
+      setCurrentRating(0)
+      setLocation('')
+      setThoughts('')
+      setPhotoDataUrl('')
+      setMatchaGreenness(null)
+      setMlCoveragePercent(null)
+      setMlConfidencePercent(null)
+    } finally {
+      setIsSavingEntry(false)
+    }
   }
 
   async function searchFriends(query: string) {
@@ -824,20 +830,25 @@ function App() {
       return
     }
 
-    await apiFetch<{ rating: RatingEntry }>(`/ratings/${entryId}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        userName: currentUserName,
-        rating: editRating,
-        location: editLocation.trim(),
-        thoughts: editThoughts.trim()
+    setIsSavingEntry(true)
+    try {
+      await apiFetch<{ rating: RatingEntry }>(`/ratings/${entryId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          userName: currentUserName,
+          rating: editRating,
+          location: editLocation.trim(),
+          thoughts: editThoughts.trim()
+        })
       })
-    })
 
-    const updated = await apiFetch<{ ratings: RatingEntry[] }>(`/ratings?userName=${encodeURIComponent(currentUserName)}`)
-    setMyEntries(updated.ratings)
-    setIsEditingEntry(false)
-    setSelectedEntryId(null)
+      const updated = await apiFetch<{ ratings: RatingEntry[] }>(`/ratings?userName=${encodeURIComponent(currentUserName)}`)
+      setMyEntries(updated.ratings)
+      setIsEditingEntry(false)
+      setSelectedEntryId(null)
+    } finally {
+      setIsSavingEntry(false)
+    }
   }
 
   async function deleteEntry(entryId: number) {
@@ -862,6 +873,17 @@ function App() {
 
   return (
     <>
+      {isSavingEntry && (
+        <div className="saving-overlay" role="status" aria-live="polite" aria-label="Saving rating">
+          <div className="saving-card">
+            <div className="matcha-glass" aria-hidden="true">
+              <div className="matcha-fill" />
+            </div>
+            <div className="saving-text">Saving your rating...</div>
+          </div>
+        </div>
+      )}
+
       <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top soft-nav">
         <div className="container d-flex justify-content-between align-items-center">
           <div className="d-flex flex-column">
@@ -1029,8 +1051,8 @@ function App() {
                 />
               </div>
 
-              <button type="button" className="btn btn-success w-100" onClick={() => void saveEntry()}>
-                Save Rating
+              <button type="button" className="btn btn-success w-100" onClick={() => void saveEntry()} disabled={isSavingEntry}>
+                {isSavingEntry ? 'Saving...' : 'Save Rating'}
               </button>
             </div>
           </div>

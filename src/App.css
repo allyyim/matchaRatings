@@ -182,6 +182,82 @@
   width: min(28rem, 100%);
 }
 
+.saving-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(8, 22, 14, 0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.saving-card {
+  background: linear-gradient(180deg, #fbfff7 0%, #f0f9e8 100%);
+  border: 1px solid #c8e2b9;
+  border-radius: 1rem;
+  width: min(22rem, 100%);
+  padding: 1.25rem 1rem;
+  box-shadow: 0 16px 32px rgba(17, 60, 32, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.matcha-glass {
+  width: 3.25rem;
+  height: 4.5rem;
+  border: 3px solid #9bc389;
+  border-top: 2px solid #9bc389;
+  border-radius: 0.45rem 0.45rem 0.75rem 0.75rem;
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.65);
+}
+
+.matcha-fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 0%;
+  background: linear-gradient(180deg, #9bd277 0%, #72b054 65%, #5a9643 100%);
+  animation: fillMatcha 1.3s ease-in-out infinite;
+}
+
+.matcha-fill::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.35) 0 18%, transparent 20%),
+    radial-gradient(circle at 60% 50%, rgba(255, 255, 255, 0.28) 0 16%, transparent 18%),
+    radial-gradient(circle at 85% 55%, rgba(255, 255, 255, 0.24) 0 14%, transparent 16%);
+}
+
+.saving-text {
+  color: #1f5f34;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+@keyframes fillMatcha {
+  0% {
+    height: 10%;
+  }
+  60% {
+    height: 92%;
+  }
+  100% {
+    height: 10%;
+  }
+}
+
 @media (max-width: 576px) {
   .camera-wrap {
     width: min(100%, 15rem);
