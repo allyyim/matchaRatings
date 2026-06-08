@@ -56,7 +56,7 @@ function normalizeLocationName(rawLocation) {
     return "Nana's Green"
   }
 
-  return location
+  return location.charAt(0).toUpperCase() + location.slice(1).toLowerCase()
 }
 
 app.get('/api/health', async (_req, res) => {
@@ -288,7 +288,7 @@ app.get('/api/explore/places', async (req, res) => {
       rank: index + 1,
       placeName: place.placeName,
       entryCount: place.entryCount,
-      averageScore: Number((place.totalScore / place.entryCount).toFixed(1))
+      averageScore: Number(((place.totalScore / place.entryCount) / 2).toFixed(1))
     }))
 
   return res.json({ places })
