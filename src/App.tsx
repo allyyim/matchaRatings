@@ -414,10 +414,14 @@ function App() {
   const [selectedFriend, setSelectedFriend] = useState('')
   const [friendEntries, setFriendEntries] = useState<RatingEntry[]>([])
   const [isSavingEntry, setIsSavingEntry] = useState(false)
+  const [isLoadingFriendRatings, setIsLoadingFriendRatings] = useState(false)
   const [isMyLogsExpanded, setIsMyLogsExpanded] = useState(false)
   const [myLogsSearchTerm, setMyLogsSearchTerm] = useState('')
   const [isFriendLogsExpanded, setIsFriendLogsExpanded] = useState(false)
   const [friendLogsSearchTerm, setFriendLogsSearchTerm] = useState('')
+
+  const showLoadingOverlay = isSavingEntry || isLoadingFriendRatings
+  const loadingOverlayText = isSavingEntry ? 'Saving your rating...' : 'Loading friend ratings...'
 
   const sortedMine = useMemo(() => {
     let sorted = [...myEntries].sort((a, b) => {
@@ -705,6 +709,17 @@ function App() {
     setCurrentRating((starIndex - 1) + step)
   }
 
+  function stopCameraAccess() {
+    if (cameraStreamRef.current) {
+      cameraStreamRef.current.getTracks().forEach((track) => track.stop())
+      cameraStreamRef.current = null
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null
+    }
+    setCameraReady(false)
+  }
+
   async function processImage(dataUrl: string) {
     setPhotoDataUrl(dataUrl)
     setMlStatus('Analyzing drink area...')
@@ -733,12 +748,15 @@ function App() {
 
     captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height)
     const dataUrl = captureCanvas.toDataURL('image/png')
+    stopCameraAccess()
     void processImage(dataUrl)
   }
 
   async function handlePhotoSelection(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     if (!file) return
+
+    stopCameraAccess()
 
     const reader = new FileReader()
     reader.onload = async (loadEvent) => {
@@ -749,8 +767,8 @@ function App() {
   }
 
   async function saveEntry() {
-    if (!currentRating || matchaGreenness === null || !photoDataUrl || !currentUserName) {
-      alert('Please upload/capture a photo, analyze greenness, and choose a rating first.')
+    if (matchaGreenness === null || !photoDataUrl || !currentUserName) {
+      alert('Please upload/capture a photo and analyze greenness first.')
       return
     }
 
@@ -809,8 +827,20 @@ function App() {
     setActivePage('friends')
     setIsFriendLogsExpanded(false)
     setFriendLogsSearchTerm('')
-    const response = await apiFetch<{ friendName: string; ratings: RatingEntry[] }>(`/friends/${encodeURIComponent(friendName)}/ratings`)
-    setFriendEntries(response.ratings)
+
+    setIsLoadingFriendRatings(true)
+    const overlayShownAt = Date.now()
+    try {
+      const response = await apiFetch<{ friendName: string; ratings: RatingEntry[] }>(`/friends/${encodeURIComponent(friendName)}/ratings`)
+      setFriendEntries(response.ratings)
+    } finally {
+      const elapsed = Date.now() - overlayShownAt
+      const minimumOverlayMs = 500
+      if (elapsed < minimumOverlayMs) {
+        await new Promise((resolve) => window.setTimeout(resolve, minimumOverlayMs - elapsed))
+      }
+      setIsLoadingFriendRatings(false)
+    }
   }
 
   function applyLocationSuggestion(value: string) {
@@ -836,8 +866,8 @@ function App() {
   }
 
   async function saveEntryEdit(entryId: number) {
-    if (!currentUserName || !editRating) {
-      alert('Please choose a rating before saving.')
+    if (!currentUserName) {
+      alert('Unable to save without a user session.')
       return
     }
 
@@ -890,8 +920,8 @@ function App() {
 
   return (
     <>
-      {isSavingEntry && createPortal(
-        <div className="saving-overlay" role="status" aria-live="polite" aria-label="Saving rating">
+      {showLoadingOverlay && createPortal(
+        <div className="saving-overlay" role="status" aria-live="polite" aria-label={loadingOverlayText}>
           <div className="saving-card">
             <div className="matcha-cup" aria-hidden="true">
               <div className="cup-straw" />
@@ -904,7 +934,7 @@ function App() {
                 <div className="boba-pearls" />
               </div>
             </div>
-            <div className="saving-text">Saving your rating...</div>
+            <div className="saving-text">{loadingOverlayText}</div>
           </div>
         </div>,
         document.body
@@ -923,7 +953,7 @@ function App() {
               className={`btn btn-sm ${activePage === 'home' ? 'btn-success' : 'btn-outline-success'}`}
               onClick={() => setActivePage('home')}
             >
-              🏠 Home
+              🏠 My Log
             </button>
             <button
               type="button"
@@ -943,7 +973,7 @@ function App() {
               <h1 className="display-6 fw-bold mb-3 text-success">Rate &amp; Log Your Matcha!</h1>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold">Location</label>
+                <label className="form-label fw-semibold">Location (if you can't find your location, manually enter it)</label>
                 <div className="location-autocomplete">
                   <input
                     type="text"
@@ -1043,7 +1073,7 @@ function App() {
               )}
 
               <div className="mb-3">
-                <label className="form-label fw-semibold d-block">Rating (half stars allowed)</label>
+                <label className="form-label fw-semibold d-block">Rating (half and 0 stars allowed)</label>
                 <div id="star-rating" className="d-flex gap-2">
                   {Array.from({ length: 5 }, (_, idx) => {
                     const starIndex = idx + 1
@@ -1064,6 +1094,9 @@ function App() {
                     )
                   })}
                 </div>
+                <button type="button" className="btn btn-outline-secondary btn-sm mt-2" onClick={() => setCurrentRating(0)}>
+                  Set 0 stars
+                </button>
                 <div className="small text-muted mt-1">Selected: {currentRating.toFixed(1)} / 5</div>
               </div>
 
@@ -1186,6 +1219,16 @@ function App() {
                               )
                             })}
                           </div>
+                          <button
+                            type="button"
+                            className="btn btn-outline-secondary btn-sm mb-2"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              setEditRating(0)
+                            }}
+                          >
+                            Set 0 stars
+                          </button>
 
                           <input
                             type="text"
@@ -1243,7 +1286,7 @@ function App() {
                     type="button"
                     className="btn btn-success w-100"
                     onClick={() => void openFriendRatings(friendQuery.trim())}
-                    disabled={!friendQuery.trim()}
+                    disabled={!friendQuery.trim() || isLoadingFriendRatings}
                   >
                     Open Friend Log
                   </button>
@@ -1253,7 +1296,13 @@ function App() {
               {friendSuggestions.length > 0 && (
                 <div className="mt-3 d-flex flex-wrap gap-2">
                   {friendSuggestions.map((friend) => (
-                    <button key={friend} type="button" className="btn btn-outline-success btn-sm" onClick={() => void openFriendRatings(friend)}>
+                    <button
+                      key={friend}
+                      type="button"
+                      className="btn btn-outline-success btn-sm"
+                      onClick={() => void openFriendRatings(friend)}
+                      disabled={isLoadingFriendRatings}
+                    >
                       {friend}
                     </button>
                   ))}
