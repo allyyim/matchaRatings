@@ -17,7 +17,19 @@ type RatingEntry = {
   comboScore: number
 }
 
-type Page = 'home' | 'friends'
+type Page = 'home' | 'friends' | 'explore'
+type ExplorePlace = {
+  rank: number
+  placeName: string
+  totalScore: number
+  entryCount: number
+  averageScore: number
+}
+
+type ExploreUser = {
+  userName: string
+  placeCount: number
+}
 
 type DrinkRegion = {
   source: 'heuristic' | 'ml-mask'
@@ -415,13 +427,20 @@ function App() {
   const [friendEntries, setFriendEntries] = useState<RatingEntry[]>([])
   const [isSavingEntry, setIsSavingEntry] = useState(false)
   const [isLoadingFriendRatings, setIsLoadingFriendRatings] = useState(false)
+  const [isLoadingExplorePlaces, setIsLoadingExplorePlaces] = useState(false)
+  const [explorePlaces, setExplorePlaces] = useState<ExplorePlace[]>([])
+  const [exploreUsers, setExploreUsers] = useState<ExploreUser[]>([])
   const [isMyLogsExpanded, setIsMyLogsExpanded] = useState(false)
   const [myLogsSearchTerm, setMyLogsSearchTerm] = useState('')
   const [isFriendLogsExpanded, setIsFriendLogsExpanded] = useState(false)
   const [friendLogsSearchTerm, setFriendLogsSearchTerm] = useState('')
 
-  const showLoadingOverlay = isSavingEntry || isLoadingFriendRatings
-  const loadingOverlayText = isSavingEntry ? 'Saving your rating...' : 'Loading friend ratings...'
+  const showLoadingOverlay = isSavingEntry || isLoadingFriendRatings || isLoadingExplorePlaces
+  const loadingOverlayText = isSavingEntry
+    ? 'Saving your rating...'
+    : isLoadingExplorePlaces
+      ? 'Loading explore data...'
+      : 'Loading friend ratings...'
 
   const sortedMine = useMemo(() => {
     let sorted = [...myEntries].sort((a, b) => {
@@ -657,6 +676,28 @@ function App() {
   }, [])
 
   useEffect(() => {
+    if (activePage !== 'explore') return
+
+    let cancelled = false
+
+    void fetchExploreData(true).catch(() => {
+      // Keep UI stable if explore fetch fails.
+    })
+
+    const intervalId = window.setInterval(() => {
+      if (cancelled) return
+      void fetchExploreData(false).catch(() => {
+        // Silent retry on next interval.
+      })
+    }, 7 * 24 * 60 * 60 * 1000)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+    }
+  }, [activePage])
+
+  useEffect(() => {
     let mounted = true
 
     async function startCamera() {
@@ -822,6 +863,25 @@ function App() {
     setFriendSuggestions(response.friends)
   }
 
+  async function fetchExploreData(showOverlay: boolean) {
+    if (showOverlay) {
+      setIsLoadingExplorePlaces(true)
+    }
+
+    try {
+      const [placesResponse, usersResponse] = await Promise.all([
+        apiFetch<{ places: ExplorePlace[] }>('/explore/places?limit=10'),
+        apiFetch<{ users: ExploreUser[] }>('/explore/users?limit=50')
+      ])
+      setExplorePlaces(placesResponse.places)
+      setExploreUsers(usersResponse.users)
+    } finally {
+      if (showOverlay) {
+        setIsLoadingExplorePlaces(false)
+      }
+    }
+  }
+
   async function openFriendRatings(friendName: string) {
     if (!friendName.trim()) return
     setSelectedFriend(friendName)
@@ -942,13 +1002,13 @@ function App() {
       )}
 
       <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top soft-nav">
-        <div className="container d-flex justify-content-between align-items-center">
+        <div className="container d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-2">
           <div className="d-flex flex-column">
             <span className="navbar-brand fw-semibold text-success mb-0">Sip &amp; Score</span>
             <small className="text-muted">Logged in as {currentUserName}</small>
           </div>
 
-          <div className="d-flex align-items-center gap-2 nav-actions">
+          <div className="d-flex align-items-center gap-2 nav-actions w-100">
             <button
               type="button"
               className={`btn btn-sm ${activePage === 'home' ? 'btn-success' : 'btn-outline-success'}`}
@@ -962,6 +1022,13 @@ function App() {
               onClick={() => setActivePage('friends')}
             >
               👥 Friends Ratings
+            </button>
+            <button
+              type="button"
+              className={`btn btn-sm ${activePage === 'explore' ? 'btn-success' : 'btn-outline-success'}`}
+              onClick={() => setActivePage('explore')}
+            >
+              🧭 Explore
             </button>
           </div>
         </div>
@@ -1353,6 +1420,56 @@ function App() {
                   </div>
                 </article>
               ))}
+            </div>
+          </section>
+        </main>
+      )}
+
+      {activePage === 'explore' && (
+        <main className="container py-3 py-md-5 px-3 px-md-4">
+          <section className="card border-0 shadow-sm matcha-shell mb-4">
+            <div className="card-body p-3 p-md-4">
+              <h2 className="h3 fw-bold text-success mb-2">Explore</h2>
+              <p className="text-muted mb-3">
+                Top 10 places by total score from all users. Explore data refreshes weekly.
+              </p>
+
+              {explorePlaces.length === 0 && <div className="alert alert-light border mb-0">No place data yet. Add ratings to build rankings.</div>}
+
+              {explorePlaces.length > 0 && (
+                <div className="d-flex flex-column gap-2">
+                  {explorePlaces.map((place) => (
+                    <article key={place.placeName} className="card border-0 shadow-sm">
+                      <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                          <div className="fw-semibold text-success">#{place.rank} {place.placeName}</div>
+                          <div className="small text-muted">{place.entryCount} entries | Avg {place.averageScore.toFixed(1)} / 200</div>
+                        </div>
+                        <div className="fw-bold">Total score: {place.totalScore.toFixed(1)} / 200</div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+
+              <hr className="my-4" />
+              <h3 className="h5 fw-bold text-success mb-2">Public User Place Counts</h3>
+              <p className="text-muted mb-3">Across all accounts, this shows how many different places each user has logged.</p>
+
+              {exploreUsers.length === 0 && <div className="alert alert-light border mb-0">No user place data yet.</div>}
+
+              {exploreUsers.length > 0 && (
+                <div className="d-flex flex-column gap-2">
+                  {exploreUsers.map((user, index) => (
+                    <article key={user.userName} className="card border-0 shadow-sm">
+                      <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
+                        <div className="fw-semibold">#{index + 1} {user.userName}</div>
+                        <div className="text-success fw-bold">{user.placeCount} places logged</div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
             </div>
           </section>
         </main>

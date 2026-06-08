@@ -32,6 +32,33 @@ function mapRatingRow(row) {
   }
 }
 
+function normalizeLocationName(rawLocation) {
+  const location = String(rawLocation || '').trim()
+  if (!location) return ''
+
+  const canonical = location
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  if (canonical.includes('bonito')) {
+    return 'Bonito Cafe'
+  }
+
+  if (
+    canonical.includes('nanas green') ||
+    canonical.includes('nana s green') ||
+    canonical === 'nanas' ||
+    canonical === 'nana s' ||
+    canonical === 'nana'
+  ) {
+    return "Nana's Green"
+  }
+
+  return location
+}
+
 app.get('/api/health', async (_req, res) => {
   res.json({ ok: true })
 })
@@ -213,6 +240,95 @@ app.get('/api/friends/:friendName/ratings', async (req, res) => {
     friendName,
     ratings: result.rows.map(mapRatingRow)
   })
+})
+
+app.get('/api/explore/places', async (req, res) => {
+  const limit = Math.max(1, Math.min(50, Number(req.query.limit) || 10))
+
+  const result = await pool.query(
+    `
+      SELECT location, rating, greenness
+      FROM ratings
+      WHERE TRIM(location) <> ''
+    `
+  )
+
+  const placeBuckets = new Map()
+
+  for (const row of result.rows) {
+    const placeName = normalizeLocationName(row.location)
+    if (!placeName) continue
+
+    const rating = Number(row.rating)
+    const greenness = Number(row.greenness)
+    const totalScore = rating * 20 + greenness
+
+    const existing = placeBuckets.get(placeName)
+    if (existing) {
+      existing.totalScore += totalScore
+      existing.entryCount += 1
+    } else {
+      placeBuckets.set(placeName, {
+        placeName,
+        totalScore,
+        entryCount: 1
+      })
+    }
+  }
+
+  const places = [...placeBuckets.values()]
+    .sort((a, b) => {
+      if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore
+      return b.entryCount - a.entryCount
+    })
+    .slice(0, limit)
+    .map((place, index) => ({
+      rank: index + 1,
+      placeName: place.placeName,
+      totalScore: Number(place.totalScore.toFixed(1)),
+      entryCount: place.entryCount,
+      averageScore: Number((place.totalScore / place.entryCount).toFixed(1))
+    }))
+
+  return res.json({ places })
+})
+
+app.get('/api/explore/users', async (req, res) => {
+  const limit = Math.max(1, Math.min(200, Number(req.query.limit) || 50))
+
+  const result = await pool.query(
+    `
+      SELECT user_name, location
+      FROM ratings
+      WHERE TRIM(location) <> ''
+    `
+  )
+
+  const userPlaces = new Map()
+
+  for (const row of result.rows) {
+    const userName = String(row.user_name || '').trim()
+    const placeName = normalizeLocationName(row.location)
+    if (!userName || !placeName) continue
+
+    if (!userPlaces.has(userName)) {
+      userPlaces.set(userName, new Set())
+    }
+    userPlaces.get(userName).add(placeName)
+  }
+
+  const users = [...userPlaces.entries()]
+    .map(([userName, places]) => ({
+      userName,
+      placeCount: places.size
+    }))
+    .sort((a, b) => {
+      if (b.placeCount !== a.placeCount) return b.placeCount - a.placeCount
+      return a.userName.localeCompare(b.userName)
+    })
+    .slice(0, limit)
+
+  return res.json({ users })
 })
 
 app.use((err, _req, res, _next) => {

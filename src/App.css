@@ -11,6 +11,29 @@
   white-space: nowrap;
 }
 
+.nav-actions {
+  width: 100%;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.nav-actions .btn {
+  width: 100%;
+  min-height: 2.25rem;
+}
+
+@media (min-width: 992px) {
+  .nav-actions {
+    width: auto;
+    display: flex !important;
+  }
+
+  .nav-actions .btn {
+    width: auto;
+  }
+}
+
 .preview-wrap {
   width: 100%;
   border-radius: 0.75rem;
@@ -390,6 +413,6 @@
   }
 
   .nav-actions .btn {
-    width: auto;
+    width: 100%;
   }
 }
