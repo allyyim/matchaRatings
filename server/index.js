@@ -2,6 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { initDb, pool } from './db.js'
+import { findBestMatch } from 'string-similarity'
 
 dotenv.config()
 
@@ -276,7 +277,35 @@ app.get('/api/explore/places', async (req, res) => {
     }
   }
 
-  const places = [...placeBuckets.values()]
+  // Fuzzy matching: merge similar place names
+  const placeNames = Array.from(placeBuckets.keys())
+  const mergedBuckets = new Map()
+  const processed = new Set()
+
+  for (const name of placeNames) {
+    if (processed.has(name)) continue
+
+    const bucket = placeBuckets.get(name)
+    let canonical = name
+
+    // Find all similar names and merge them
+    for (const otherName of placeNames) {
+      if (processed.has(otherName) || otherName === name) continue
+
+      const similarity = findBestMatch(name.toLowerCase(), [otherName.toLowerCase()]).bestMatch.rating
+      if (similarity > 0.75) {
+        const otherBucket = placeBuckets.get(otherName)
+        bucket.totalScore += otherBucket.totalScore
+        bucket.entryCount += otherBucket.entryCount
+        processed.add(otherName)
+      }
+    }
+
+    mergedBuckets.set(canonical, bucket)
+    processed.add(name)
+  }
+
+  const places = [...mergedBuckets.values()]
     .sort((a, b) => {
       const bAverage = b.totalScore / b.entryCount
       const aAverage = a.totalScore / a.entryCount
@@ -288,7 +317,7 @@ app.get('/api/explore/places', async (req, res) => {
       rank: index + 1,
       placeName: place.placeName,
       entryCount: place.entryCount,
-      averageScore: Number(((place.totalScore / place.entryCount) / 2).toFixed(1))
+      averageScore: Number((place.totalScore / place.entryCount).toFixed(1))
     }))
 
   return res.json({ places })

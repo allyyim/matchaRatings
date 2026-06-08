@@ -1432,7 +1432,7 @@ function App() {
             <div className="card-body p-3 p-md-4">
               <h2 className="h3 fw-bold text-success mb-2">Explore</h2>
               <p className="text-muted mb-3">
-                Top 10 places ranked by average score out of 100 from all users. Explore data refreshes weekly.
+                Top 10 places ranked by average score out of 200 from all users. Explore data refreshes weekly.
               </p>
 
               <section className="mb-4">
@@ -1453,7 +1453,7 @@ function App() {
                             <div className="fw-semibold text-success">#{place.rank} {place.placeName}</div>
                             <div className="small text-muted">{place.entryCount} entries</div>
                           </div>
-                          <div className="fw-bold">Average score: {place.averageScore.toFixed(1)} / 100</div>
+                          <div className="fw-bold">Average score: {place.averageScore.toFixed(1)} / 200</div>
                         </div>
                       </article>
                     ))}
