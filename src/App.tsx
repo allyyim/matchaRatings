@@ -753,6 +753,7 @@ function App() {
     }
 
     setIsSavingEntry(true)
+    const overlayShownAt = Date.now()
     try {
       await apiFetch<{ rating: RatingEntry }>('/ratings', {
         method: 'POST',
@@ -777,6 +778,11 @@ function App() {
       setMlCoveragePercent(null)
       setMlConfidencePercent(null)
     } finally {
+      const elapsed = Date.now() - overlayShownAt
+      const minimumOverlayMs = 700
+      if (elapsed < minimumOverlayMs) {
+        await new Promise((resolve) => window.setTimeout(resolve, minimumOverlayMs - elapsed))
+      }
       setIsSavingEntry(false)
     }
   }
@@ -831,6 +837,7 @@ function App() {
     }
 
     setIsSavingEntry(true)
+    const overlayShownAt = Date.now()
     try {
       await apiFetch<{ rating: RatingEntry }>(`/ratings/${entryId}`, {
         method: 'PUT',
@@ -847,6 +854,11 @@ function App() {
       setIsEditingEntry(false)
       setSelectedEntryId(null)
     } finally {
+      const elapsed = Date.now() - overlayShownAt
+      const minimumOverlayMs = 700
+      if (elapsed < minimumOverlayMs) {
+        await new Promise((resolve) => window.setTimeout(resolve, minimumOverlayMs - elapsed))
+      }
       setIsSavingEntry(false)
     }
   }
@@ -876,8 +888,19 @@ function App() {
       {isSavingEntry && (
         <div className="saving-overlay" role="status" aria-live="polite" aria-label="Saving rating">
           <div className="saving-card">
-            <div className="matcha-glass" aria-hidden="true">
-              <div className="matcha-fill" />
+            <div className="matcha-cup" aria-hidden="true">
+              <div className="cup-rim" />
+              <div className="cup-body">
+                <div className="milk-layer" />
+                <div className="boba-pearls" />
+                <div className="matcha-fill">
+                  <div className="matcha-drip" />
+                </div>
+                <div className="ice-cubes">
+                  <span className="ice-cube ice-cube-a" />
+                  <span className="ice-cube ice-cube-b" />
+                </div>
+              </div>
             </div>
             <div className="saving-text">Saving your rating...</div>
           </div>
