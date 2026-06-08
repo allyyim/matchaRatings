@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS browser_users (
   browser_id TEXT PRIMARY KEY,
-  user_name TEXT NOT NULL,
+  user_name TEXT NOT NULL UNIQUE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

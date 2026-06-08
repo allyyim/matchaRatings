@@ -176,13 +176,13 @@ The app sends `browserId` to `POST /api/users/session`. If no existing `browser_
 ### 2) How are scores calculated?
 Per entry: `rating * 20 + greenness` (0 to 200). Explore place rankings use average score out of 200 for each normalized place.
 
-### 3) Why are some place names merged in Explore?
-Normalization combines known naming variants so rankings are cleaner, such as Bonito + Bonito Cafe and Nana's + Nana's Green.
+### 3) How do the top 10 places in Explore get ranked?
+Places are ranked by average score (out of 100) across all user ratings. Duplicate entries for the same place are automatically merged-for example, "Bonito" and "Bonito Cafe" count as one place with combined/averaged scores. Results sort highest to lowest.
 
 ### 4) Is the camera always required?
 No. You can upload from photo roll or capture live. After a photo is chosen/captured, live camera access is stopped.
 
-### 5) Why can two users share the same displayed name?
-Current schema stores `user_name` as text and does not enforce global uniqueness. Session mapping is browser-based via `browser_id`.
+### 5) Why must each username be unique?
+The `browser_users` table enforces a UNIQUE constraint on `user_name`, so each username belongs to exactly one user. This prevents confusion in Friends search, keeps ratings correctly attributed, and ensures the app maintains a trustworthy social network.
 
 </details>
