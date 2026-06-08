@@ -889,17 +889,14 @@ function App() {
         <div className="saving-overlay" role="status" aria-live="polite" aria-label="Saving rating">
           <div className="saving-card">
             <div className="matcha-cup" aria-hidden="true">
-              <div className="cup-rim" />
+              <div className="cup-straw" />
+              <div className="cup-dome" />
+              <div className="cup-lid" />
               <div className="cup-body">
-                <div className="milk-layer" />
+                <div className="cup-liquid" />
+                <div className="cup-liquid-surface" />
+                <div className="cup-highlight" />
                 <div className="boba-pearls" />
-                <div className="matcha-fill">
-                  <div className="matcha-drip" />
-                </div>
-                <div className="ice-cubes">
-                  <span className="ice-cube ice-cube-a" />
-                  <span className="ice-cube ice-cube-b" />
-                </div>
               </div>
             </div>
             <div className="saving-text">Saving your rating...</div>
