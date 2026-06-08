@@ -1,21 +1,29 @@
 # Sip & Score - Matcha Log
 
-React + TypeScript + Vite app for rating matcha with half-star support, camera capture, and optional ML drink-area detection.
+React + TypeScript + Vite app for rating matcha with half-star support, camera capture, optional ML drink-area detection, friend lookups, and Explore rankings.
 
-## Technical Architecture
+<details open>
+<summary><strong>Technical Design</strong></summary>
 
-This project uses a split frontend/backend architecture. The frontend is a React + TypeScript SPA built with Vite and hosted on GitHub Pages. The backend is an Express API hosted on Render and connected to Supabase PostgreSQL via a pooled connection string. Optional TensorFlow.js inference runs in the browser to detect drink regions before greenness scoring.
+This project uses a split frontend/backend architecture.
+
+- Frontend: React + TypeScript SPA (`src/App.tsx`) built with Vite.
+- Backend: Express API (`server/index.js`) serving JSON endpoints.
+- Data: PostgreSQL via `pg` pool (`server/db.js`).
+- ML assist: Optional TensorFlow.js model in `public/ml/drink-area/model.json` for drink-area segmentation before greenness scoring.
+- Scoring:
+  - Entry total score (out of 200): `rating * 20 + greenness`
+  - Explore place ranking: average score out of 200 across entries for each normalized place.
 
 ```mermaid
 flowchart TD
-   A[GitHub Pages Frontend]
-   B[React + TypeScript + Vite SPA]
-   C[Image Upload or Camera Capture]
-   D[Optional TensorFlow.js Drink-Area Detection]
-   E[Greenness + Half-Star Scoring]
-   F[Express API on Render]
-   G[Supabase PostgreSQL]
-   H[Home Ratings + Friends Ratings]
+   A[Client Browser]
+   B[React + Vite UI]
+   C[Photo Input / Camera]
+   D[Optional TF.js Model]
+   E[Greenness + Rating Scoring]
+   F[Express API]
+   G[PostgreSQL]
 
    A --> B
    B --> C
@@ -23,66 +31,158 @@ flowchart TD
    D --> E
    E --> F
    F --> G
-   G --> H
 ```
 
-### System Design
+</details>
 
-- Frontend layer: `src/App.tsx` renders the main app and Friends Ratings page, while `src/App.css` and `src/index.css` provide responsive styling.
-- Client scoring pipeline: camera capture or file upload generates an image payload; optional TensorFlow.js model inference (`public/ml/drink-area/model.json`) narrows the drink region before greenness scoring.
-- API layer: `server/index.js` exposes REST endpoints for health checks, browser-to-user session mapping, rating creation, personal rating retrieval, friend search, and friend ranking retrieval.
-- Data layer: `server/db.js` initializes and connects to PostgreSQL tables (`browser_users`, `ratings`) and indexes query paths used by ratings and friend lookup.
-- Ranking logic: friend logs are ordered by a combined score formula `(rating * 20 + greenness)` to blend star rating and color quality.
-- Deployment layer: GitHub Actions builds and deploys the SPA to GitHub Pages, and production API traffic is routed via `VITE_API_BASE_URL` to the Render-hosted backend.
+<details open>
+<summary><strong>System Design</strong></summary>
 
-## Local Development
+### Runtime Components
+
+- `src/App.tsx`: page tabs (`My Log`, `Friends Ratings`, `Explore`), rating creation/edit/delete, search, and overlays.
+- `server/index.js`: REST routes for sessions, ratings CRUD, friend search/lookups, explore places, and explore users.
+- `server/db.js`: DB pool + schema initialization.
+
+### Database Relations
+
+```mermaid
+erDiagram
+  BROWSER_USERS {
+    text browser_id PK
+    text user_name
+    timestamptz created_at
+  }
+
+  RATINGS {
+    bigint id PK
+    text user_name
+    text photo
+    numeric rating
+    int greenness
+    text location
+    text thoughts
+    timestamptz created_at
+  }
+
+  BROWSER_USERS ||--o{ RATINGS : "logical user identity by user_name"
+```
+
+Notes:
+- The relationship is logical (by user name), not enforced as a SQL foreign key.
+- Explore endpoints normalize place names before aggregation (for example, Bonito + Bonito Cafe).
+
+</details>
+
+<details open>
+<summary><strong>API Calls</strong></summary>
+
+Base path: `/api`
+
+### Health and Session
+
+- `GET /health`
+  - Response: `{ ok: true }`
+- `POST /users/session`
+  - Body: `{ browserId, userName? }`
+  - Response: `{ requiresName, userName? }`
+
+### Ratings
+
+- `POST /ratings`
+  - Body: `{ userName, photo, rating, greenness, location, thoughts }`
+  - Response: `{ rating }`
+- `GET /ratings?userName=<name>`
+  - Response: `{ ratings: RatingEntry[] }`
+- `PUT /ratings/:id`
+  - Body: `{ userName, rating, location, thoughts }`
+  - Response: `{ rating }`
+- `DELETE /ratings/:id?userName=<name>`
+  - Response: `{ deletedId }`
+
+### Friends
+
+- `GET /friends/search?q=<partialName>`
+  - Response: `{ friends: string[] }`
+- `GET /friends/:friendName/ratings`
+  - Response: `{ friendName, ratings: RatingEntry[] }`
+
+### Explore
+
+- `GET /explore/places?limit=10`
+  - Response: `{ places: [{ rank, placeName, averageScore, entryCount }] }`
+- `GET /explore/users?limit=50`
+  - Response: `{ users: [{ userName, placeCount }] }`
+
+</details>
+
+<details>
+<summary><strong>Local Development</strong></summary>
 
 1. Install dependencies:
-   ```bash
-   npm install
-   ```
-2. Copy environment template and set your Postgres connection:
-   ```bash
-   copy .env.example .env
-   ```
-3. Start frontend + API together:
-   ```bash
-   npm run dev:full
-   ```
-4. Open the local URL printed by Vite, usually `http://localhost:5173`.
-
-If you only want frontend or backend individually:
 
 ```bash
-npm run dev      # frontend only
-npm run server   # backend API only
+npm install
 ```
 
-## Production Build
+2. Copy env template and set DB connection:
+
+```bash
+copy .env.example .env
+```
+
+3. Start frontend + backend:
+
+```bash
+npm run dev:full
+```
+
+4. Open the Vite URL (usually `http://localhost:5173`).
+
+Optional split runs:
+
+```bash
+npm run dev
+npm run server
+```
+
+</details>
+
+<details>
+<summary><strong>Build and Deploy</strong></summary>
+
+Build:
 
 ```bash
 npm run build
 ```
 
-To preview the production build locally:
+Preview:
 
 ```bash
 npm run preview
 ```
 
-## GitHub Pages Deployment
+GitHub Pages deploys from `main` via GitHub Actions.
 
-This repo is configured to deploy automatically to GitHub Pages from the `main` branch with GitHub Actions.
+</details>
 
-One-time setup in GitHub:
-1. Open the repository settings.
-2. Go to `Pages`.
-3. Set `Build and deployment` to `GitHub Actions`.
-4. Push a commit to `main` or run the workflow manually from the `Actions` tab.
+<details open>
+<summary><strong>FAQ (Top 5)</strong></summary>
 
-What happens after that:
-- Every push to `main` runs `npm ci` and `npm run build`.
-- The `dist` folder is published to GitHub Pages automatically.
-- The Vite base path is adjusted during the GitHub Actions build so public assets and the ML model load correctly on Pages.
+### 1) How does the app know a new user is registering?
+The app sends `browserId` to `POST /api/users/session`. If no existing `browser_users` row exists for that browser and no name is provided, API returns `requiresName: true`, and the UI prompts for a name.
 
-If your repository name is not `matchaRatings`, update the base path in [vite.config.ts](vite.config.ts) and the asset paths in [src/App.tsx](src/App.tsx) to match your repo name.
+### 2) How are scores calculated?
+Per entry: `rating * 20 + greenness` (0 to 200). Explore place rankings use average score out of 200 for each normalized place.
+
+### 3) Why are some place names merged in Explore?
+Normalization combines known naming variants so rankings are cleaner, such as Bonito + Bonito Cafe and Nana's + Nana's Green.
+
+### 4) Is the camera always required?
+No. You can upload from photo roll or capture live. After a photo is chosen/captured, live camera access is stopped.
+
+### 5) Why can two users share the same displayed name?
+Current schema stores `user_name` as text and does not enforce global uniqueness. Session mapping is browser-based via `browser_id`.
+
+</details>

@@ -261,16 +261,16 @@ app.get('/api/explore/places', async (req, res) => {
 
     const rating = Number(row.rating)
     const greenness = Number(row.greenness)
-    const blendedScore = (rating * 20 + greenness) / 2
+    const scoreOutOf200 = rating * 20 + greenness
 
     const existing = placeBuckets.get(placeName)
     if (existing) {
-      existing.totalBlendedScore += blendedScore
+      existing.totalScore += scoreOutOf200
       existing.entryCount += 1
     } else {
       placeBuckets.set(placeName, {
         placeName,
-        totalBlendedScore: blendedScore,
+        totalScore: scoreOutOf200,
         entryCount: 1
       })
     }
@@ -278,8 +278,8 @@ app.get('/api/explore/places', async (req, res) => {
 
   const places = [...placeBuckets.values()]
     .sort((a, b) => {
-      const bAverage = b.totalBlendedScore / b.entryCount
-      const aAverage = a.totalBlendedScore / a.entryCount
+      const bAverage = b.totalScore / b.entryCount
+      const aAverage = a.totalScore / a.entryCount
       if (bAverage !== aAverage) return bAverage - aAverage
       return b.entryCount - a.entryCount
     })
@@ -288,7 +288,7 @@ app.get('/api/explore/places', async (req, res) => {
       rank: index + 1,
       placeName: place.placeName,
       entryCount: place.entryCount,
-      averageScore: Number((place.totalBlendedScore / place.entryCount).toFixed(1))
+      averageScore: Number((place.totalScore / place.entryCount).toFixed(1))
     }))
 
   return res.json({ places })

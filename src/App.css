@@ -8,6 +8,15 @@
 }
 
 .nav-actions .btn {
+  white-space: normal;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.nav-user {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -21,6 +30,8 @@
 .nav-actions .btn {
   width: 100%;
   min-height: 2.25rem;
+  padding: 0.4rem 0.35rem;
+  font-size: 0.78rem;
 }
 
 @media (min-width: 992px) {
@@ -31,6 +42,9 @@
 
   .nav-actions .btn {
     width: auto;
+    white-space: nowrap;
+    font-size: 0.875rem;
+    padding: 0.35rem 0.65rem;
   }
 }
 
@@ -203,6 +217,21 @@
 
 .entry-edit-panel {
   width: min(28rem, 100%);
+}
+
+.explore-user-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.explore-user-link:hover {
+  color: #1f5f34;
 }
 
 .saving-overlay {
@@ -414,5 +443,9 @@
 
   .nav-actions .btn {
     width: 100%;
+  }
+
+  .nav-actions {
+    gap: 0.4rem;
   }
 }

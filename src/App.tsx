@@ -1006,7 +1006,7 @@ function App() {
         <div className="container d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-2">
           <div className="d-flex flex-column">
             <span className="navbar-brand fw-semibold text-success mb-0">Sip &amp; Score</span>
-            <small className="text-muted">Logged in as {currentUserName}</small>
+            <small className="text-muted nav-user">Logged in as {currentUserName}</small>
           </div>
 
           <div className="d-flex align-items-center gap-2 nav-actions w-100">
@@ -1432,7 +1432,7 @@ function App() {
             <div className="card-body p-3 p-md-4">
               <h2 className="h3 fw-bold text-success mb-2">Explore</h2>
               <p className="text-muted mb-3">
-                Top 10 places ranked by blended average score out of 100 from all users. Explore data refreshes weekly.
+                Top 10 places ranked by average score out of 200 from all users. Explore data refreshes weekly.
               </p>
 
               <section className="mb-4">
@@ -1453,7 +1453,7 @@ function App() {
                             <div className="fw-semibold text-success">#{place.rank} {place.placeName}</div>
                             <div className="small text-muted">{place.entryCount} entries</div>
                           </div>
-                          <div className="fw-bold">Average score: {place.averageScore.toFixed(1)} / 100</div>
+                          <div className="fw-bold">Average score: {place.averageScore.toFixed(1)} / 200</div>
                         </div>
                       </article>
                     ))}
@@ -1475,7 +1475,18 @@ function App() {
                     {exploreUsers.map((user, index) => (
                       <article key={user.userName} className="card border-0 shadow-sm">
                         <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
-                          <div className="fw-semibold">#{index + 1} {user.userName}</div>
+                          <div className="fw-semibold">
+                            #{index + 1}{' '}
+                            <button
+                              type="button"
+                              className="explore-user-link"
+                              onClick={() => {
+                                void openFriendRatings(user.userName)
+                              }}
+                            >
+                              {user.userName}
+                            </button>
+                          </div>
                           <div className="text-success fw-bold">{user.placeCount} places logged</div>
                         </div>
                       </article>
