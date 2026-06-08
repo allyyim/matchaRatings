@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, MouseEvent } from 'react'
+import { createPortal } from 'react-dom'
 import * as tf from '@tensorflow/tfjs'
 import './App.css'
 
@@ -399,6 +400,7 @@ function App() {
   const [cameraReady, setCameraReady] = useState(false)
   const [cameraError, setCameraError] = useState('')
   const videoRef = useRef<HTMLVideoElement>(null)
+  const photoInputRef = useRef<HTMLInputElement>(null)
   const cameraStreamRef = useRef<MediaStream | null>(null)
 
   const [myEntries, setMyEntries] = useState<RatingEntry[]>([])
@@ -774,6 +776,9 @@ function App() {
       setLocation('')
       setThoughts('')
       setPhotoDataUrl('')
+      if (photoInputRef.current) {
+        photoInputRef.current.value = ''
+      }
       setMatchaGreenness(null)
       setMlCoveragePercent(null)
       setMlConfidencePercent(null)
@@ -885,7 +890,7 @@ function App() {
 
   return (
     <>
-      {isSavingEntry && (
+      {isSavingEntry && createPortal(
         <div className="saving-overlay" role="status" aria-live="polite" aria-label="Saving rating">
           <div className="saving-card">
             <div className="matcha-cup" aria-hidden="true">
@@ -901,7 +906,8 @@ function App() {
             </div>
             <div className="saving-text">Saving your rating...</div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top soft-nav">
@@ -1007,6 +1013,7 @@ function App() {
               <div className="mb-3">
                 <label className="form-label fw-semibold">Upload matcha photo</label>
                 <input
+                  ref={photoInputRef}
                   type="file"
                   className="form-control"
                   accept="image/*,.jpg,.jpeg,.png,.jfif,.webp"
