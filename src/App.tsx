@@ -411,13 +411,46 @@ function App() {
   const [friendSuggestions, setFriendSuggestions] = useState<string[]>([])
   const [selectedFriend, setSelectedFriend] = useState('')
   const [friendEntries, setFriendEntries] = useState<RatingEntry[]>([])
+  const [isMyLogsExpanded, setIsMyLogsExpanded] = useState(false)
+  const [myLogsSearchTerm, setMyLogsSearchTerm] = useState('')
+  const [isFriendLogsExpanded, setIsFriendLogsExpanded] = useState(false)
+  const [friendLogsSearchTerm, setFriendLogsSearchTerm] = useState('')
 
   const sortedMine = useMemo(() => {
-    return [...myEntries].sort((a, b) => {
+    let sorted = [...myEntries].sort((a, b) => {
       if (b.rating !== a.rating) return b.rating - a.rating
       return b.greenness - a.greenness
     })
-  }, [myEntries])
+    
+    // Apply search filter if search term is present
+    if (myLogsSearchTerm.trim()) {
+      const searchLower = myLogsSearchTerm.toLowerCase()
+      sorted = sorted.filter((entry) =>
+        entry.location.toLowerCase().includes(searchLower) ||
+        entry.thoughts.toLowerCase().includes(searchLower)
+      )
+    }
+    
+    return sorted
+  }, [myEntries, myLogsSearchTerm])
+
+  const filteredFriendEntries = useMemo(() => {
+    let filtered = [...friendEntries].sort((a, b) => {
+      if (b.comboScore !== a.comboScore) return b.comboScore - a.comboScore
+      return b.rating - a.rating
+    })
+    
+    // Apply search filter if search term is present
+    if (friendLogsSearchTerm.trim()) {
+      const searchLower = friendLogsSearchTerm.toLowerCase()
+      filtered = filtered.filter((entry) =>
+        entry.location.toLowerCase().includes(searchLower) ||
+        entry.thoughts.toLowerCase().includes(searchLower)
+      )
+    }
+    
+    return filtered
+  }, [friendEntries, friendLogsSearchTerm])
 
   useEffect(() => {
     loadDrinkAreaModel()
@@ -757,6 +790,8 @@ function App() {
     if (!friendName.trim()) return
     setSelectedFriend(friendName)
     setActivePage('friends')
+    setIsFriendLogsExpanded(false)
+    setFriendLogsSearchTerm('')
     const response = await apiFetch<{ friendName: string; ratings: RatingEntry[] }>(`/friends/${encodeURIComponent(friendName)}/ratings`)
     setFriendEntries(response.ratings)
   }
@@ -1001,11 +1036,25 @@ function App() {
           </div>
 
           <section className="mt-4 mb-5">
-            <h2 className="h4 fw-bold text-success mb-3">My Log (tap to edit or delete)</h2>
+            <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
+              <div className="d-flex align-items-center gap-2 flex-grow-1">
+                <h2 className="h4 fw-bold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => setIsMyLogsExpanded(!isMyLogsExpanded)}>
+                  My Ratings {isMyLogsExpanded ? '▼' : '▶'}
+                </h2>
+              </div>
+              <input
+                type="text"
+                className="form-control"
+                style={{ maxWidth: '200px' }}
+                placeholder="search ratings"
+                value={myLogsSearchTerm}
+                onChange={(event) => setMyLogsSearchTerm(event.target.value)}
+              />
+            </div>
             <div className="d-flex flex-column gap-3">
               {sortedMine.length === 0 && <div className="alert alert-light border">No ratings yet.</div>}
 
-              {sortedMine.map((entry) => (
+              {(isMyLogsExpanded ? sortedMine : sortedMine.slice(0, 3)).map((entry) => (
                 <article key={entry.id} className="card border-0 shadow-sm entry-card" onClick={() => openEntryOverlay(entry)}>
                   <div className="card-body d-flex gap-3 align-items-start">
                     <img src={entry.photo} alt="Matcha" className="entry-thumb" />
@@ -1016,7 +1065,7 @@ function App() {
                       </div>
                       <div>Rating: {entry.rating.toFixed(1)} / 5</div>
                       <div>Greenness: {entry.greenness} / 100</div>
-                      <div>Combined score: {entry.comboScore.toFixed(1)}</div>
+                      <div>Combined score: {entry.comboScore.toFixed(1)} / 200</div>
                       {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
                     </div>
                   </div>
@@ -1165,15 +1214,27 @@ function App() {
           </section>
 
           <section>
-            <h3 className="h4 fw-bold text-success mb-3">
-              {selectedFriend ? `${selectedFriend}'s ratings (best to worst)` : 'Select a friend to view their log'}
-            </h3>
+            <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
+              <h3 className="h4 fw-bold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => setIsFriendLogsExpanded(!isFriendLogsExpanded)}>
+                {selectedFriend ? `${selectedFriend}'s ratings` : 'Select a friend to view their log'} {selectedFriend && (isFriendLogsExpanded ? '▼' : '▶')}
+              </h3>
+              {selectedFriend && (
+                <input
+                  type="text"
+                  className="form-control"
+                  style={{ maxWidth: '200px' }}
+                  placeholder="search ratings"
+                  value={friendLogsSearchTerm}
+                  onChange={(event) => setFriendLogsSearchTerm(event.target.value)}
+                />
+              )}
+            </div>
             <div className="d-flex flex-column gap-3">
-              {selectedFriend && friendEntries.length === 0 && (
+              {selectedFriend && filteredFriendEntries.length === 0 && (
                 <div className="alert alert-light border">No ratings found for this friend.</div>
               )}
 
-              {friendEntries.map((entry) => (
+              {(isFriendLogsExpanded || !selectedFriend ? filteredFriendEntries : filteredFriendEntries.slice(0, 3)).map((entry) => (
                 <article key={entry.id} className="card border-0 shadow-sm">
                   <div className="card-body d-flex gap-3 align-items-start">
                     <img src={entry.photo} alt="Friend's matcha" className="entry-thumb" />
@@ -1184,7 +1245,7 @@ function App() {
                       </div>
                       <div>Rating: {entry.rating.toFixed(1)} / 5</div>
                       <div>Greenness: {entry.greenness} / 100</div>
-                      <div>Combined score: {entry.comboScore.toFixed(1)}</div>
+                      <div>Combined score: {entry.comboScore.toFixed(1)} / 200</div>
                       {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
                     </div>
                   </div>
