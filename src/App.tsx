@@ -1121,9 +1121,12 @@ function App() {
           <section className="mt-4 mb-5">
             <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
               <div className="d-flex align-items-center gap-2 flex-grow-1">
-                <h2 className="h4 fw-bold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => setIsMyLogsExpanded(!isMyLogsExpanded)}>
-                  My Ratings {isMyLogsExpanded ? '▼' : '▶'}
-                </h2>
+                <div>
+                  <h2 className="h4 fw-bold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => setIsMyLogsExpanded(!isMyLogsExpanded)}>
+                    My Ratings {isMyLogsExpanded ? '▼' : '▶'}
+                  </h2>
+                  <small className="text-muted">Tap any entry to edit or delete</small>
+                </div>
               </div>
               <input
                 type="text"
