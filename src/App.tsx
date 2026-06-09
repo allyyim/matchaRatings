@@ -445,6 +445,20 @@ function App() {
 
   const sortedMine = useMemo(() => {
     let sorted = [...myEntries].sort((a, b) => {
+      const aIsZeroStar = a.rating === 0
+      const bIsZeroStar = b.rating === 0
+
+      // Force all 0-star ratings to the bottom regardless of combo score.
+      if (aIsZeroStar !== bIsZeroStar) {
+        return aIsZeroStar ? 1 : -1
+      }
+
+      // Within the 0-star group, rank by greenness.
+      if (aIsZeroStar && bIsZeroStar) {
+        if (b.greenness !== a.greenness) return b.greenness - a.greenness
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      }
+
       if (b.comboScore !== a.comboScore) return b.comboScore - a.comboScore
       if (b.rating !== a.rating) return b.rating - a.rating
       return b.greenness - a.greenness
@@ -464,6 +478,20 @@ function App() {
 
   const filteredFriendEntries = useMemo(() => {
     let filtered = [...friendEntries].sort((a, b) => {
+      const aIsZeroStar = a.rating === 0
+      const bIsZeroStar = b.rating === 0
+
+      // Force all 0-star ratings to the bottom regardless of combo score.
+      if (aIsZeroStar !== bIsZeroStar) {
+        return aIsZeroStar ? 1 : -1
+      }
+
+      // Within the 0-star group, rank by greenness.
+      if (aIsZeroStar && bIsZeroStar) {
+        if (b.greenness !== a.greenness) return b.greenness - a.greenness
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      }
+
       if (b.comboScore !== a.comboScore) return b.comboScore - a.comboScore
       return b.rating - a.rating
     })
@@ -1221,8 +1249,8 @@ function App() {
                         <span className="text-muted small">{entry.date}</span>
                       </div>
                       <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
-                      <div>Greenness: {entry.greenness} / 100</div>
-                      <div>Total score: {entry.comboScore.toFixed(1)} / 200</div>
+                      <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                      <div>Total score: {entry.comboScore.toFixed(1)} / 200.0</div>
                       {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
                     </div>
                   </div>
