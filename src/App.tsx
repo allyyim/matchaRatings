@@ -1208,13 +1208,13 @@ function App() {
             <div className="d-flex flex-column gap-3">
               {sortedMine.length === 0 && <div className="alert alert-light border">No ratings yet.</div>}
 
-              {(isMyLogsExpanded ? sortedMine : sortedMine.slice(0, 3)).map((entry) => (
+              {(isMyLogsExpanded ? sortedMine : sortedMine.slice(0, 3)).map((entry, index) => (
                 <article key={entry.id} className="card border-0 shadow-sm entry-card" onClick={() => openEntryOverlay(entry)}>
                   <div className="card-body d-flex gap-3 align-items-start">
                     <img src={entry.photo} alt="Matcha" className="entry-thumb" />
                     <div className="flex-grow-1">
                       <div className="d-flex justify-content-between flex-wrap gap-2">
-                        <strong>{entry.location || 'Unknown location'}</strong>
+                        <strong>#{index + 1} {entry.location || 'Unknown location'}</strong>
                         <span className="text-muted small">{entry.date}</span>
                       </div>
                       <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
@@ -1393,7 +1393,7 @@ function App() {
                   type="text"
                   className="form-control"
                   style={{ maxWidth: '200px' }}
-                  placeholder="search ratings"
+                  placeholder="Search Ratings"
                   value={friendLogsSearchTerm}
                   onChange={(event) => setFriendLogsSearchTerm(event.target.value)}
                 />
@@ -1404,13 +1404,13 @@ function App() {
                 <div className="alert alert-light border">No ratings found for this friend.</div>
               )}
 
-              {(isFriendLogsExpanded || !selectedFriend ? filteredFriendEntries : filteredFriendEntries.slice(0, 3)).map((entry) => (
+              {(isFriendLogsExpanded || !selectedFriend ? filteredFriendEntries : filteredFriendEntries.slice(0, 3)).map((entry, index) => (
                 <article key={entry.id} className="card border-0 shadow-sm">
                   <div className="card-body d-flex gap-3 align-items-start">
                     <img src={entry.photo} alt="Friend's matcha" className="entry-thumb" />
                     <div className="flex-grow-1">
                       <div className="d-flex justify-content-between flex-wrap gap-2">
-                        <strong>{entry.location || 'Unknown location'}</strong>
+                        <strong>#{index + 1} {entry.location || 'Unknown location'}</strong>
                         <span className="text-muted small">{entry.date}</span>
                       </div>
                       <div>Rating: {entry.rating.toFixed(1)} / 5</div>
@@ -1432,7 +1432,7 @@ function App() {
             <div className="card-body p-3 p-md-4">
               <h2 className="h3 fw-bold text-success mb-2">Explore</h2>
               <p className="text-muted mb-3">
-                Top 10 places ranked by average score out of 200 from all users. Explore data refreshes weekly.
+                Top places ranked by average score out of 200 from all users. Explore data refreshes weekly.
               </p>
 
               <section className="mb-4">
@@ -1487,7 +1487,7 @@ function App() {
                               {user.userName}
                             </button>
                           </div>
-                          <div className="text-success fw-bold">{user.placeCount} places logged</div>
+                          <div className="text-success fw-bold">{user.placeCount}</div>
                         </div>
                       </article>
                     ))}

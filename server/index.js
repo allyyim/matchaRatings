@@ -38,26 +38,68 @@ function normalizeLocationName(rawLocation) {
   if (!location) return ''
 
   const canonical = location
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
 
-  if (canonical.includes('bonito')) {
-    return 'Bonito Cafe'
+  return canonical
+    .split(' ')
+    .filter(Boolean)
+    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+    .join(' ')
+}
+
+function getCanonicalPlaceData(rawLocation) {
+  const normalizedName = normalizeLocationName(rawLocation)
+  if (!normalizedName) {
+    return { displayName: '', canonicalKey: '' }
   }
 
-  if (
-    canonical.includes('nanas green') ||
-    canonical.includes('nana s green') ||
-    canonical === 'nanas' ||
-    canonical === 'nana s' ||
-    canonical === 'nana'
-  ) {
-    return "Nana's Green"
+  const firstSegment = normalizedName.split(',')[0].split(' - ')[0].trim()
+  const displayName = firstSegment || normalizedName
+  const canonicalKey = displayName
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  return { displayName, canonicalKey }
+}
+
+function shouldMergePlaces(canonicalA, canonicalB) {
+  if (!canonicalA || !canonicalB) return false
+  if (canonicalA === canonicalB) return true
+
+  const shorter = canonicalA.length <= canonicalB.length ? canonicalA : canonicalB
+  const longer = canonicalA.length > canonicalB.length ? canonicalA : canonicalB
+  if (shorter.length >= 4 && longer.startsWith(shorter)) {
+    return true
   }
 
-  return location.charAt(0).toUpperCase() + location.slice(1).toLowerCase()
+  const tokensA = new Set(canonicalA.split(' ').filter(Boolean))
+  const tokensB = new Set(canonicalB.split(' ').filter(Boolean))
+  const minTokenCount = Math.min(tokensA.size, tokensB.size)
+  if (!minTokenCount) return false
+
+  let overlap = 0
+  for (const token of tokensA) {
+    if (tokensB.has(token)) {
+      overlap += 1
+    }
+  }
+
+  if (overlap / minTokenCount >= 0.8) {
+    return true
+  }
+
+  const similarity = findBestMatch(canonicalA, [canonicalB]).bestMatch.rating
+  return similarity >= 0.78
 }
 
 app.get('/api/health', async (_req, res) => {
@@ -257,55 +299,45 @@ app.get('/api/explore/places', async (req, res) => {
   const placeBuckets = new Map()
 
   for (const row of result.rows) {
-    const placeName = normalizeLocationName(row.location)
-    if (!placeName) continue
+    const { displayName, canonicalKey } = getCanonicalPlaceData(row.location)
+    if (!displayName || !canonicalKey) continue
 
     const rating = Number(row.rating)
     const greenness = Number(row.greenness)
     const scoreOutOf200 = rating * 20 + greenness
 
-    const existing = placeBuckets.get(placeName)
+    const existing = placeBuckets.get(canonicalKey)
     if (existing) {
       existing.totalScore += scoreOutOf200
       existing.entryCount += 1
     } else {
-      placeBuckets.set(placeName, {
-        placeName,
+      placeBuckets.set(canonicalKey, {
+        placeName: displayName,
+        canonicalKey,
         totalScore: scoreOutOf200,
         entryCount: 1
       })
     }
   }
 
-  // Fuzzy matching: merge similar place names
-  const placeNames = Array.from(placeBuckets.keys())
-  const mergedBuckets = new Map()
-  const processed = new Set()
+  const mergedBuckets = []
+  for (const bucket of placeBuckets.values()) {
+    const existingCluster = mergedBuckets.find((cluster) => shouldMergePlaces(cluster.canonicalKey, bucket.canonicalKey))
 
-  for (const name of placeNames) {
-    if (processed.has(name)) continue
-
-    const bucket = placeBuckets.get(name)
-    let canonical = name
-
-    // Find all similar names and merge them
-    for (const otherName of placeNames) {
-      if (processed.has(otherName) || otherName === name) continue
-
-      const similarity = findBestMatch(name.toLowerCase(), [otherName.toLowerCase()]).bestMatch.rating
-      if (similarity > 0.75) {
-        const otherBucket = placeBuckets.get(otherName)
-        bucket.totalScore += otherBucket.totalScore
-        bucket.entryCount += otherBucket.entryCount
-        processed.add(otherName)
-      }
+    if (!existingCluster) {
+      mergedBuckets.push({ ...bucket })
+      continue
     }
 
-    mergedBuckets.set(canonical, bucket)
-    processed.add(name)
+    existingCluster.totalScore += bucket.totalScore
+    existingCluster.entryCount += bucket.entryCount
+
+    if (bucket.placeName.length < existingCluster.placeName.length) {
+      existingCluster.placeName = bucket.placeName
+    }
   }
 
-  const places = [...mergedBuckets.values()]
+  const places = mergedBuckets
     .sort((a, b) => {
       const bAverage = b.totalScore / b.entryCount
       const aAverage = a.totalScore / a.entryCount
@@ -338,13 +370,13 @@ app.get('/api/explore/users', async (req, res) => {
 
   for (const row of result.rows) {
     const userName = String(row.user_name || '').trim()
-    const placeName = normalizeLocationName(row.location)
-    if (!userName || !placeName) continue
+    const { canonicalKey } = getCanonicalPlaceData(row.location)
+    if (!userName || !canonicalKey) continue
 
     if (!userPlaces.has(userName)) {
       userPlaces.set(userName, new Set())
     }
-    userPlaces.get(userName).add(placeName)
+    userPlaces.get(userName).add(canonicalKey)
   }
 
   const users = [...userPlaces.entries()]
