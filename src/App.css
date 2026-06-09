@@ -175,6 +175,29 @@
   flex: 0 0 auto;
 }
 
+.entry-media-col {
+  width: 4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+}
+
+.entry-rank-circle {
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 999px;
+  border: 2px solid #1f5f34;
+  color: #1f5f34;
+  font-size: 0.78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
 .entry-card {
   position: relative;
   cursor: pointer;
@@ -426,6 +449,16 @@
   .entry-thumb {
     width: 3.25rem;
     height: 3.25rem;
+  }
+
+  .entry-media-col {
+    width: 3.25rem;
+  }
+
+  .entry-rank-circle {
+    width: 1.65rem;
+    height: 1.65rem;
+    font-size: 0.72rem;
   }
 
   .card-body {

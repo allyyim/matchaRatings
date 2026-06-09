@@ -1211,10 +1211,13 @@ function App() {
               {(isMyLogsExpanded ? sortedMine : sortedMine.slice(0, 3)).map((entry, index) => (
                 <article key={entry.id} className="card border-0 shadow-sm entry-card" onClick={() => openEntryOverlay(entry)}>
                   <div className="card-body d-flex gap-3 align-items-start">
-                    <img src={entry.photo} alt="Matcha" className="entry-thumb" />
+                    <div className="entry-media-col">
+                      <img src={entry.photo} alt="Matcha" className="entry-thumb" />
+                      <div className="entry-rank-circle">#{index + 1}</div>
+                    </div>
                     <div className="flex-grow-1">
                       <div className="d-flex justify-content-between flex-wrap gap-2">
-                        <strong>#{index + 1} {entry.location || 'Unknown location'}</strong>
+                        <strong>{entry.location || 'Unknown location'}</strong>
                         <span className="text-muted small">{entry.date}</span>
                       </div>
                       <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
@@ -1407,10 +1410,13 @@ function App() {
               {(isFriendLogsExpanded || !selectedFriend ? filteredFriendEntries : filteredFriendEntries.slice(0, 3)).map((entry, index) => (
                 <article key={entry.id} className="card border-0 shadow-sm">
                   <div className="card-body d-flex gap-3 align-items-start">
-                    <img src={entry.photo} alt="Friend's matcha" className="entry-thumb" />
+                    <div className="entry-media-col">
+                      <img src={entry.photo} alt="Friend's matcha" className="entry-thumb" />
+                      <div className="entry-rank-circle">#{index + 1}</div>
+                    </div>
                     <div className="flex-grow-1">
                       <div className="d-flex justify-content-between flex-wrap gap-2">
-                        <strong>#{index + 1} {entry.location || 'Unknown location'}</strong>
+                        <strong>{entry.location || 'Unknown location'}</strong>
                         <span className="text-muted small">{entry.date}</span>
                       </div>
                       <div>Rating: {entry.rating.toFixed(1)} / 5</div>

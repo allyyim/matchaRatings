@@ -76,6 +76,18 @@ function shouldMergePlaces(canonicalA, canonicalB) {
   if (!canonicalA || !canonicalB) return false
   if (canonicalA === canonicalB) return true
 
+  const compactA = canonicalA.replace(/\s+/g, '')
+  const compactB = canonicalB.replace(/\s+/g, '')
+  if (compactA && compactA === compactB) {
+    return true
+  }
+
+  const compactShorter = compactA.length <= compactB.length ? compactA : compactB
+  const compactLonger = compactA.length > compactB.length ? compactA : compactB
+  if (compactShorter.length >= 5 && compactLonger.startsWith(compactShorter)) {
+    return true
+  }
+
   const shorter = canonicalA.length <= canonicalB.length ? canonicalA : canonicalB
   const longer = canonicalA.length > canonicalB.length ? canonicalA : canonicalB
   if (shorter.length >= 4 && longer.startsWith(shorter)) {
