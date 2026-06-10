@@ -167,6 +167,10 @@
   max-width: none;
 }
 
+.rating-star-row {
+  padding: 0.2rem 0.15rem;
+}
+
 .entry-thumb {
   width: 4rem;
   height: 4rem;
@@ -196,6 +200,10 @@
   align-items: center;
   justify-content: center;
   line-height: 1;
+}
+
+.entry-metrics {
+  padding: 0.2rem 0;
 }
 
 .entry-card {

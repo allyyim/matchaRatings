@@ -8,6 +8,12 @@ dotenv.config()
 
 const app = express()
 const port = Number(process.env.PORT || 4000)
+const STAR_SCORE_WEIGHT = 1.1
+const GREENNESS_SCORE_WEIGHT = 0.9
+
+function getWeightedScore(rating, greenness) {
+  return rating * 20 * STAR_SCORE_WEIGHT + greenness * GREENNESS_SCORE_WEIGHT
+}
 
 app.use(cors())
 app.use(express.json({ limit: '15mb' }))
@@ -29,7 +35,7 @@ function mapRatingRow(row) {
     thoughts: row.thoughts || '',
     date: new Date(row.created_at).toLocaleDateString(),
     createdAt: row.created_at,
-    comboScore: Number((rating * 20 + greenness).toFixed(2))
+    comboScore: Number(getWeightedScore(rating, greenness).toFixed(2))
   }
 }
 
@@ -286,7 +292,7 @@ app.get('/api/friends/:friendName/ratings', async (req, res) => {
       SELECT *
       FROM ratings
       WHERE user_name = $1
-      ORDER BY (rating * 20 + greenness) DESC, created_at DESC
+      ORDER BY ((rating * 20 * ${STAR_SCORE_WEIGHT}) + (greenness * ${GREENNESS_SCORE_WEIGHT})) DESC, created_at DESC
     `,
     [friendName]
   )
@@ -316,7 +322,7 @@ app.get('/api/explore/places', async (req, res) => {
 
     const rating = Number(row.rating)
     const greenness = Number(row.greenness)
-    const scoreOutOf200 = rating * 20 + greenness
+    const scoreOutOf200 = getWeightedScore(rating, greenness)
 
     const existing = placeBuckets.get(canonicalKey)
     if (existing) {

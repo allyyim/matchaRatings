@@ -54,6 +54,33 @@ const drinkAreaModelConfig = {
   maskThreshold: 0.45
 }
 
+const STAR_SCORE_WEIGHT = 1.1
+const GREENNESS_SCORE_WEIGHT = 0.9
+
+function getWeightedScore(rating: number, greenness: number) {
+  return rating * 20 * STAR_SCORE_WEIGHT + greenness * GREENNESS_SCORE_WEIGHT
+}
+
+function compareEntriesForRank(a: RatingEntry, b: RatingEntry) {
+  const aIsZeroStar = a.rating === 0
+  const bIsZeroStar = b.rating === 0
+
+  if (aIsZeroStar !== bIsZeroStar) {
+    return aIsZeroStar ? 1 : -1
+  }
+
+  if (aIsZeroStar && bIsZeroStar) {
+    if (b.greenness !== a.greenness) return b.greenness - a.greenness
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  }
+
+  const scoreA = getWeightedScore(a.rating, a.greenness)
+  const scoreB = getWeightedScore(b.rating, b.greenness)
+  if (scoreB !== scoreA) return scoreB - scoreA
+  if (b.rating !== a.rating) return b.rating - a.rating
+  return b.greenness - a.greenness
+}
+
 let drinkAreaModelPromise: Promise<tf.GraphModel | tf.LayersModel | null> | null = null
 
 async function loadDrinkAreaModel(): Promise<tf.GraphModel | tf.LayersModel | null> {
@@ -435,6 +462,8 @@ function App() {
   const [myLogsSearchTerm, setMyLogsSearchTerm] = useState('')
   const [isFriendLogsExpanded, setIsFriendLogsExpanded] = useState(false)
   const [friendLogsSearchTerm, setFriendLogsSearchTerm] = useState('')
+  const [isRatingDragActive, setIsRatingDragActive] = useState(false)
+  const [isEditRatingDragActive, setIsEditRatingDragActive] = useState(false)
 
   const showLoadingOverlay = isSavingEntry || isLoadingFriendRatings || isLoadingExplorePlaces
   const loadingOverlayText = isSavingEntry
@@ -443,70 +472,41 @@ function App() {
       ? 'Loading explore data...'
       : 'Loading friend ratings...'
 
+  const rankedMine = useMemo(() => {
+    return [...myEntries].sort(compareEntriesForRank)
+  }, [myEntries])
+
+  const myRankById = useMemo(() => {
+    return new Map(rankedMine.map((entry, index) => [entry.id, index + 1]))
+  }, [rankedMine])
+
   const sortedMine = useMemo(() => {
-    let sorted = [...myEntries].sort((a, b) => {
-      const aIsZeroStar = a.rating === 0
-      const bIsZeroStar = b.rating === 0
+    if (!myLogsSearchTerm.trim()) return rankedMine
 
-      // Force all 0-star ratings to the bottom regardless of combo score.
-      if (aIsZeroStar !== bIsZeroStar) {
-        return aIsZeroStar ? 1 : -1
-      }
+    const searchLower = myLogsSearchTerm.toLowerCase()
+    return rankedMine.filter((entry) =>
+      entry.location.toLowerCase().includes(searchLower) ||
+      entry.thoughts.toLowerCase().includes(searchLower)
+    )
+  }, [rankedMine, myLogsSearchTerm])
 
-      // Within the 0-star group, rank by greenness.
-      if (aIsZeroStar && bIsZeroStar) {
-        if (b.greenness !== a.greenness) return b.greenness - a.greenness
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      }
+  const rankedFriendEntries = useMemo(() => {
+    return [...friendEntries].sort(compareEntriesForRank)
+  }, [friendEntries])
 
-      if (b.comboScore !== a.comboScore) return b.comboScore - a.comboScore
-      if (b.rating !== a.rating) return b.rating - a.rating
-      return b.greenness - a.greenness
-    })
-    
-    // Apply search filter if search term is present
-    if (myLogsSearchTerm.trim()) {
-      const searchLower = myLogsSearchTerm.toLowerCase()
-      sorted = sorted.filter((entry) =>
-        entry.location.toLowerCase().includes(searchLower) ||
-        entry.thoughts.toLowerCase().includes(searchLower)
-      )
-    }
-    
-    return sorted
-  }, [myEntries, myLogsSearchTerm])
+  const friendRankById = useMemo(() => {
+    return new Map(rankedFriendEntries.map((entry, index) => [entry.id, index + 1]))
+  }, [rankedFriendEntries])
 
   const filteredFriendEntries = useMemo(() => {
-    let filtered = [...friendEntries].sort((a, b) => {
-      const aIsZeroStar = a.rating === 0
-      const bIsZeroStar = b.rating === 0
+    if (!friendLogsSearchTerm.trim()) return rankedFriendEntries
 
-      // Force all 0-star ratings to the bottom regardless of combo score.
-      if (aIsZeroStar !== bIsZeroStar) {
-        return aIsZeroStar ? 1 : -1
-      }
-
-      // Within the 0-star group, rank by greenness.
-      if (aIsZeroStar && bIsZeroStar) {
-        if (b.greenness !== a.greenness) return b.greenness - a.greenness
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      }
-
-      if (b.comboScore !== a.comboScore) return b.comboScore - a.comboScore
-      return b.rating - a.rating
-    })
-    
-    // Apply search filter if search term is present
-    if (friendLogsSearchTerm.trim()) {
-      const searchLower = friendLogsSearchTerm.toLowerCase()
-      filtered = filtered.filter((entry) =>
-        entry.location.toLowerCase().includes(searchLower) ||
-        entry.thoughts.toLowerCase().includes(searchLower)
-      )
-    }
-    
-    return filtered
-  }, [friendEntries, friendLogsSearchTerm])
+    const searchLower = friendLogsSearchTerm.toLowerCase()
+    return rankedFriendEntries.filter((entry) =>
+      entry.location.toLowerCase().includes(searchLower) ||
+      entry.thoughts.toLowerCase().includes(searchLower)
+    )
+  }, [rankedFriendEntries, friendLogsSearchTerm])
 
   useEffect(() => {
     loadDrinkAreaModel()
@@ -773,11 +773,41 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    function clearDragState() {
+      setIsRatingDragActive(false)
+      setIsEditRatingDragActive(false)
+    }
+
+    window.addEventListener('pointerup', clearDragState)
+    window.addEventListener('pointercancel', clearDragState)
+
+    return () => {
+      window.removeEventListener('pointerup', clearDragState)
+      window.removeEventListener('pointercancel', clearDragState)
+    }
+  }, [])
+
   function updateRatingFromClick(starIndex: number, event: MouseEvent<HTMLButtonElement>) {
     const bounds = event.currentTarget.getBoundingClientRect()
     const clickX = event.clientX - bounds.left
     const step = clickX < bounds.width / 2 ? 0.5 : 1
     setCurrentRating((starIndex - 1) + step)
+  }
+
+  function getRatingFromPointer(starIndex: number, clientX: number, target: HTMLButtonElement) {
+    const bounds = target.getBoundingClientRect()
+    const pointerX = clientX - bounds.left
+    const step = pointerX < bounds.width / 2 ? 0.5 : 1
+    return (starIndex - 1) + step
+  }
+
+  function handleCurrentRatingPointer(starIndex: number, event: React.PointerEvent<HTMLButtonElement>) {
+    setCurrentRating(getRatingFromPointer(starIndex, event.clientX, event.currentTarget))
+  }
+
+  function handleEditRatingPointer(starIndex: number, event: React.PointerEvent<HTMLButtonElement>) {
+    setEditRating(getRatingFromPointer(starIndex, event.clientX, event.currentTarget))
   }
 
   function stopCameraAccess() {
@@ -1171,7 +1201,7 @@ function App() {
 
               <div className="mb-3">
                 <label className="form-label fw-semibold d-block">Rating (half and 0 stars allowed)</label>
-                <div id="star-rating" className="d-flex gap-2">
+                <div id="star-rating" className="d-flex gap-2 rating-star-row">
                   {Array.from({ length: 5 }, (_, idx) => {
                     const starIndex = idx + 1
                     const fillAmount = Math.max(0, Math.min(1, currentRating - idx))
@@ -1181,6 +1211,15 @@ function App() {
                         key={starIndex}
                         className="star"
                         onClick={(event) => updateRatingFromClick(starIndex, event)}
+                        onPointerDown={(event) => {
+                          setIsRatingDragActive(true)
+                          handleCurrentRatingPointer(starIndex, event)
+                        }}
+                        onPointerMove={(event) => {
+                          if (!isRatingDragActive) return
+                          handleCurrentRatingPointer(starIndex, event)
+                        }}
+                        onPointerUp={() => setIsRatingDragActive(false)}
                         aria-label={`Rate ${starIndex} stars`}
                       >
                         <img className="star-base" src={pixelStarUrl} alt="" />
@@ -1236,21 +1275,23 @@ function App() {
             <div className="d-flex flex-column gap-3">
               {sortedMine.length === 0 && <div className="alert alert-light border">No ratings yet.</div>}
 
-              {(isMyLogsExpanded ? sortedMine : sortedMine.slice(0, 3)).map((entry, index) => (
+              {(isMyLogsExpanded ? sortedMine : sortedMine.slice(0, 3)).map((entry) => (
                 <article key={entry.id} className="card border-0 shadow-sm entry-card" onClick={() => openEntryOverlay(entry)}>
                   <div className="card-body d-flex gap-3 align-items-start">
                     <div className="entry-media-col">
                       <img src={entry.photo} alt="Matcha" className="entry-thumb" />
-                      <div className="entry-rank-circle">#{index + 1}</div>
+                      <div className="entry-rank-circle">#{myRankById.get(entry.id) || 0}</div>
                     </div>
                     <div className="flex-grow-1">
                       <div className="d-flex justify-content-between flex-wrap gap-2">
                         <strong>{entry.location || 'Unknown location'}</strong>
                         <span className="text-muted small">{entry.date}</span>
                       </div>
-                      <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
-                      <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
-                      <div>Total score: {entry.comboScore.toFixed(1)} / 200.0</div>
+                      <div className="entry-metrics">
+                        <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
+                        <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                        <div>Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                      </div>
                       {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
                     </div>
                   </div>
@@ -1296,7 +1337,7 @@ function App() {
                       {isEditingEntry && (
                         <div className="entry-edit-panel p-3 bg-white rounded shadow-sm">
                           <label className="form-label fw-semibold mb-1">Edit rating</label>
-                          <div className="d-flex gap-2 mb-2">
+                          <div className="d-flex gap-2 mb-2 rating-star-row">
                             {Array.from({ length: 5 }, (_, idx) => {
                               const starIndex = idx + 1
                               const fillAmount = Math.max(0, Math.min(1, editRating - idx))
@@ -1311,6 +1352,20 @@ function App() {
                                     const clickX = event.clientX - bounds.left
                                     const step = clickX < bounds.width / 2 ? 0.5 : 1
                                     setEditRating((starIndex - 1) + step)
+                                  }}
+                                  onPointerDown={(event) => {
+                                    event.stopPropagation()
+                                    setIsEditRatingDragActive(true)
+                                    handleEditRatingPointer(starIndex, event)
+                                  }}
+                                  onPointerMove={(event) => {
+                                    if (!isEditRatingDragActive) return
+                                    event.stopPropagation()
+                                    handleEditRatingPointer(starIndex, event)
+                                  }}
+                                  onPointerUp={(event) => {
+                                    event.stopPropagation()
+                                    setIsEditRatingDragActive(false)
                                   }}
                                   aria-label={`Edit to ${starIndex} stars`}
                                 >
@@ -1435,21 +1490,23 @@ function App() {
                 <div className="alert alert-light border">No ratings found for this friend.</div>
               )}
 
-              {(isFriendLogsExpanded || !selectedFriend ? filteredFriendEntries : filteredFriendEntries.slice(0, 3)).map((entry, index) => (
+              {(isFriendLogsExpanded || !selectedFriend ? filteredFriendEntries : filteredFriendEntries.slice(0, 3)).map((entry) => (
                 <article key={entry.id} className="card border-0 shadow-sm">
                   <div className="card-body d-flex gap-3 align-items-start">
                     <div className="entry-media-col">
                       <img src={entry.photo} alt="Friend's matcha" className="entry-thumb" />
-                      <div className="entry-rank-circle">#{index + 1}</div>
+                      <div className="entry-rank-circle">#{friendRankById.get(entry.id) || 0}</div>
                     </div>
                     <div className="flex-grow-1">
                       <div className="d-flex justify-content-between flex-wrap gap-2">
                         <strong>{entry.location || 'Unknown location'}</strong>
                         <span className="text-muted small">{entry.date}</span>
                       </div>
-                      <div>Rating: {entry.rating.toFixed(1)} / 5</div>
-                      <div>Greenness: {entry.greenness} / 100</div>
-                      <div>Total score: {entry.comboScore.toFixed(1)} / 200</div>
+                      <div className="entry-metrics">
+                        <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
+                        <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                        <div>Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                      </div>
                       {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
                     </div>
                   </div>
