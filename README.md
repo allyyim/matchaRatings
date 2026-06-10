@@ -97,7 +97,7 @@ Base path: `/api`
 - `GET /ratings?userName=<name>`
   - Response: `{ ratings: RatingEntry[] }`
 - `PUT /ratings/:id`
-  - Body: `{ userName, rating, location, thoughts }`
+  - Body: `{ userName, rating, location, thoughts, greenness? }`
   - Response: `{ rating }`
 - `DELETE /ratings/:id?userName=<name>`
   - Response: `{ deletedId }`
@@ -113,6 +113,8 @@ Base path: `/api`
 
 - `GET /explore/places?limit=10`
   - Response: `{ places: [{ rank, placeName, averageScore, entryCount }] }`
+- `GET /explore/places/:placeName/ratings`
+  - Response: `{ placeName, ratings: RatingEntry[] }`
 - `GET /explore/users?limit=50`
   - Response: `{ users: [{ userName, placeCount }] }`
 
@@ -170,7 +172,7 @@ GitHub Pages deploys from `main` via GitHub Actions.
 </details>
 
 <details open>
-<summary><strong>FAQ (Top 5)</strong></summary>
+<summary><strong>FAQ (Top 7)</strong></summary>
 
 ### 1) How does the app know a new user is registering?
 The app sends `browserId` to `POST /api/users/session`. If no existing `browser_users` row exists for that browser and no name is provided, API returns `requiresName: true`, and the UI prompts for a name.
@@ -188,13 +190,16 @@ Explore place rankings use the average score out of 200 for each merged place.
 ### 3) How do the top 10 places in Explore get ranked?
 Places are ranked by average score out of 200 across all user ratings. Duplicate entries for the same place are merged dynamically before ranking, including variants caused by punctuation, spacing, or appended city/location text. Results then sort highest to lowest by average score.
 
-### 4) Is the camera always required?
+### 4) Can I click a place in Explore to see all ratings for it?
+Yes. Click any place card in the `Top Places` list to open a popup modal with all ratings matched to that place (including merged name/location variants). Use the `X` button in the top-right of the popup to close it.
+
+### 5) Is the camera always required?
 No. You can upload from photo roll or capture live. After a photo is chosen/captured, live camera access is stopped.
 
-### 5) How do star ratings work in the UI?
+### 6) How do star ratings work in the UI?
 Ratings support half-stars and `0` stars. You can tap a star or press and drag across the star row in both the new-entry form and the edit-entry form.
 
-### 6) Why must each username be unique?
+### 7) Why must each username be unique?
 The `browser_users` table enforces a UNIQUE constraint on `user_name`, so each username belongs to exactly one user. This prevents confusion in Friends search, keeps ratings correctly attributed, and ensures the app maintains a trustworthy social network.
 
 </details>

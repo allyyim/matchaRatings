@@ -1683,14 +1683,15 @@ function App() {
           <section className="card border-0 shadow-sm matcha-shell mb-4">
             <div className="card-body p-3 p-md-4">
               <h2 className="h3 fw-bold text-success mb-2">Explore</h2>
-              <p className="text-muted mb-3">
-                Top places ranked by average score out of 200 from all users. Explore data refreshes weekly.
-              </p>
-
+  
               <section className="mb-4">
                 <h3 className="h5 fw-bold text-success mb-2" style={{ cursor: 'pointer' }} onClick={() => setIsExplorePlacesExpanded((prev) => !prev)}>
                   Top Places {isExplorePlacesExpanded ? '▼' : '▶'}
                 </h3>
+                <p className="text-muted mb-3">
+                Top places ranked by average score out of 200 from all users. Refreshes weekly. Click a place to see all ratings logged for it.
+              </p>
+
 
                 {isExplorePlacesExpanded && explorePlaces.length === 0 && (
                   <div className="alert alert-light border mb-0">No place data yet. Add ratings to build rankings.</div>
@@ -1723,7 +1724,7 @@ function App() {
                 <h3 className="h5 fw-bold text-success mb-2" style={{ cursor: 'pointer' }} onClick={() => setIsExploreUsersExpanded((prev) => !prev)}>
                   User Rankings {isExploreUsersExpanded ? '▼' : '▶'}
                 </h3>
-                <p className="text-muted mb-3">Across all accounts, this shows how many different places each user has logged.</p>
+                <p className="text-muted mb-3">Across all accounts, see how many different places each user has logged. Click a user to see all ratings logged for them.</p>
 
                 {isExploreUsersExpanded && exploreUsers.length === 0 && <div className="alert alert-light border mb-0">No user place data yet.</div>}
 
