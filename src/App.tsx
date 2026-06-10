@@ -1690,7 +1690,7 @@ function App() {
                 </h3>
                 <p className="text-muted mb-3">
                 Top places ranked by average score out of 200 from all users. Refreshes weekly. Click a place to see all ratings logged for it.
-              </p>
+                </p>
 
 
                 {isExplorePlacesExpanded && explorePlaces.length === 0 && (
