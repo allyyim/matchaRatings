@@ -30,6 +30,11 @@ type ExploreUser = {
   placeCount: number
 }
 
+type ExplorePlaceRatingsResponse = {
+  placeName: string
+  ratings: RatingEntry[]
+}
+
 type DrinkRegion = {
   source: 'heuristic' | 'ml-mask'
   contains: (x: number, y: number) => boolean
@@ -475,6 +480,10 @@ function App() {
   const [isLoadingExplorePlaces, setIsLoadingExplorePlaces] = useState(false)
   const [explorePlaces, setExplorePlaces] = useState<ExplorePlace[]>([])
   const [exploreUsers, setExploreUsers] = useState<ExploreUser[]>([])
+  const [selectedExplorePlaceName, setSelectedExplorePlaceName] = useState('')
+  const [selectedExplorePlaceEntries, setSelectedExplorePlaceEntries] = useState<RatingEntry[]>([])
+  const [isExplorePlaceModalOpen, setIsExplorePlaceModalOpen] = useState(false)
+  const [isLoadingExplorePlaceEntries, setIsLoadingExplorePlaceEntries] = useState(false)
   const [isExplorePlacesExpanded, setIsExplorePlacesExpanded] = useState(true)
   const [isExploreUsersExpanded, setIsExploreUsersExpanded] = useState(true)
   const [isMyLogsExpanded, setIsMyLogsExpanded] = useState(false)
@@ -1006,6 +1015,33 @@ function App() {
     }
   }
 
+  async function openExplorePlaceRatings(placeName: string) {
+    const trimmedPlace = placeName.trim()
+    if (!trimmedPlace) return
+
+    setSelectedExplorePlaceName(trimmedPlace)
+    setSelectedExplorePlaceEntries([])
+    setIsExplorePlaceModalOpen(true)
+    setIsLoadingExplorePlaceEntries(true)
+
+    try {
+      const response = await apiFetch<ExplorePlaceRatingsResponse>(`/explore/places/${encodeURIComponent(trimmedPlace)}/ratings`)
+      setSelectedExplorePlaceName(response.placeName || trimmedPlace)
+      setSelectedExplorePlaceEntries(response.ratings)
+    } catch {
+      setSelectedExplorePlaceEntries([])
+    } finally {
+      setIsLoadingExplorePlaceEntries(false)
+    }
+  }
+
+  function closeExplorePlaceRatings() {
+    setIsExplorePlaceModalOpen(false)
+    setSelectedExplorePlaceName('')
+    setSelectedExplorePlaceEntries([])
+    setIsLoadingExplorePlaceEntries(false)
+  }
+
   async function openFriendRatings(friendName: string) {
     if (!friendName.trim()) return
     setSelectedFriend(friendName)
@@ -1123,6 +1159,63 @@ function App() {
               </div>
             </div>
             <div className="saving-text">{loadingOverlayText}</div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {isExplorePlaceModalOpen && createPortal(
+        <div className="explore-place-modal-overlay" role="dialog" aria-modal="true" aria-label={`${selectedExplorePlaceName} ratings`}>
+          <div className="explore-place-modal card border-0 shadow-lg">
+            <div className="card-body p-3 p-md-4">
+              <div className="d-flex justify-content-between align-items-start gap-3 mb-3">
+                <div>
+                  <h3 className="h5 fw-bold text-success mb-1">{selectedExplorePlaceName}</h3>
+                  <div className="small text-muted">All ratings logged for this place</div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm explore-place-close"
+                  onClick={closeExplorePlaceRatings}
+                  aria-label="Close place ratings popup"
+                >
+                  X
+                </button>
+              </div>
+
+              {isLoadingExplorePlaceEntries && (
+                <div className="alert alert-light border mb-0">Loading place ratings...</div>
+              )}
+
+              {!isLoadingExplorePlaceEntries && selectedExplorePlaceEntries.length === 0 && (
+                <div className="alert alert-light border mb-0">No ratings found for this place yet.</div>
+              )}
+
+              {!isLoadingExplorePlaceEntries && selectedExplorePlaceEntries.length > 0 && (
+                <div className="d-flex flex-column gap-2 explore-place-modal-list">
+                  {selectedExplorePlaceEntries.map((entry, index) => (
+                    <article key={`place-rating-${entry.id}-${index}`} className="card border-0 shadow-sm">
+                      <div className="card-body d-flex gap-3 align-items-start py-2">
+                        <img src={entry.photo} alt="Matcha" className="entry-thumb" />
+                        <div className="flex-grow-1">
+                          <div className="d-flex justify-content-between flex-wrap gap-2">
+                            <strong>{entry.userName}</strong>
+                            <span className="text-muted small">{entry.date}</span>
+                          </div>
+                          <div className="small text-muted mb-1">{entry.location || selectedExplorePlaceName}</div>
+                          <div className="entry-metrics">
+                            <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
+                            <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                            <div>Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                          </div>
+                          {entry.thoughts && <p className="mt-1 mb-0">{entry.thoughts}</p>}
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>,
         document.body
@@ -1606,15 +1699,20 @@ function App() {
                 {isExplorePlacesExpanded && explorePlaces.length > 0 && (
                   <div className="d-flex flex-column gap-2">
                     {explorePlaces.map((place) => (
-                      <article key={place.placeName} className="card border-0 shadow-sm">
-                        <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+                      <button
+                        type="button"
+                        key={place.placeName}
+                        className="card border-0 shadow-sm explore-place-card"
+                        onClick={() => void openExplorePlaceRatings(place.placeName)}
+                      >
+                        <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-2 text-start">
                           <div>
                             <div className="fw-semibold text-success">#{place.rank} {place.placeName}</div>
                             <div className="small text-muted">{place.entryCount} entries</div>
                           </div>
                           <div className="fw-bold">Average score: {place.averageScore.toFixed(1)} / 200</div>
                         </div>
-                      </article>
+                      </button>
                     ))}
                   </div>
                 )}

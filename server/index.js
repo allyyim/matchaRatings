@@ -381,6 +381,45 @@ app.get('/api/explore/places', async (req, res) => {
   return res.json({ places })
 })
 
+app.get('/api/explore/places/:placeName/ratings', async (req, res) => {
+  const rawPlaceName = String(req.params.placeName || '').trim()
+  if (!rawPlaceName) {
+    return res.status(400).json({ error: 'placeName is required' })
+  }
+
+  const { displayName, canonicalKey } = getCanonicalPlaceData(rawPlaceName)
+  if (!displayName || !canonicalKey) {
+    return res.json({ placeName: rawPlaceName, ratings: [] })
+  }
+
+  const result = await pool.query(
+    `
+      SELECT *
+      FROM ratings
+      WHERE TRIM(location) <> ''
+    `
+  )
+
+  const ratings = result.rows
+    .map((row) => ({
+      row,
+      canonicalKey: getCanonicalPlaceData(row.location).canonicalKey
+    }))
+    .filter((item) => item.canonicalKey && shouldMergePlaces(item.canonicalKey, canonicalKey))
+    .map((item) => mapRatingRow(item.row))
+    .sort((a, b) => {
+      const scoreB = getWeightedScore(b.rating, b.greenness)
+      const scoreA = getWeightedScore(a.rating, a.greenness)
+      if (scoreB !== scoreA) return scoreB - scoreA
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    })
+
+  return res.json({
+    placeName: displayName,
+    ratings
+  })
+})
+
 app.get('/api/explore/users', async (req, res) => {
   const limit = Math.max(1, Math.min(200, Number(req.query.limit) || 50))
 
