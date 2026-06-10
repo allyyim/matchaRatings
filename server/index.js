@@ -12,7 +12,7 @@ const STAR_SCORE_WEIGHT = 1.1
 const GREENNESS_SCORE_WEIGHT = 0.9
 
 function getWeightedScore(rating, greenness) {
-  return rating * 20 * STAR_SCORE_WEIGHT + greenness * GREENNESS_SCORE_WEIGHT
+  return rating * 10 * STAR_SCORE_WEIGHT + greenness * GREENNESS_SCORE_WEIGHT
 }
 
 app.use(cors())
@@ -292,7 +292,7 @@ app.get('/api/friends/:friendName/ratings', async (req, res) => {
       SELECT *
       FROM ratings
       WHERE user_name = $1
-      ORDER BY ((rating * 20 * ${STAR_SCORE_WEIGHT}) + (greenness * ${GREENNESS_SCORE_WEIGHT})) DESC, created_at DESC
+      ORDER BY ((rating * 10 * ${STAR_SCORE_WEIGHT}) + (greenness * ${GREENNESS_SCORE_WEIGHT})) DESC, created_at DESC
     `,
     [friendName]
   )
