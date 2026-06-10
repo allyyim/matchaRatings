@@ -55,10 +55,10 @@ const drinkAreaModelConfig = {
 }
 
 const STAR_SCORE_WEIGHT = 1.1
-const GREENNESS_SCORE_WEIGHT = 0.9
+const GREENNESS_SCORE_WEIGHT = 0.8
 
 function getWeightedScore(rating: number, greenness: number) {
-  return rating * 10 * STAR_SCORE_WEIGHT + greenness * GREENNESS_SCORE_WEIGHT
+  return rating * 20 * STAR_SCORE_WEIGHT + greenness * GREENNESS_SCORE_WEIGHT
 }
 
 function compareEntriesForRank(a: RatingEntry, b: RatingEntry) {
@@ -1200,9 +1200,9 @@ function App() {
               )}
 
               <div className="mb-3">
-                <label className="form-label fw-semibold d-block">Rating (half and 0 stars allowed, out of 10)</label>
+                <label className="form-label fw-semibold d-block">Rating (half and 0 stars allowed)</label>
                 <div id="star-rating" className="d-flex gap-2 rating-star-row">
-                  {Array.from({ length: 10 }, (_, idx) => {
+                  {Array.from({ length: 5 }, (_, idx) => {
                     const starIndex = idx + 1
                     const fillAmount = Math.max(0, Math.min(1, currentRating - idx))
                     return (
@@ -1233,7 +1233,7 @@ function App() {
                 <button type="button" className="btn btn-outline-secondary btn-sm mt-2" onClick={() => setCurrentRating(0)}>
                   Set 0 stars
                 </button>
-                <div className="small text-muted mt-1">Selected: {currentRating.toFixed(1)} / 10</div>
+                <div className="small text-muted mt-1">Selected: {currentRating.toFixed(1)} / 5</div>
               </div>
 
               <div className="mb-3">
@@ -1288,7 +1288,7 @@ function App() {
                         <span className="text-muted small">{entry.date}</span>
                       </div>
                       <div className="entry-metrics">
-                        <div>Rating: {entry.rating.toFixed(1)} / 10.0</div>
+                        <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
                         <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                         <div>Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
                       </div>
@@ -1338,7 +1338,7 @@ function App() {
                         <div className="entry-edit-panel p-3 bg-white rounded shadow-sm">
                           <label className="form-label fw-semibold mb-1">Edit rating</label>
                           <div className="d-flex gap-2 mb-2 rating-star-row">
-                            {Array.from({ length: 10 }, (_, idx) => {
+                            {Array.from({ length: 5 }, (_, idx) => {
                               const starIndex = idx + 1
                               const fillAmount = Math.max(0, Math.min(1, editRating - idx))
                               return (
@@ -1503,7 +1503,7 @@ function App() {
                         <span className="text-muted small">{entry.date}</span>
                       </div>
                       <div className="entry-metrics">
-                        <div>Rating: {entry.rating.toFixed(1)} / 10.0</div>
+                        <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
                         <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                         <div>Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
                       </div>
