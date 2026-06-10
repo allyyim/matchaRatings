@@ -62,6 +62,14 @@ function getWeightedScore(rating: number, greenness: number) {
   return rating * 20 + greenness * greennessWeight
 }
 
+function withUpdatedGreenness(entry: RatingEntry, greenness: number): RatingEntry {
+  return {
+    ...entry,
+    greenness,
+    comboScore: Number(getWeightedScore(entry.rating, greenness).toFixed(2))
+  }
+}
+
 function compareEntriesForRank(a: RatingEntry, b: RatingEntry) {
   const aIsZeroStar = a.rating === 0
   const bIsZeroStar = b.rating === 0
@@ -575,16 +583,29 @@ function App() {
   useEffect(() => {
     if (!isUserReady || !currentUserName) return
 
+    let cancelled = false
+
     async function loadMyRatings() {
       try {
         const response = await apiFetch<{ ratings: RatingEntry[] }>(`/ratings?userName=${encodeURIComponent(currentUserName)}`)
+        if (cancelled) return
         setMyEntries(response.ratings)
+
+        const refreshedEntries = await refreshGreennessForEntries(response.ratings, currentUserName)
+        if (!cancelled) {
+          setMyEntries(refreshedEntries)
+        }
       } catch {
-        setMyEntries([])
+        if (!cancelled) {
+          setMyEntries([])
+        }
       }
     }
 
     void loadMyRatings()
+    return () => {
+      cancelled = true
+    }
   }, [isUserReady, currentUserName])
 
   useEffect(() => {
@@ -933,6 +954,39 @@ function App() {
     setFriendSuggestions(response.friends)
   }
 
+  async function refreshGreennessForEntries(entries: RatingEntry[], persistUserName?: string) {
+    const refreshedEntries = await Promise.all(
+      entries.map(async (entry) => {
+        try {
+          const { score } = await analyzeGreennessFromDataUrl(entry.photo)
+          return withUpdatedGreenness(entry, score)
+        } catch {
+          return entry
+        }
+      })
+    )
+
+    if (persistUserName) {
+      const changedEntries = refreshedEntries.filter((entry, index) => entry.greenness !== entries[index].greenness)
+      await Promise.all(
+        changedEntries.map((entry) =>
+          apiFetch<{ rating: RatingEntry }>(`/ratings/${entry.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              userName: persistUserName,
+              rating: entry.rating,
+              greenness: entry.greenness,
+              location: entry.location,
+              thoughts: entry.thoughts
+            })
+          }).catch(() => null)
+        )
+      )
+    }
+
+    return refreshedEntries
+  }
+
   async function fetchExploreData(showOverlay: boolean) {
     if (showOverlay) {
       setIsLoadingExplorePlaces(true)
@@ -964,6 +1018,9 @@ function App() {
     try {
       const response = await apiFetch<{ friendName: string; ratings: RatingEntry[] }>(`/friends/${encodeURIComponent(friendName)}/ratings`)
       setFriendEntries(response.ratings)
+
+      const refreshedEntries = await refreshGreennessForEntries(response.ratings)
+      setFriendEntries(refreshedEntries)
     } finally {
       const elapsed = Date.now() - overlayShownAt
       const minimumOverlayMs = 500

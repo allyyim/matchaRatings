@@ -185,6 +185,8 @@ app.put('/api/ratings/:id', async (req, res) => {
   const id = Number(req.params.id)
   const userName = String(req.body?.userName || '').trim()
   const rating = Number(req.body?.rating)
+  const incomingGreenness = req.body?.greenness
+  const greenness = incomingGreenness === undefined || incomingGreenness === null ? null : Number(incomingGreenness)
   const location = String(req.body?.location || '').trim()
   const thoughts = String(req.body?.thoughts || '').trim()
 
@@ -196,16 +198,21 @@ app.put('/api/ratings/:id', async (req, res) => {
     return res.status(400).json({ error: 'userName and rating are required' })
   }
 
+  if (greenness !== null && Number.isNaN(greenness)) {
+    return res.status(400).json({ error: 'greenness must be a valid number when provided' })
+  }
+
   const updated = await pool.query(
     `
       UPDATE ratings
       SET rating = $3,
-          location = $4,
-          thoughts = $5
+          greenness = COALESCE($4, greenness),
+          location = $5,
+          thoughts = $6
       WHERE id = $1 AND user_name = $2
       RETURNING *
     `,
-    [id, userName, rating, location, thoughts]
+    [id, userName, rating, greenness, location, thoughts]
   )
 
   if (updated.rowCount === 0) {
