@@ -54,11 +54,12 @@ const drinkAreaModelConfig = {
   maskThreshold: 0.45
 }
 
-const STAR_SCORE_WEIGHT = 1.1
-const GREENNESS_SCORE_WEIGHT = 0.8
+const LOW_RATING_GREENNESS_WEIGHT = 0.8
+const FULL_GREENNESS_WEIGHT = 1
 
 function getWeightedScore(rating: number, greenness: number) {
-  return rating * 20 * STAR_SCORE_WEIGHT + greenness * GREENNESS_SCORE_WEIGHT
+  const greennessWeight = rating >= 4 ? FULL_GREENNESS_WEIGHT : LOW_RATING_GREENNESS_WEIGHT
+  return rating * 20 + greenness * greennessWeight
 }
 
 function compareEntriesForRank(a: RatingEntry, b: RatingEntry) {

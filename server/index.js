@@ -8,11 +8,12 @@ dotenv.config()
 
 const app = express()
 const port = Number(process.env.PORT || 4000)
-const STAR_SCORE_WEIGHT = 1.1
-const GREENNESS_SCORE_WEIGHT = 0.8
+const LOW_RATING_GREENNESS_WEIGHT = 0.8
+const FULL_GREENNESS_WEIGHT = 1
 
 function getWeightedScore(rating, greenness) {
-  return rating * 20 * STAR_SCORE_WEIGHT + greenness * GREENNESS_SCORE_WEIGHT
+  const greennessWeight = rating >= 4 ? FULL_GREENNESS_WEIGHT : LOW_RATING_GREENNESS_WEIGHT
+  return rating * 20 + greenness * greennessWeight
 }
 
 app.use(cors())
@@ -292,7 +293,7 @@ app.get('/api/friends/:friendName/ratings', async (req, res) => {
       SELECT *
       FROM ratings
       WHERE user_name = $1
-      ORDER BY ((rating * 20 * ${STAR_SCORE_WEIGHT}) + (greenness * ${GREENNESS_SCORE_WEIGHT})) DESC, created_at DESC
+      ORDER BY ((rating * 20) + (greenness * CASE WHEN rating >= 4 THEN ${FULL_GREENNESS_WEIGHT} ELSE ${LOW_RATING_GREENNESS_WEIGHT} END)) DESC, created_at DESC
     `,
     [friendName]
   )

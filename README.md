@@ -12,7 +12,8 @@ This project uses a split frontend/backend architecture.
 - Data: PostgreSQL via `pg` pool (`server/db.js`).
 - ML assist: Optional TensorFlow.js model in `public/ml/drink-area/model.json` for drink-area segmentation before greenness scoring.
 - Scoring:
-  - Entry total score (out of 200): `rating * 20 + greenness`
+  - Entry total score (out of 200): `rating * 20 + greennessWeight * greenness`
+  - `greennessWeight = 1.0` when rating is `4.0/5` or higher, otherwise `0.8`
   - Explore place ranking: average score out of 200 across entries for each normalized place.
 
 ```mermaid
@@ -70,7 +71,7 @@ erDiagram
 
 Notes:
 - The relationship is logical (by user name), not enforced as a SQL foreign key.
-- Explore endpoints normalize place names before aggregation (for example, Bonito + Bonito Cafe).
+- Explore endpoints normalize and merge similar place names before aggregation, including spacing, punctuation, and location variants.
 
 </details>
 
@@ -174,10 +175,16 @@ GitHub Pages deploys from `main` via GitHub Actions.
 The app sends `browserId` to `POST /api/users/session`. If no existing `browser_users` row exists for that browser and no name is provided, API returns `requiresName: true`, and the UI prompts for a name.
 
 ### 2) How are scores calculated?
-Per entry: `rating * 20 + greenness` (0 to 200). Explore place rankings use average score out of 200 for each normalized place.
+Per entry: `rating * 20 + greennessWeight * greenness`.
+
+- If the rating is `4.0/5` or higher, greenness counts at full value.
+- If the rating is below `4.0/5`, greenness is discounted to `0.8x`.
+- `0`-star ratings are always pushed to the bottom of rankings, and then sorted by greenness within that `0`-star group.
+
+Explore place rankings use the average score out of 200 for each merged place.
 
 ### 3) How do the top 10 places in Explore get ranked?
-Places are ranked by average score (out of 100) across all user ratings. Duplicate entries for the same place are automatically merged-for example, "Bonito" and "Bonito Cafe" count as one place with combined/averaged scores. Results sort highest to lowest.
+Places are ranked by average score out of 200 across all user ratings. Duplicate entries for the same place are merged dynamically before ranking, including variants caused by punctuation, spacing, or appended city/location text. Results then sort highest to lowest by average score.
 
 ### 4) Is the camera always required?
 No. You can upload from photo roll or capture live. After a photo is chosen/captured, live camera access is stopped.
