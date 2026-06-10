@@ -25,11 +25,28 @@ export async function initDb() {
       user_name TEXT NOT NULL,
       photo TEXT NOT NULL,
       rating NUMERIC(2,1) NOT NULL CHECK (rating >= 0 AND rating <= 5),
-      greenness INTEGER NOT NULL CHECK (greenness >= 0 AND greenness <= 100),
+      greenness NUMERIC(4,1) NOT NULL CHECK (greenness >= 0 AND greenness <= 100),
       location TEXT NOT NULL DEFAULT '',
       thoughts TEXT NOT NULL DEFAULT '',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+  `)
+
+  await pool.query(`
+    ALTER TABLE ratings
+    ALTER COLUMN greenness TYPE NUMERIC(4,1)
+    USING ROUND(greenness::NUMERIC, 1);
+  `)
+
+  await pool.query(`
+    ALTER TABLE ratings
+    DROP CONSTRAINT IF EXISTS ratings_greenness_check;
+  `)
+
+  await pool.query(`
+    ALTER TABLE ratings
+    ADD CONSTRAINT ratings_greenness_check
+    CHECK (greenness >= 0 AND greenness <= 100);
   `)
 
   await pool.query(`

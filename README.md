@@ -1,6 +1,6 @@
 # Sip & Score - Matcha Log
 
-React + TypeScript + Vite app for rating matcha with half-star support, camera capture, optional ML drink-area detection, friend lookups, and Explore rankings.
+React + TypeScript + Vite app for rating matcha with half-star support, tap-and-drag star input, camera capture, optional ML drink-area detection, friend lookups, and Explore rankings.
 
 <details open>
 <summary><strong>Technical Design</strong></summary>
@@ -14,6 +14,7 @@ This project uses a split frontend/backend architecture.
 - Scoring:
   - Entry total score (out of 200): `rating * 20 + greennessWeight * greenness`
   - `greennessWeight = 1.0` when rating is `4.0/5` or higher, otherwise `0.8`
+  - Greenness is stored and displayed to one decimal place.
   - Explore place ranking: average score out of 200 across entries for each normalized place.
 
 ```mermaid
@@ -41,7 +42,7 @@ flowchart TD
 
 ### Runtime Components
 
-- `src/App.tsx`: page tabs (`My Log`, `Friends Ratings`, `Explore`), rating creation/edit/delete, search, and overlays.
+- `src/App.tsx`: page tabs (`My Log`, `Friends Ratings`, `Explore`), rating creation/edit/delete, tap-and-drag star input, search, and overlays.
 - `server/index.js`: REST routes for sessions, ratings CRUD, friend search/lookups, explore places, and explore users.
 - `server/db.js`: DB pool + schema initialization.
 
@@ -60,7 +61,7 @@ erDiagram
     text user_name
     text photo
     numeric rating
-    int greenness
+    numeric greenness
     text location
     text thoughts
     timestamptz created_at
@@ -179,6 +180,7 @@ Per entry: `rating * 20 + greennessWeight * greenness`.
 
 - If the rating is `4.0/5` or higher, greenness counts at full value.
 - If the rating is below `4.0/5`, greenness is discounted to `0.8x`.
+- Greenness is saved to one decimal place.
 - `0`-star ratings are always pushed to the bottom of rankings, and then sorted by greenness within that `0`-star group.
 
 Explore place rankings use the average score out of 200 for each merged place.
@@ -189,7 +191,10 @@ Places are ranked by average score out of 200 across all user ratings. Duplicate
 ### 4) Is the camera always required?
 No. You can upload from photo roll or capture live. After a photo is chosen/captured, live camera access is stopped.
 
-### 5) Why must each username be unique?
+### 5) How do star ratings work in the UI?
+Ratings support half-stars and `0` stars. You can tap a star or press and drag across the star row in both the new-entry form and the edit-entry form.
+
+### 6) Why must each username be unique?
 The `browser_users` table enforces a UNIQUE constraint on `user_name`, so each username belongs to exactly one user. This prevents confusion in Friends search, keeps ratings correctly attributed, and ensures the app maintains a trustworthy social network.
 
 </details>

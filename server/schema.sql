@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS ratings (
   user_name TEXT NOT NULL,
   photo TEXT NOT NULL,
   rating NUMERIC(2,1) NOT NULL CHECK (rating >= 0 AND rating <= 5),
-  greenness INTEGER NOT NULL CHECK (greenness >= 0 AND greenness <= 100),
+  greenness NUMERIC(4,1) NOT NULL CHECK (greenness >= 0 AND greenness <= 100),
   location TEXT NOT NULL DEFAULT '',
   thoughts TEXT NOT NULL DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()

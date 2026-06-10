@@ -381,7 +381,7 @@ function analyzeGreennessFromDataUrl(dataUrl: string): Promise<{
       }
 
       const score = totalBucketPixels
-        ? Math.min(100, Math.round((totalWeightedScore / totalBucketPixels) * 100))
+        ? Number(Math.min(100, (totalWeightedScore / totalBucketPixels) * 100).toFixed(1))
         : 0
       resolve({ score, statusMessage, coveragePercent, confidencePercent })
     }
@@ -1186,7 +1186,7 @@ function App() {
               )}
 
               <div className="mb-3 text-success fw-semibold">
-                {matchaGreenness !== null ? `Greenness (out of 100): ${matchaGreenness}` : 'Greenness score will appear after upload.'}
+                {matchaGreenness !== null ? `Greenness (out of 100): ${matchaGreenness.toFixed(1)}` : 'Greenness score will appear after upload.'}
               </div>
 
               {mlCoveragePercent !== null && mlConfidencePercent !== null && (
