@@ -6,6 +6,7 @@ export default defineConfig(() => ({
   base: process.env.GITHUB_ACTIONS === 'true' ? '/matchaRatings/' : '/',
   plugins: [react()],
   server: {
+    host: true,
     proxy: {
       '/api': 'http://localhost:4000'
     }

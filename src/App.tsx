@@ -421,6 +421,10 @@ function getBrowserId() {
   return generated
 }
 
+function getGreennessRefreshKey(userName: string) {
+  return `matchaGreennessRefreshed:${userName.trim().toLowerCase()}`
+}
+
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
@@ -456,7 +460,7 @@ function App() {
   const [thoughts, setThoughts] = useState('')
   const [photoDataUrl, setPhotoDataUrl] = useState('')
   const [matchaGreenness, setMatchaGreenness] = useState<number | null>(null)
-  const [mlStatus, setMlStatus] = useState('Checking ML drink-area model...')
+  const [mlStatus, setMlStatus] = useState('ML drink-area detector will load when you analyze a photo.')
   const [mlCoveragePercent, setMlCoveragePercent] = useState<number | null>(null)
   const [mlConfidencePercent, setMlConfidencePercent] = useState<number | null>(null)
   const [cameraReady, setCameraReady] = useState(false)
@@ -537,20 +541,6 @@ function App() {
   }, [rankedFriendEntries, friendLogsSearchTerm])
 
   useEffect(() => {
-    loadDrinkAreaModel()
-      .then((model) => {
-        if (model) {
-          setMlStatus('ML drink-area detector loaded.')
-        } else {
-          setMlStatus('ML model not found. Using heuristic drink area.')
-        }
-      })
-      .catch(() => {
-        setMlStatus('ML initialization failed. Using heuristic drink area.')
-      })
-  }, [])
-
-  useEffect(() => {
     let mounted = true
 
     async function initUserSession() {
@@ -600,9 +590,14 @@ function App() {
         if (cancelled) return
         setMyEntries(response.ratings)
 
-        const refreshedEntries = await refreshGreennessForEntries(response.ratings, currentUserName)
-        if (!cancelled) {
-          setMyEntries(refreshedEntries)
+        const refreshKey = getGreennessRefreshKey(currentUserName)
+        const hasRefreshed = localStorage.getItem(refreshKey) === '1'
+        if (!hasRefreshed) {
+          const refreshedEntries = await refreshGreennessForEntries(response.ratings, currentUserName)
+          if (!cancelled) {
+            setMyEntries(refreshedEntries)
+            localStorage.setItem(refreshKey, '1')
+          }
         }
       } catch {
         if (!cancelled) {
@@ -1054,9 +1049,6 @@ function App() {
     try {
       const response = await apiFetch<{ friendName: string; ratings: RatingEntry[] }>(`/friends/${encodeURIComponent(friendName)}/ratings`)
       setFriendEntries(response.ratings)
-
-      const refreshedEntries = await refreshGreennessForEntries(response.ratings)
-      setFriendEntries(refreshedEntries)
     } finally {
       const elapsed = Date.now() - overlayShownAt
       const minimumOverlayMs = 500
