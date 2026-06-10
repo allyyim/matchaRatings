@@ -381,7 +381,17 @@ function analyzeGreennessFromDataUrl(dataUrl: string): Promise<{
       }
 
       const score = totalBucketPixels
-        ? Number(Math.min(100, (totalWeightedScore / totalBucketPixels) * 100).toFixed(1))
+        ? (() => {
+            const baseScore = (totalWeightedScore / totalBucketPixels) * 100
+            const emeraldRatio = matchaLikePixelCount ? emeraldPixelCount / matchaLikePixelCount : 0
+            const paleRatio = matchaLikePixelCount ? palePixelCount / matchaLikePixelCount : 0
+            const coverageRatio = Math.min(1, totalBucketPixels / Math.max(1, img.width * img.height * 0.2))
+
+            // Add a small analytical adjustment so similarly green drinks separate more often.
+            const analyticalAdjustment = (emeraldRatio * 0.45) + (coverageRatio * 0.35) + (paleRatio * 0.1)
+
+            return Number(Math.min(100, baseScore + analyticalAdjustment).toFixed(1))
+          })()
         : 0
       resolve({ score, statusMessage, coveragePercent, confidencePercent })
     }
