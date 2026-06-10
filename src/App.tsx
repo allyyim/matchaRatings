@@ -47,7 +47,21 @@ type DetectResult = {
   confidencePercent: number | null
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const rawApiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || '/api')
+const API_BASE_URL = (() => {
+  if (typeof window === 'undefined') return rawApiBaseUrl
+
+  const host = window.location.hostname
+  const isPhoneOrLanClient = host !== 'localhost' && host !== '127.0.0.1'
+  const apiPointsToLocalhost = /https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(rawApiBaseUrl)
+
+  // If opened from a phone/LAN host, never call localhost from env config.
+  if (isPhoneOrLanClient && apiPointsToLocalhost) {
+    return '/api'
+  }
+
+  return rawApiBaseUrl
+})()
 const pixelStarUrl = `${import.meta.env.BASE_URL}blank.png`
 const pixelStarFilledUrl = `${import.meta.env.BASE_URL}filled.png`
 const pencilIconUrl = `${import.meta.env.BASE_URL}pencil.svg`
@@ -413,10 +427,61 @@ function analyzeGreennessFromDataUrl(dataUrl: string): Promise<{
   })
 }
 
+function createFallbackBrowserId() {
+  return `mb-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+function getSafeRandomUuid() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+  return createFallbackBrowserId()
+}
+
+function downscaleDataUrlImage(dataUrl: string, maxDimension = 1280, quality = 0.82): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      const width = img.width
+      const height = img.height
+
+      if (!width || !height) {
+        resolve(dataUrl)
+        return
+      }
+
+      const largestSide = Math.max(width, height)
+      const scale = largestSide > maxDimension ? maxDimension / largestSide : 1
+      const targetWidth = Math.max(1, Math.round(width * scale))
+      const targetHeight = Math.max(1, Math.round(height * scale))
+
+      const canvas = document.createElement('canvas')
+      canvas.width = targetWidth
+      canvas.height = targetHeight
+      const ctx = canvas.getContext('2d')
+      if (!ctx) {
+        resolve(dataUrl)
+        return
+      }
+
+      ctx.drawImage(img, 0, 0, targetWidth, targetHeight)
+
+      try {
+        resolve(canvas.toDataURL('image/jpeg', quality))
+      } catch {
+        resolve(dataUrl)
+      }
+    }
+
+    img.onerror = () => resolve(dataUrl)
+    img.src = dataUrl
+  })
+}
+
 function getBrowserId() {
   const existing = localStorage.getItem('matchaBrowserId')
   if (existing) return existing
-  const generated = crypto.randomUUID()
+  const generated = getSafeRandomUuid()
   localStorage.setItem('matchaBrowserId', generated)
   return generated
 }
@@ -446,6 +511,9 @@ function App() {
   const [activePage, setActivePage] = useState<Page>('home')
   const [browserId] = useState(() => getBrowserId())
   const [currentUserName, setCurrentUserName] = useState('')
+  const [pendingUserName, setPendingUserName] = useState('')
+  const [requiresManualName, setRequiresManualName] = useState(false)
+  const [isSubmittingName, setIsSubmittingName] = useState(false)
   const [isUserReady, setIsUserReady] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState('Connecting to ratings service...')
 
@@ -552,8 +620,12 @@ function App() {
           candidate = window.prompt('Enter your name to create your ratings log:')?.trim() || ''
         }
 
-        while (!candidate) {
-          candidate = window.prompt('Name is required. Enter your name to continue:')?.trim() || ''
+        if (!candidate) {
+          if (mounted) {
+            setRequiresManualName(true)
+            setLoadingMessage('Enter your name to continue.')
+          }
+          return
         }
 
         const session = await apiFetch<{ requiresName: boolean; userName: string }>('/users/session', {
@@ -565,6 +637,8 @@ function App() {
 
         localStorage.setItem('matchaUserName', session.userName)
         setCurrentUserName(session.userName)
+        setPendingUserName('')
+        setRequiresManualName(false)
         setIsUserReady(true)
         setLoadingMessage('')
       } catch {
@@ -578,6 +652,30 @@ function App() {
       mounted = false
     }
   }, [browserId])
+
+  async function submitManualName() {
+    const candidate = pendingUserName.trim()
+    if (!candidate) return
+
+    setIsSubmittingName(true)
+    try {
+      const session = await apiFetch<{ requiresName: boolean; userName: string }>('/users/session', {
+        method: 'POST',
+        body: JSON.stringify({ browserId, userName: candidate })
+      })
+
+      localStorage.setItem('matchaUserName', session.userName)
+      setCurrentUserName(session.userName)
+      setPendingUserName('')
+      setRequiresManualName(false)
+      setIsUserReady(true)
+      setLoadingMessage('')
+    } catch {
+      setLoadingMessage('Unable to connect to API. Check server and network, then try again.')
+    } finally {
+      setIsSubmittingName(false)
+    }
+  }
 
   useEffect(() => {
     if (!isUserReady || !currentUserName) return
@@ -858,15 +956,26 @@ function App() {
   }
 
   async function processImage(dataUrl: string) {
-    setPhotoDataUrl(dataUrl)
-    setMlStatus('Analyzing drink area...')
+    setMlStatus('Preparing image...')
     setMlCoveragePercent(null)
     setMlConfidencePercent(null)
-    const { score, statusMessage, coveragePercent, confidencePercent } = await analyzeGreennessFromDataUrl(dataUrl)
-    setMatchaGreenness(score)
-    setMlStatus(statusMessage)
-    setMlCoveragePercent(coveragePercent)
-    setMlConfidencePercent(confidencePercent)
+
+    const optimizedDataUrl = await downscaleDataUrlImage(dataUrl)
+    setPhotoDataUrl(optimizedDataUrl)
+
+    try {
+      setMlStatus('Analyzing drink area...')
+      const { score, statusMessage, coveragePercent, confidencePercent } = await analyzeGreennessFromDataUrl(optimizedDataUrl)
+      setMatchaGreenness(score)
+      setMlStatus(statusMessage)
+      setMlCoveragePercent(coveragePercent)
+      setMlConfidencePercent(confidencePercent)
+    } catch {
+      setMatchaGreenness(0)
+      setMlStatus('Image analysis failed on this device. You can still save and edit manually.')
+      setMlCoveragePercent(null)
+      setMlConfidencePercent(null)
+    }
   }
 
   function captureFromCamera() {
@@ -884,7 +993,7 @@ function App() {
     }
 
     captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height)
-    const dataUrl = captureCanvas.toDataURL('image/png')
+    const dataUrl = captureCanvas.toDataURL('image/jpeg', 0.82)
     stopCameraAccess()
     void processImage(dataUrl)
   }
@@ -1129,7 +1238,41 @@ function App() {
   if (!isUserReady) {
     return (
       <main className="container py-5">
-        <div className="alert alert-warning border">{loadingMessage}</div>
+        {requiresManualName ? (
+          <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
+            <div className="card-body p-3 p-md-4">
+              <h1 className="h4 fw-bold text-success mb-2">Welcome to Sip &amp; Score</h1>
+              <p className="text-muted mb-3">Enter a username to open your ratings.</p>
+              <label className="form-label fw-semibold" htmlFor="manual-user-name">Username</label>
+              <input
+                id="manual-user-name"
+                type="text"
+                className="form-control mb-3"
+                value={pendingUserName}
+                onChange={(event) => setPendingUserName(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault()
+                    void submitManualName()
+                  }
+                }}
+                placeholder="Your name"
+                autoComplete="name"
+              />
+              <button
+                type="button"
+                className="btn btn-success w-100"
+                onClick={() => void submitManualName()}
+                disabled={!pendingUserName.trim() || isSubmittingName}
+              >
+                {isSubmittingName ? 'Opening...' : 'Open Ratings'}
+              </button>
+              {loadingMessage && <div className="alert alert-warning border mt-3 mb-0">{loadingMessage}</div>}
+            </div>
+          </section>
+        ) : (
+          <div className="alert alert-warning border">{loadingMessage}</div>
+        )}
       </main>
     )
   }
@@ -1188,7 +1331,7 @@ function App() {
                   {selectedExplorePlaceEntries.map((entry, index) => (
                     <article key={`place-rating-${entry.id}-${index}`} className="card border-0 shadow-sm">
                       <div className="card-body d-flex gap-3 align-items-start py-2">
-                        <img src={entry.photo} alt="Matcha" className="entry-thumb" />
+                        <img src={entry.photo} alt="Matcha" className="entry-thumb" loading="lazy" decoding="async" />
                         <div className="flex-grow-1">
                           <div className="d-flex justify-content-between flex-wrap gap-2">
                             <strong>{entry.userName}</strong>
@@ -1333,7 +1476,7 @@ function App() {
 
               {photoDataUrl && (
                 <div className="preview-wrap mb-3">
-                  <img src={photoDataUrl} alt="Matcha preview" className="preview-image" />
+                  <img src={photoDataUrl} alt="Matcha preview" className="preview-image" loading="lazy" decoding="async" />
                 </div>
               )}
 
@@ -1432,7 +1575,7 @@ function App() {
                 <article key={entry.id} className="card border-0 shadow-sm entry-card" onClick={() => openEntryOverlay(entry)}>
                   <div className="card-body d-flex gap-3 align-items-start">
                     <div className="entry-media-col">
-                      <img src={entry.photo} alt="Matcha" className="entry-thumb" />
+                      <img src={entry.photo} alt="Matcha" className="entry-thumb" loading="lazy" decoding="async" />
                       <div className="entry-rank-circle">#{myRankById.get(entry.id) || 0}</div>
                     </div>
                     <div className="flex-grow-1">
@@ -1647,7 +1790,7 @@ function App() {
                 <article key={entry.id} className="card border-0 shadow-sm">
                   <div className="card-body d-flex gap-3 align-items-start">
                     <div className="entry-media-col">
-                      <img src={entry.photo} alt="Friend's matcha" className="entry-thumb" />
+                      <img src={entry.photo} alt="Friend's matcha" className="entry-thumb" loading="lazy" decoding="async" />
                       <div className="entry-rank-circle">#{friendRankById.get(entry.id) || 0}</div>
                     </div>
                     <div className="flex-grow-1">
