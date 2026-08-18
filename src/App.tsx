@@ -1437,7 +1437,7 @@ function App() {
                           </div>
                           <div className="small text-muted mb-1">{entry.location || selectedExplorePlaceName}</div>
                           <div className="entry-metrics">
-                            <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
+                            <div className="rating-badge mb-2">Rating: <span className="rating-value">{entry.rating.toFixed(1)}</span> / 5.0</div>
                             <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                             <div>Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
                           </div>
@@ -1715,7 +1715,7 @@ function App() {
                 <button type="button" className="btn btn-outline-secondary btn-sm mt-2" onClick={() => setCurrentRating(0)}>
                   Set 0 stars
                 </button>
-                <div className="small text-muted mt-1">Selected: {currentRating.toFixed(1)} / 5.0</div>
+                <div className="rating-badge mt-2">Selected: <span className="rating-value">{currentRating.toFixed(1)}</span> / 5.0</div>
               </div>
 
               <div className="mb-3">
