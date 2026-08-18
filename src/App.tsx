@@ -1,8 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
+import * as Sentry from '@sentry/react'
 import * as tf from '@tensorflow/tfjs'
 import './App.css'
+
+const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN || ''
+
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: import.meta.env.MODE,
+    release: `matcha-ratings@${import.meta.env.VITE_APP_VERSION || 'dev'}`,
+    tracesSampleRate: 1.0,
+    integrations: [Sentry.browserTracingIntegration()],
+    enableLogs: true
+  })
+}
 
 type RatingEntry = {
   id: number
@@ -490,13 +504,61 @@ function getGreennessRefreshKey(userName: string) {
   return `matchaGreennessRefreshed:${userName.trim().toLowerCase()}`
 }
 
+function sanitizeInput(input: string, maxLength = 500): string {
+  return input
+    .trim()
+    .slice(0, maxLength)
+    .replace(/[<>\"']/g, '')
+}
+
+function sanitizeUsername(username: string): string {
+  return sanitizeInput(username, 100).replace(/[^a-zA-Z0-9._-]/g, '')
+}
+
+function validateEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email) && email.length <= 254
+}
+
+function getSessionToken() {
+  if (typeof window === 'undefined') return ''
+  return window.localStorage.getItem('matchaAuthToken') || window.sessionStorage.getItem('matchaAuthToken') || ''
+}
+
+function setSessionToken(token: string) {
+  if (typeof window === 'undefined') return
+  if (token) {
+    window.localStorage.setItem('matchaAuthToken', token)
+    return
+  }
+
+  window.localStorage.removeItem('matchaAuthToken')
+  window.sessionStorage.removeItem('matchaAuthToken')
+}
+
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  if (typeof window !== 'undefined' && window.location.protocol === 'http:' && !window.location.hostname.match(/^(localhost|127\.0\.0\.1)$/)) {
+    console.warn('Warning: Using HTTP in production. Consider using HTTPS.')
+  }
+
+  const headers = new Headers(init?.headers || {})
+  headers.set('Content-Type', 'application/json')
+  headers.set('X-Requested-With', 'XMLHttpRequest')
+
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+  if (csrfToken) {
+    headers.set('X-CSRF-Token', csrfToken)
+  }
+
+  const token = getSessionToken()
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`)
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers || {})
-    },
-    ...init
+    ...init,
+    headers,
+    credentials: 'same-origin'
   })
 
   if (!response.ok) {
@@ -533,6 +595,7 @@ function App() {
   const [mlConfidencePercent, setMlConfidencePercent] = useState<number | null>(null)
   const [cameraReady, setCameraReady] = useState(false)
   const [cameraError, setCameraError] = useState('')
+  const [isCameraModalOpen, setIsCameraModalOpen] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const cameraStreamRef = useRef<MediaStream | null>(null)
@@ -628,13 +691,19 @@ function App() {
           return
         }
 
-        const session = await apiFetch<{ requiresName: boolean; userName: string }>('/users/session', {
+        if (!validateEmail(candidate) && candidate.includes('@')) {
+          candidate = candidate.split('@')[0]
+        }
+
+        const safeCandidate = sanitizeUsername(candidate)
+        const session = await apiFetch<{ requiresName: boolean; userName: string; token: string }>('/users/session', {
           method: 'POST',
-          body: JSON.stringify({ browserId, userName: candidate })
+          body: JSON.stringify({ browserId, userName: safeCandidate })
         })
 
         if (!mounted) return
 
+        setSessionToken(session.token || '')
         localStorage.setItem('matchaUserName', session.userName)
         setCurrentUserName(session.userName)
         setPendingUserName('')
@@ -654,16 +723,22 @@ function App() {
   }, [browserId])
 
   async function submitManualName() {
-    const candidate = pendingUserName.trim()
+    let candidate = pendingUserName.trim()
     if (!candidate) return
+
+    if (!validateEmail(candidate) && candidate.includes('@')) {
+      candidate = candidate.split('@')[0]
+    }
 
     setIsSubmittingName(true)
     try {
-      const session = await apiFetch<{ requiresName: boolean; userName: string }>('/users/session', {
+      const safeCandidate = sanitizeUsername(candidate)
+      const session = await apiFetch<{ requiresName: boolean; userName: string; token: string }>('/users/session', {
         method: 'POST',
-        body: JSON.stringify({ browserId, userName: candidate })
+        body: JSON.stringify({ browserId, userName: safeCandidate })
       })
 
+      setSessionToken(session.token || '')
       localStorage.setItem('matchaUserName', session.userName)
       setCurrentUserName(session.userName)
       setPendingUserName('')
@@ -676,6 +751,19 @@ function App() {
       setIsSubmittingName(false)
     }
   }
+
+  useEffect(() => {
+    if (!isUserReady || !currentUserName) return
+
+    void apiFetch('/telemetry', {
+      method: 'POST',
+      body: JSON.stringify({
+        event: 'app_loaded',
+        page: activePage,
+        properties: { userName: currentUserName }
+      })
+    }).catch(() => undefined)
+  }, [activePage, currentUserName, isUserReady])
 
   useEffect(() => {
     if (!isUserReady || !currentUserName) return
@@ -896,7 +984,9 @@ function App() {
       }
     }
 
-    void startCamera()
+    if (isCameraModalOpen) {
+      void startCamera()
+    }
 
     return () => {
       mounted = false
@@ -905,7 +995,7 @@ function App() {
         cameraStreamRef.current = null
       }
     }
-  }, [])
+  }, [isCameraModalOpen])
 
   useEffect(() => {
     function clearDragState() {
@@ -994,8 +1084,15 @@ function App() {
 
     captureCtx.drawImage(video, 0, 0, captureCanvas.width, captureCanvas.height)
     const dataUrl = captureCanvas.toDataURL('image/jpeg', 0.82)
-    stopCameraAccess()
     void processImage(dataUrl)
+  }
+
+  function retakeCameraPhoto() {
+    setPhotoDataUrl('')
+    setMatchaGreenness(null)
+    setMlCoveragePercent(null)
+    setMlConfidencePercent(null)
+    setMlStatus('ML drink-area detector will load when you analyze a photo.')
   }
 
   async function handlePhotoSelection(event: ChangeEvent<HTMLInputElement>) {
@@ -1242,7 +1339,7 @@ function App() {
           <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
             <div className="card-body p-3 p-md-4">
               <h1 className="h4 fw-bold text-success mb-2">Welcome to Sip &amp; Score</h1>
-              <p className="text-muted mb-3">Enter a username to open your ratings.</p>
+              <p className="text-muted mb-3">Find friend's log</p>
               <label className="form-label fw-semibold" htmlFor="manual-user-name">Username</label>
               <input
                 id="manual-user-name"
@@ -1279,6 +1376,7 @@ function App() {
 
   return (
     <>
+      <a className="skip-link" href="#main-content">Skip to content</a>
       {showLoadingOverlay && createPortal(
         <div className="saving-overlay" role="status" aria-live="polite" aria-label={loadingOverlayText}>
           <div className="saving-card">
@@ -1306,7 +1404,7 @@ function App() {
               <div className="d-flex justify-content-between align-items-start gap-3 mb-3">
                 <div>
                   <h3 className="h5 fw-bold text-success mb-1">{selectedExplorePlaceName}</h3>
-                  <div className="small text-muted">All ratings logged for this place</div>
+                  <div className="small text-muted">All ratings</div>
                 </div>
                 <button
                   type="button"
@@ -1356,11 +1454,87 @@ function App() {
         document.body
       )}
 
-      <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top soft-nav">
+      {isCameraModalOpen && createPortal(
+        <div className="camera-modal-overlay" role="dialog" aria-modal="true" aria-label="Camera capture">
+          <div className="camera-modal-container card border-0 shadow-lg">
+            <div className="camera-modal-header d-flex justify-content-between align-items-center mb-3">
+              <h3 className="h5 fw-bold text-success mb-0">Take Photo</h3>
+              <button
+                type="button"
+                className="btn btn-outline-secondary btn-sm"
+                onClick={() => {
+                  setIsCameraModalOpen(false)
+                  stopCameraAccess()
+                }}
+                aria-label="Close camera"
+              >
+                ✕
+              </button>
+            </div>
+
+            {cameraError && (
+              <div className="alert alert-danger border mb-3">{cameraError}</div>
+            )}
+
+            <div className="camera-modal-content">
+              <div className="camera-wrap mb-3">
+                <video ref={videoRef} className="camera-video" autoPlay playsInline muted />
+              </div>
+
+              <div className="d-flex gap-2 justify-content-center flex-wrap">
+                <button
+                  type="button"
+                  className="btn btn-success"
+                  onClick={captureFromCamera}
+                  disabled={!cameraReady}
+                >
+                  Capture Photo
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary"
+                  onClick={() => {
+                    setIsCameraModalOpen(false)
+                    stopCameraAccess()
+                  }}
+                >
+                  Close
+                </button>
+              </div>
+
+              {photoDataUrl && (
+                <div className="camera-modal-preview mt-4">
+                  <h4 className="small fw-semibold text-success mb-2">Photo Preview</h4>
+                  <img src={photoDataUrl} alt="Captured preview" className="preview-image mb-2" />
+                  <div className="d-flex gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-success flex-grow-1"
+                      onClick={() => setIsCameraModalOpen(false)}
+                    >
+                      Use Photo
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline-success"
+                      onClick={retakeCameraPhoto}
+                    >
+                      Retake
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top soft-nav" aria-label="Main navigation">
         <div className="container d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-2">
           <div className="d-flex flex-column">
             <span className="navbar-brand fw-semibold text-success mb-0">Sip &amp; Score</span>
-            <small className="text-muted nav-user">Logged in as {currentUserName}</small>
+            <small className="text-muted nav-user">{currentUserName}</small>
           </div>
 
           <div className="d-flex align-items-center gap-2 nav-actions w-100">
@@ -1369,34 +1543,34 @@ function App() {
               className={`btn btn-sm ${activePage === 'home' ? 'btn-success' : 'btn-outline-success'}`}
               onClick={() => setActivePage('home')}
             >
-              🏠 My Log
+              My Log
             </button>
             <button
               type="button"
               className={`btn btn-sm ${activePage === 'friends' ? 'btn-success' : 'btn-outline-success'}`}
               onClick={() => setActivePage('friends')}
             >
-              👥 Friends Ratings
+              Friends
             </button>
             <button
               type="button"
               className={`btn btn-sm ${activePage === 'explore' ? 'btn-success' : 'btn-outline-success'}`}
               onClick={() => setActivePage('explore')}
             >
-              🧭 Explore
+              Explore
             </button>
           </div>
         </div>
       </nav>
 
       {activePage === 'home' && (
-        <main className="container py-3 py-md-5 px-3 px-md-4">
+        <main id="main-content" className="container py-3 py-md-5 px-3 px-md-4" tabIndex={-1}>
           <div className="card shadow-sm border-0 matcha-shell">
             <div className="card-body p-3 p-md-4">
-              <h1 className="display-6 fw-bold mb-3 text-success">Rate &amp; Log Your Matcha!</h1>
+              <h1 className="display-6 fw-bold mb-3 text-success">Log Rating</h1>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold">Location (if you can't find your location, manually enter it)</label>
+                <label className="form-label fw-semibold">Location</label>
                 <div className="location-autocomplete">
                   <input
                     type="text"
@@ -1451,24 +1625,36 @@ function App() {
               </div>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold">Camera capture</label>
-                <div className="camera-wrap mb-2">
-                  <video ref={videoRef} className="camera-video" autoPlay playsInline muted />
-                </div>
+                <label className="form-label fw-semibold">Camera</label>
                 <div className="d-flex gap-2 flex-wrap align-items-center justify-content-center justify-content-md-start">
-                  <button type="button" className="btn btn-outline-success" onClick={captureFromCamera} disabled={!cameraReady}>
-                    Capture photo
+                  <button 
+                    type="button" 
+                    className="btn btn-success" 
+                    onClick={() => setIsCameraModalOpen(true)}
+                  >
+                    Open Camera
                   </button>
+                  {photoDataUrl && (
+                    <span className="small text-success fw-semibold">Photo ready</span>
+                  )}
                   {cameraError && <span className="small text-danger align-self-center">{cameraError}</span>}
                 </div>
               </div>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold">Upload matcha photo</label>
+                <label className="form-label fw-semibold d-block">Photo</label>
+                <label
+                  htmlFor="photo-library-input"
+                  className="btn btn-success mb-2"
+                  aria-label="Open photo library"
+                >
+                  Open Photo Library
+                </label>
                 <input
+                  id="photo-library-input"
                   ref={photoInputRef}
                   type="file"
-                  className="form-control"
+                  className="visually-hidden"
                   accept="image/*,.jpg,.jpeg,.png,.jfif,.webp"
                   onChange={handlePhotoSelection}
                 />
@@ -1481,7 +1667,7 @@ function App() {
               )}
 
               <div className="mb-3 text-success fw-semibold">
-                {matchaGreenness !== null ? `Greenness (out of 100): ${matchaGreenness.toFixed(1)}` : 'Greenness score will appear after upload.'}
+                {matchaGreenness !== null ? `Greenness: ${matchaGreenness.toFixed(1)}/100` : 'Greenness score pending'}
               </div>
 
               {mlCoveragePercent !== null && mlConfidencePercent !== null && (
@@ -1496,7 +1682,7 @@ function App() {
               )}
 
               <div className="mb-3">
-                <label className="form-label fw-semibold d-block">Rating (half and 0 stars allowed)</label>
+                <label className="form-label fw-semibold d-block">Rating</label>
                 <div id="star-rating" className="d-flex gap-2 rating-star-row">
                   {Array.from({ length: 5 }, (_, idx) => {
                     const starIndex = idx + 1
@@ -1529,7 +1715,7 @@ function App() {
                 <button type="button" className="btn btn-outline-secondary btn-sm mt-2" onClick={() => setCurrentRating(0)}>
                   Set 0 stars
                 </button>
-                <div className="small text-muted mt-1">Selected: {currentRating.toFixed(1)} / 5</div>
+                <div className="small text-muted mt-1">Selected: {currentRating.toFixed(1)} / 5.0</div>
               </div>
 
               <div className="mb-3">
@@ -1553,10 +1739,10 @@ function App() {
             <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
               <div className="d-flex align-items-center gap-2 flex-grow-1">
                 <div>
-                  <h2 className="h4 fw-bold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => setIsMyLogsExpanded(!isMyLogsExpanded)}>
-                    My Ratings {isMyLogsExpanded ? '▼' : '▶'}
+                  <h2 className="h4 fw-bold text-success mb-0">
+                    My Ratings
                   </h2>
-                  <small className="text-muted">Tap any entry to edit or delete</small>
+                  <small className="text-muted">Tap to edit</small>
                 </div>
               </div>
               <input
@@ -1714,19 +1900,28 @@ function App() {
                   )}
                 </article>
               ))}
+              {sortedMine.length > 3 && (
+                <button
+                  type="button"
+                  className="btn btn-outline-success w-100 mt-2"
+                  onClick={() => setIsMyLogsExpanded(!isMyLogsExpanded)}
+                >
+                  {isMyLogsExpanded ? 'See Less' : 'See More'}
+                </button>
+              )}
             </div>
           </section>
         </main>
       )}
 
       {activePage === 'friends' && (
-        <main className="container py-3 py-md-5 px-3 px-md-4">
+        <main id="main-content" className="container py-3 py-md-5 px-3 px-md-4" tabIndex={-1}>
           <section className="card border-0 shadow-sm matcha-shell mb-4">
             <div className="card-body p-3 p-md-4">
-              <h2 className="h3 fw-bold text-success mb-3">Friends Ratings</h2>
+              <h2 className="h3 fw-bold text-success mb-3">Friends</h2>
               <div className="row g-2 align-items-end">
                 <div className="col-12 col-md-8">
-                  <label className="form-label fw-semibold">Search friend by name</label>
+                  <label className="form-label fw-semibold">Search</label>
                   <input
                     type="text"
                     className="form-control"
@@ -1742,7 +1937,7 @@ function App() {
                     onClick={() => void openFriendRatings(friendQuery.trim())}
                     disabled={!friendQuery.trim() || isLoadingFriendRatings}
                   >
-                    Open Friend Log
+                    View Log
                   </button>
                 </div>
               </div>
@@ -1768,7 +1963,7 @@ function App() {
           <section>
             <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
               <h3 className="h4 fw-bold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => setIsFriendLogsExpanded(!isFriendLogsExpanded)}>
-                {selectedFriend ? `${selectedFriend}'s ratings` : 'Select a friend to view their log'} {selectedFriend && (isFriendLogsExpanded ? '▼' : '▶')}
+                {selectedFriend ? selectedFriend : 'Choose friend'} {selectedFriend && (isFriendLogsExpanded ? '▼' : '▶')}
               </h3>
               {selectedFriend && (
                 <input
@@ -1807,24 +2002,32 @@ function App() {
                     </div>
                   </div>
                 </article>
-              ))}
+              ))}              {selectedFriend && filteredFriendEntries.length > 3 && !isFriendLogsExpanded && (
+                <button
+                  type="button"
+                  className="btn btn-outline-success w-100 mt-2"
+                  onClick={() => setIsFriendLogsExpanded(true)}
+                >
+                  See More
+                </button>
+              )}
             </div>
           </section>
         </main>
       )}
 
       {activePage === 'explore' && (
-        <main className="container py-3 py-md-5 px-3 px-md-4">
+        <main id="main-content" className="container py-3 py-md-5 px-3 px-md-4" tabIndex={-1}>
           <section className="card border-0 shadow-sm matcha-shell mb-4">
             <div className="card-body p-3 p-md-4">
-              <h2 className="h3 fw-bold text-success mb-2">Explore</h2>
+              <h2 className="h3 fw-bold text-success mb-2">Community</h2>
   
               <section className="mb-4">
                 <h3 className="h5 fw-bold text-success mb-2" style={{ cursor: 'pointer' }} onClick={() => setIsExplorePlacesExpanded((prev) => !prev)}>
-                  Top Places {isExplorePlacesExpanded ? '▼' : '▶'}
+                  Places {isExplorePlacesExpanded ? '▼' : '▶'}
                 </h3>
                 <p className="text-muted mb-3">
-                Top places ranked by average score out of 200 from all users. Refreshes weekly. Click a place to see all ratings logged for it.
+                Ranked by community
                 </p>
 
 
@@ -1857,9 +2060,9 @@ function App() {
               <hr className="my-4" />
               <section>
                 <h3 className="h5 fw-bold text-success mb-2" style={{ cursor: 'pointer' }} onClick={() => setIsExploreUsersExpanded((prev) => !prev)}>
-                  User Rankings {isExploreUsersExpanded ? '▼' : '▶'}
+                  Users {isExploreUsersExpanded ? '▼' : '▶'}
                 </h3>
-                <p className="text-muted mb-3">Across all accounts, see how many different places each user has logged. Click a user to see all ratings logged for them.</p>
+                <p className="text-muted mb-3">Community leaderboard</p>
 
                 {isExploreUsersExpanded && exploreUsers.length === 0 && <div className="alert alert-light border mb-0">No user place data yet.</div>}
 

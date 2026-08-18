@@ -1,13 +1,29 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
+import crypto from 'node:crypto'
+import jwt from 'jsonwebtoken'
+import * as Sentry from '@sentry/node'
+import rateLimit from 'express-rate-limit'
 import { initDb, pool } from './db.js'
 import { findBestMatch } from 'string-similarity'
 
 dotenv.config()
 
+Sentry.init({
+  dsn: process.env.SENTRY_DSN || '',
+  environment: process.env.NODE_ENV || 'development',
+  release: `matcha-ratings@${process.env.npm_package_version || 'dev'}`,
+  tracesSampleRate: 1.0,
+  enableLogs: true
+})
+
 const app = express()
 const port = Number(process.env.PORT || 4000)
+const APP_SECRET = process.env.APP_SECRET || 'matcha-development-secret-change-me'
+const JWT_SECRET = process.env.JWT_SECRET || APP_SECRET
+const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7
+const telemetryBuffer = []
 const LOW_RATING_GREENNESS_WEIGHT = 0.8
 const FULL_GREENNESS_WEIGHT = 1
 
@@ -16,8 +32,145 @@ function getWeightedScore(rating, greenness) {
   return rating * 20 + greenness * greennessWeight
 }
 
-app.use(cors())
+function sanitizeText(value, maxLength = 500) {
+  return String(value ?? '')
+    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLength)
+}
+
+function sanitizeUserName(value) {
+  return sanitizeText(value, 80).replace(/[^a-zA-Z0-9._-]/g, '')
+}
+
+function normalizeLocationText(value) {
+  return sanitizeText(value, 200)
+}
+
+function safeJsonParse(value) {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return null
+  }
+}
+
+function encryptField(value) {
+  if (!value) return ''
+
+  const key = crypto.createHash('sha256').update(APP_SECRET).digest()
+  const iv = crypto.randomBytes(16)
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
+  const encrypted = Buffer.concat([
+    cipher.update(String(value), 'utf8'),
+    cipher.final()
+  ])
+  const tag = cipher.getAuthTag()
+
+  return JSON.stringify({ iv: iv.toString('hex'), content: encrypted.toString('base64'), tag: tag.toString('hex') })
+}
+
+function decryptField(value) {
+  if (!value) return ''
+
+  const parsed = safeJsonParse(value)
+  if (!parsed || !parsed.iv || !parsed.content || !parsed.tag) {
+    return String(value)
+  }
+
+  try {
+    const key = crypto.createHash('sha256').update(APP_SECRET).digest()
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(parsed.iv, 'hex'))
+    decipher.setAuthTag(Buffer.from(parsed.tag, 'hex'))
+    const decrypted = Buffer.concat([
+      decipher.update(Buffer.from(parsed.content, 'base64')),
+      decipher.final()
+    ])
+
+    return decrypted.toString('utf8')
+  } catch {
+    return String(value)
+  }
+}
+
+function generateToken(userName, browserId) {
+  return jwt.sign({ userName, browserId }, JWT_SECRET, { expiresIn: '7d' })
+}
+
+function getSessionFromRequest(req) {
+  const authorization = String(req.headers.authorization || '')
+  const match = authorization.match(/^Bearer\s+(.+)$/i)
+  const token = match ? match[1].trim() : ''
+  if (!token) return null
+
+  try {
+    const payload = jwt.verify(token, JWT_SECRET)
+    if (!payload || typeof payload !== 'object') return null
+
+    const userName = String(payload.userName || '').trim()
+    const browserId = String(payload.browserId || '').trim()
+    if (!userName || !browserId) return null
+
+    return {
+      userName,
+      browserId,
+      expiresAt: Date.now() + SESSION_TTL_MS,
+      token
+    }
+  } catch {
+    return null
+  }
+}
+
+function requireSession(req, res, next) {
+  const session = getSessionFromRequest(req)
+  if (!session) {
+    return res.status(401).json({ error: 'Authentication required' })
+  }
+
+  req.session = session
+  return next()
+}
+
+function requireUserOwnership(req, res, next) {
+  const sessionUser = String(req.session?.userName || '').trim()
+  const candidate = String(req.body?.userName || req.query?.userName || '').trim()
+
+  if (!sessionUser) {
+    return res.status(401).json({ error: 'Invalid session' })
+  }
+
+  if (!candidate) {
+    return res.status(400).json({ error: 'userName is required' })
+  }
+
+  if (sessionUser.toLowerCase() !== candidate.toLowerCase()) {
+    return res.status(403).json({ error: 'Forbidden: user ownership mismatch' })
+  }
+
+  return next()
+}
+
+const apiRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 120,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please slow down.' }
+})
+
+app.disable('x-powered-by')
+app.use(cors({ origin: true, credentials: true }))
 app.use(express.json({ limit: '15mb' }))
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff')
+  res.setHeader('X-Frame-Options', 'DENY')
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
+  res.setHeader('X-XSS-Protection', '0')
+  next()
+})
+app.use('/api', apiRateLimiter)
 
 app.get('/', (_req, res) => {
   res.status(200).send('Matcha Ratings API is running. Use /api/health for health checks.')
@@ -29,7 +182,7 @@ function mapRatingRow(row) {
   return {
     id: Number(row.id),
     userName: row.user_name,
-    photo: row.photo,
+    photo: decryptField(row.photo),
     rating,
     greenness,
     location: row.location || '',
@@ -127,10 +280,10 @@ app.get('/api/health', async (_req, res) => {
 
 app.post('/api/users/session', async (req, res) => {
   const browserId = String(req.body?.browserId || '').trim()
-  const incomingUserName = String(req.body?.userName || '').trim()
+  const incomingUserName = sanitizeUserName(String(req.body?.userName || '').trim())
 
-  if (!browserId) {
-    return res.status(400).json({ error: 'browserId is required' })
+  if (!browserId || browserId.length > 128) {
+    return res.status(400).json({ error: 'browserId is required and must be valid' })
   }
 
   const existing = await pool.query(
@@ -139,10 +292,11 @@ app.post('/api/users/session', async (req, res) => {
   )
 
   if (!incomingUserName && existing.rowCount === 0) {
-    return res.status(200).json({ requiresName: true })
+    return res.status(200).json({ requiresName: true, userName: '', token: '' })
   }
 
   const userName = incomingUserName || existing.rows[0].user_name
+  const token = generateToken(userName, browserId)
 
   await pool.query(
     `
@@ -154,19 +308,61 @@ app.post('/api/users/session', async (req, res) => {
     [browserId, userName]
   )
 
-  return res.json({ requiresName: false, userName })
+  return res.json({ requiresName: false, userName, token })
 })
 
+app.post('/api/telemetry', async (req, res) => {
+  const eventName = sanitizeText(String(req.body?.event || '').trim(), 80)
+  const page = sanitizeText(String(req.body?.page || '').trim(), 40)
+  const properties = req.body?.properties && typeof req.body.properties === 'object' ? req.body.properties : {}
+
+  if (!eventName) {
+    return res.status(400).json({ error: 'event is required' })
+  }
+
+  telemetryBuffer.push({
+    eventName,
+    page,
+    properties,
+    createdAt: new Date().toISOString(),
+    userName: req.session?.userName || null
+  })
+
+  if (telemetryBuffer.length > 500) {
+    telemetryBuffer.splice(0, telemetryBuffer.length - 500)
+  }
+
+  return res.json({ ok: true })
+})
+
+app.get('/api/telemetry', async (_req, res) => {
+  res.json({ events: telemetryBuffer.slice(-50) })
+})
+
+app.use('/api', requireSession)
+
 app.post('/api/ratings', async (req, res) => {
-  const userName = String(req.body?.userName || '').trim()
+  const userName = sanitizeUserName(String(req.body?.userName || '').trim())
   const photo = String(req.body?.photo || '').trim()
   const rating = Number(req.body?.rating)
   const greenness = Number(req.body?.greenness)
-  const location = String(req.body?.location || '').trim()
-  const thoughts = String(req.body?.thoughts || '').trim()
+  const location = normalizeLocationText(req.body?.location || '')
+  const thoughts = sanitizeText(req.body?.thoughts || '', 800)
 
-  if (!userName || !photo || Number.isNaN(rating) || Number.isNaN(greenness)) {
+  if (!userName || !photo || !photo.startsWith('data:image/') || Number.isNaN(rating) || Number.isNaN(greenness)) {
     return res.status(400).json({ error: 'Missing required rating fields' })
+  }
+
+  if (rating < 0 || rating > 5 || greenness < 0 || greenness > 100) {
+    return res.status(400).json({ error: 'rating and greenness must be in valid ranges' })
+  }
+
+  if (photo.length > 15_000_000) {
+    return res.status(413).json({ error: 'Photo is too large' })
+  }
+
+  if (userName.toLowerCase() !== req.session.userName.toLowerCase()) {
+    return res.status(403).json({ error: 'Forbidden: user ownership mismatch' })
   }
 
   const inserted = await pool.query(
@@ -175,7 +371,7 @@ app.post('/api/ratings', async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
     `,
-    [userName, photo, rating, greenness, location, thoughts]
+    [userName, encryptField(photo), rating, greenness, location, thoughts]
   )
 
   return res.status(201).json({ rating: mapRatingRow(inserted.rows[0]) })
@@ -183,12 +379,12 @@ app.post('/api/ratings', async (req, res) => {
 
 app.put('/api/ratings/:id', async (req, res) => {
   const id = Number(req.params.id)
-  const userName = String(req.body?.userName || '').trim()
+  const userName = sanitizeUserName(String(req.body?.userName || '').trim())
   const rating = Number(req.body?.rating)
   const incomingGreenness = req.body?.greenness
   const greenness = incomingGreenness === undefined || incomingGreenness === null ? null : Number(incomingGreenness)
-  const location = String(req.body?.location || '').trim()
-  const thoughts = String(req.body?.thoughts || '').trim()
+  const location = normalizeLocationText(req.body?.location || '')
+  const thoughts = sanitizeText(req.body?.thoughts || '', 800)
 
   if (!Number.isInteger(id) || id <= 0) {
     return res.status(400).json({ error: 'Valid rating id is required' })
@@ -198,8 +394,16 @@ app.put('/api/ratings/:id', async (req, res) => {
     return res.status(400).json({ error: 'userName and rating are required' })
   }
 
+  if (userName.toLowerCase() !== req.session.userName.toLowerCase()) {
+    return res.status(403).json({ error: 'Forbidden: user ownership mismatch' })
+  }
+
   if (greenness !== null && Number.isNaN(greenness)) {
     return res.status(400).json({ error: 'greenness must be a valid number when provided' })
+  }
+
+  if (rating < 0 || rating > 5 || (greenness !== null && (greenness < 0 || greenness > 100))) {
+    return res.status(400).json({ error: 'rating and greenness must be in valid ranges' })
   }
 
   const updated = await pool.query(
@@ -224,7 +428,7 @@ app.put('/api/ratings/:id', async (req, res) => {
 
 app.delete('/api/ratings/:id', async (req, res) => {
   const id = Number(req.params.id)
-  const userName = String(req.query.userName || '').trim()
+  const userName = sanitizeUserName(String(req.query.userName || '').trim())
 
   if (!Number.isInteger(id) || id <= 0) {
     return res.status(400).json({ error: 'Valid rating id is required' })
@@ -232,6 +436,10 @@ app.delete('/api/ratings/:id', async (req, res) => {
 
   if (!userName) {
     return res.status(400).json({ error: 'userName query parameter is required' })
+  }
+
+  if (userName.toLowerCase() !== req.session.userName.toLowerCase()) {
+    return res.status(403).json({ error: 'Forbidden: user ownership mismatch' })
   }
 
   const deleted = await pool.query(
@@ -251,9 +459,13 @@ app.delete('/api/ratings/:id', async (req, res) => {
 })
 
 app.get('/api/ratings', async (req, res) => {
-  const userName = String(req.query.userName || '').trim()
+  const userName = sanitizeUserName(String(req.query.userName || '').trim())
   if (!userName) {
     return res.status(400).json({ error: 'userName query parameter is required' })
+  }
+
+  if (userName.toLowerCase() !== req.session.userName.toLowerCase()) {
+    return res.status(403).json({ error: 'Forbidden: user ownership mismatch' })
   }
 
   const result = await pool.query(
@@ -270,8 +482,12 @@ app.get('/api/ratings', async (req, res) => {
 })
 
 app.get('/api/friends/search', async (req, res) => {
-  const q = String(req.query.q || '').trim()
+  const q = sanitizeText(String(req.query.q || '').trim(), 40)
   if (!q) {
+    return res.json({ friends: [] })
+  }
+
+  if (q.length < 2) {
     return res.json({ friends: [] })
   }
 
@@ -290,7 +506,7 @@ app.get('/api/friends/search', async (req, res) => {
 })
 
 app.get('/api/friends/:friendName/ratings', async (req, res) => {
-  const friendName = String(req.params.friendName || '').trim()
+  const friendName = sanitizeUserName(String(req.params.friendName || '').trim())
   if (!friendName) {
     return res.status(400).json({ error: 'friendName is required' })
   }

@@ -11,6 +11,8 @@ This project uses a split frontend/backend architecture.
 - Backend: Express API (`server/index.js`) serving JSON endpoints.
 - Data: PostgreSQL via `pg` pool (`server/db.js`).
 - ML assist: Optional TensorFlow.js model in `public/ml/drink-area/model.json` for drink-area segmentation before greenness scoring.
+- Monitoring: Free Sentry tier for frontend + backend crash monitoring and release tracking.
+- Release tagging: GitHub Releases should include a version tag like `v1.0.0` and match the app release value used in Sentry.
 - Scoring:
   - Entry total score (out of 200): `rating * 20 + greennessWeight * greenness`
   - `greennessWeight = 1.0` when rating is `4.0/5` or higher, otherwise `0.8`

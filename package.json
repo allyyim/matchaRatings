@@ -12,11 +12,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@sentry/node": "^10.70.0",
+    "@sentry/react": "^10.70.0",
     "@tensorflow/tfjs": "^4.22.0",
     "bootstrap": "^5.3.8",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.6.2",
+    "jsonwebtoken": "^9.0.3",
     "pg": "^8.21.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
