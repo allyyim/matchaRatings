@@ -87,6 +87,11 @@ export async function initDb() {
     ON accounts (LOWER(user_name));
   `)
 
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_accounts_email
+    ON accounts (email);
+  `)
+
   // Single-use magic-link tokens for passwordless sign-in and account linking/migration.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS login_tokens (
@@ -102,5 +107,15 @@ export async function initDb() {
 
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_login_tokens_email ON login_tokens (email);
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_login_tokens_expires_at
+    ON login_tokens (expires_at);
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_browser_users_user_name
+    ON browser_users (user_name);
   `)
 }
