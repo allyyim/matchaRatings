@@ -649,7 +649,8 @@ function App() {
 
   const [myEntries, setMyEntries] = useState<RatingEntry[]>([])
   const [isMyRatingsLoading, setIsMyRatingsLoading] = useState(true)
-  const [myRatingsSort, setMyRatingsSort] = useState<'highest' | 'lowest' | 'greenest'>('highest')
+  const [myRatingsSort, setMyRatingsSort] = useState<'highest' | 'lowest' | 'greenest' | 'newest' | 'oldest'>('highest')
+  const [isMyRatingsFilterOpen, setIsMyRatingsFilterOpen] = useState(false)
   const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null)
   const [isEditingEntry, setIsEditingEntry] = useState(false)
   const [editRating, setEditRating] = useState(0)
@@ -711,6 +712,12 @@ function App() {
         break
       case 'greenest':
         next.sort((a, b) => b.greenness - a.greenness || b.rating - a.rating || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        break
+      case 'newest':
+        next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        break
+      case 'oldest':
+        next.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
         break
       case 'highest':
       default:
@@ -1657,7 +1664,7 @@ function App() {
                     setIsCameraModalOpen(true)
                   }}
                 >
-                  📷 Open Camera
+                  Open Camera
                 </button>
                 
                 <label
@@ -1666,7 +1673,7 @@ function App() {
                   style={{ cursor: 'pointer' }}
                   onClick={() => setIsUploadMenuOpen(false)}
                 >
-                  🖼️ Photo Library
+                  Photo Library
                 </label>
                 <input
                   id="photo-library-input"
@@ -1676,17 +1683,84 @@ function App() {
                   accept="image/*,.jpg,.jpeg,.png,.jfif,.webp"
                   onChange={handlePhotoSelection}
                 />
-                
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {isMyRatingsFilterOpen && createPortal(
+        <div className="filter-menu-overlay" role="dialog" aria-modal="true" aria-label="Filter ratings" onClick={() => setIsMyRatingsFilterOpen(false)}>
+          <div className="filter-menu-card card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="card-body p-3">
+              <h3 className="h5 fw-bold text-success mb-4">Filter & Sort</h3>
+              
+              <div className="d-flex flex-column gap-2">
+                <label className="small fw-semibold text-secondary mb-2">Total Score</label>
                 <button
                   type="button"
-                  className="btn btn-outline-success w-100"
+                  className={`btn btn-sm w-100 text-start ${
+                    myRatingsSort === 'highest' ? 'btn-success' : 'btn-outline-success'
+                  }`}
                   onClick={() => {
-                    setPhotoDataUrl(noPhotoPlaceholderUrl)
-                    setIsUploadMenuOpen(false)
-                    stopCameraAccess()
+                    setMyRatingsSort('highest')
+                    setIsMyRatingsFilterOpen(false)
                   }}
                 >
-                  ✕ I Have No Picture
+                  Highest Score
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm w-100 text-start ${
+                    myRatingsSort === 'lowest' ? 'btn-success' : 'btn-outline-success'
+                  }`}
+                  onClick={() => {
+                    setMyRatingsSort('lowest')
+                    setIsMyRatingsFilterOpen(false)
+                  }}
+                >
+                  Lowest Score
+                </button>
+
+                <label className="small fw-semibold text-secondary mb-2 mt-3">Date Added</label>
+                <button
+                  type="button"
+                  className={`btn btn-sm w-100 text-start ${
+                    myRatingsSort === 'newest' ? 'btn-success' : 'btn-outline-success'
+                  }`}
+                  onClick={() => {
+                    setMyRatingsSort('newest')
+                    setIsMyRatingsFilterOpen(false)
+                  }}
+                >
+                  Newest
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-sm w-100 text-start ${
+                    myRatingsSort === 'oldest' ? 'btn-success' : 'btn-outline-success'
+                  }`}
+                  onClick={() => {
+                    setMyRatingsSort('oldest')
+                    setIsMyRatingsFilterOpen(false)
+                  }}
+                >
+                  Oldest
+                </button>
+
+                <label className="small fw-semibold text-secondary mb-2 mt-3">Greenness Score</label>
+                <button
+                  type="button"
+                  className={`btn btn-sm w-100 text-start ${
+                    myRatingsSort === 'greenest' ? 'btn-success' : 'btn-outline-success'
+                  }`}
+                  onClick={() => {
+                    setMyRatingsSort('greenest')
+                    setIsMyRatingsFilterOpen(false)
+                  }}
+                >
+                  Greenest
                 </button>
               </div>
             </div>
@@ -1993,26 +2067,17 @@ function App() {
 
               <div className="my-ratings-controls">
                 <div className="my-ratings-action-row">
-                  <div className="score-sort-cluster">
+                  <div className="score-sort-bubble">
                     <button
                       type="button"
-                      className={`score-sort-button ${myRatingsSort === 'lowest' ? 'active' : ''}`}
-                      onClick={() => setMyRatingsSort('lowest')}
-                      aria-label="Sort by score ascending"
-                      title="Lowest score first"
+                      className="filter-bubble-button"
+                      onClick={() => setIsMyRatingsFilterOpen(true)}
+                      aria-label="Open filter menu"
+                      title="Filter and sort"
                     >
-                      ↓
+                      <span className="filter-icon">⚙️</span>
+                      <span className="score-sort-label">Score</span>
                     </button>
-                    <button
-                      type="button"
-                      className={`score-sort-button ${myRatingsSort === 'highest' ? 'active' : ''}`}
-                      onClick={() => setMyRatingsSort('highest')}
-                      aria-label="Sort by score descending"
-                      title="Highest score first"
-                    >
-                      ↑
-                    </button>
-                    <span className="score-sort-label">Score</span>
                   </div>
 
                   <div className="ratings-search-shell">
