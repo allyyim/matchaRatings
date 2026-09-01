@@ -1657,6 +1657,8 @@ function App() {
     setMyEntries((prev) => prev.filter((entry) => entry.id !== entryId))
     setIsEditingEntry(false)
     setSelectedEntryId(null)
+    setMilestoneMessage('Entry removed from your log')
+    setTimeout(() => setMilestoneMessage(''), 3000)
   }
 
   if (!isUserReady) {
@@ -1752,6 +1754,13 @@ function App() {
             </div>
             <div className="saving-text">{loadingOverlayText}</div>
           </div>
+        </div>,
+        document.body
+      )}
+
+      {milestoneMessage && createPortal(
+        <div className="milestone-toast" role="status" aria-live="polite">
+          <div className="milestone-toast-content">{milestoneMessage}</div>
         </div>,
         document.body
       )}
@@ -2124,7 +2133,7 @@ function App() {
         <div className="notes-modal-overlay" role="dialog" aria-modal="true" aria-label="Edit notes">
           <div className="notes-modal card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
             <div className="notes-modal-header d-flex justify-content-between align-items-center p-4 border-bottom">
-              <h3 className="h5 fw-bold text-success mb-0">Add Notes</h3>
+              <h3 className="h5 fw-bold text-success mb-0">Your thoughts...</h3>
               <button
                 type="button"
                 className="btn btn-link text-muted p-0"
@@ -2241,8 +2250,7 @@ function App() {
               )}
 
               <div className="mb-3">
-                <label className="form-label fw-semibold" htmlFor="location-input">Matcha place name</label>
-                <div className="form-text mb-2">Enter the cafe or shop name.</div>
+                <div className="form-label fw-semibold">Enter the cafe or shop name.</div>
                 <div className="location-autocomplete">
                   <input
                     id="location-input"
@@ -2468,7 +2476,7 @@ function App() {
                 </div>
               )}
 
-              {!isMyRatingsLoading && filteredMine.length === 0 && <div className="alert alert-light border">No ratings match this filter.</div>}
+              {!isMyRatingsLoading && filteredMine.length === 0 && <div className="alert alert-light border">Your matcha journey starts here ☕</div>}
 
               {!isMyRatingsLoading && (isMyLogsExpanded ? filteredMine : filteredMine.slice(0, 3)).map((entry) => (
                 <article key={entry.id} data-entry-id={entry.id} className="card border-0 shadow-sm entry-card cursor-pointer" onClick={() => openEntryOverlay(entry)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openEntryOverlay(entry) }}>
