@@ -1995,25 +1995,6 @@ function App() {
                 />
               </div>
 
-              <div className="d-flex flex-column flex-sm-row align-items-sm-center gap-2 mb-2">
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary btn-sm"
-                  onClick={() => {
-                    const resolvedPhoto = photoDataUrl || noPhotoPlaceholderUrl
-                    setPhotoDataUrl('')
-                    setMatchaGreenness(0)
-                    setMlCoveragePercent(null)
-                    setMlConfidencePercent(null)
-                    setMlStatus('No photo was included for this rating; green score was not analyzed.')
-                    setCurrentRating((previous) => previous)
-                    console.info('No photo selected for this rating; saving without image.', resolvedPhoto)
-                  }}
-                >
-                  Skip photo / Save without image
-                </button>
-              </div>
-
               <button type="button" className="btn btn-success w-100" onClick={() => void saveEntry()} disabled={isSavingEntry}>
                 {isSavingEntry ? 'Saving...' : 'Save Rating'}
               </button>
