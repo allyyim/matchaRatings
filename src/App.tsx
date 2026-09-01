@@ -1958,8 +1958,8 @@ function App() {
           </div>
 
           <section className="mt-4 mb-5">
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
-              <div className="d-flex align-items-center gap-2 flex-grow-1">
+            <div className="d-flex flex-column gap-2 mb-3">
+              <div className="d-flex align-items-center gap-2">
                 <div>
                   <h2 className="h4 fw-bold text-success mb-0">
                     My Ratings
@@ -1967,65 +1967,72 @@ function App() {
                   <small className="text-muted">Tap to edit</small>
                 </div>
               </div>
-              <div className="my-ratings-controls">
-                <div className="score-sort-cluster">
-                  <span className="score-sort-label">score</span>
-                  <div className="score-sort-buttongroup">
-                    <button
-                      type="button"
-                      className={`score-sort-button ${myRatingsSort === 'highest' ? 'active' : ''}`}
-                      onClick={() => setMyRatingsSort('highest')}
-                      aria-label="Sort by score descending"
-                      title="Highest score first"
-                    >
-                      ↑
-                    </button>
-                    <button
-                      type="button"
-                      className={`score-sort-button ${myRatingsSort === 'lowest' ? 'active' : ''}`}
-                      onClick={() => setMyRatingsSort('lowest')}
-                      aria-label="Sort by score ascending"
-                      title="Lowest score first"
-                    >
-                      ↓
-                    </button>
-                  </div>
-                </div>
 
-                <div className="ratings-filter-group compact-pills" aria-label="Filter my ratings">
+              <div className="my-ratings-controls">
+                <div className="my-ratings-pill-row" aria-label="Filter my ratings">
                   {[
-                    { value: 'all', label: 'all' },
+                    { value: 'all', label: 'All' },
                     { value: 'zero', label: '0' },
-                    { value: 'low', label: '<3' },
+                    { value: 'low', label: 'Under 3' },
                     { value: 'high', label: '3+' }
                   ].map((filter) => (
                     <button
                       key={filter.value}
                       type="button"
-                      className={`filter-pill ${myRatingsFilter === filter.value ? 'active' : ''}`}
+                      className={`filter-chip ${myRatingsFilter === filter.value ? 'active' : ''}`}
                       onClick={() => setMyRatingsFilter(filter.value as 'all' | 'zero' | 'low' | 'high')}
                     >
                       {filter.label}
                     </button>
                   ))}
-                  <button
-                    type="button"
-                    className={`filter-pill ${myRatingsSort === 'greenest' ? 'active' : ''}`}
-                    onClick={() => setMyRatingsSort('greenest')}
-                  >
-                    green
-                  </button>
                 </div>
 
-                <div className="ratings-search-shell">
-                  <span className="ratings-search-icon" aria-hidden="true">⌕</span>
-                  <input
-                    type="text"
-                    className="form-control ratings-search-input"
-                    placeholder="Search"
-                    value={myLogsSearchTerm}
-                    onChange={(event) => setMyLogsSearchTerm(event.target.value)}
-                  />
+                <div className="my-ratings-action-row">
+                  <div className="score-sort-cluster">
+                    <div className="score-sort-buttongroup">
+                      <button
+                        type="button"
+                        className={`score-sort-button ${myRatingsSort === 'highest' ? 'active' : ''}`}
+                        onClick={() => setMyRatingsSort('highest')}
+                        aria-label="Sort by score descending"
+                        title="Highest score first"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        className={`score-sort-button ${myRatingsSort === 'lowest' ? 'active' : ''}`}
+                        onClick={() => setMyRatingsSort('lowest')}
+                        aria-label="Sort by score ascending"
+                        title="Lowest score first"
+                      >
+                        ↓
+                      </button>
+                    </div>
+                    <span className="score-sort-label">Score</span>
+                  </div>
+
+                  <div className="ratings-search-shell">
+                    <button
+                      type="button"
+                      className="search-icon-button"
+                      aria-label="Search ratings"
+                      onClick={() => {
+                        const input = document.getElementById('my-ratings-search-input') as HTMLInputElement | null
+                        input?.focus()
+                      }}
+                    >
+                      <span aria-hidden="true">⌕</span>
+                    </button>
+                    <input
+                      id="my-ratings-search-input"
+                      type="text"
+                      className="form-control ratings-search-input"
+                      placeholder="Search"
+                      value={myLogsSearchTerm}
+                      onChange={(event) => setMyLogsSearchTerm(event.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
