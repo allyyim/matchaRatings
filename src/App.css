@@ -487,9 +487,9 @@ textarea.form-control {
 
 .filter-bubble-button {
   appearance: none;
-  border: 1.5px solid var(--warm-accent);
-  background: linear-gradient(135deg, var(--warm-accent-subtle) 0%, #f9f0e8 100%);
-  color: var(--warm-accent);
+  border: 1.5px solid var(--primary-green);
+  background: linear-gradient(135deg, var(--green-soft) 0%, #f0f7eb 100%);
+  color: var(--primary-green);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -500,11 +500,11 @@ textarea.form-control {
   font-weight: 600;
   font-size: 0.9rem;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(212, 155, 74, 0.15);
+  box-shadow: 0 2px 8px rgba(31, 95, 52, 0.12);
 }
 
 .filter-bubble-button:hover {
-  box-shadow: var(--shadow-warm);
+  box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
 
@@ -514,7 +514,7 @@ textarea.form-control {
 }
 
 .score-sort-label {
-  font-size: 0.85rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: inherit;
   letter-spacing: 0.03em;
