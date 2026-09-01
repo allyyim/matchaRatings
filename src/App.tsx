@@ -1967,39 +1967,65 @@ function App() {
                   <small className="text-muted">Tap to edit</small>
                 </div>
               </div>
-              <div className="d-flex flex-wrap gap-2 align-items-center justify-content-end ratings-toolbar">
+              <div className="my-ratings-controls">
+                <div className="score-sort-cluster">
+                  <span className="score-sort-label">score</span>
+                  <div className="score-sort-buttongroup">
+                    <button
+                      type="button"
+                      className={`score-sort-button ${myRatingsSort === 'highest' ? 'active' : ''}`}
+                      onClick={() => setMyRatingsSort('highest')}
+                      aria-label="Sort by score descending"
+                      title="Highest score first"
+                    >
+                      ↑
+                    </button>
+                    <button
+                      type="button"
+                      className={`score-sort-button ${myRatingsSort === 'lowest' ? 'active' : ''}`}
+                      onClick={() => setMyRatingsSort('lowest')}
+                      aria-label="Sort by score ascending"
+                      title="Lowest score first"
+                    >
+                      ↓
+                    </button>
+                  </div>
+                </div>
+
+                <div className="ratings-filter-group compact-pills" aria-label="Filter my ratings">
+                  {[
+                    { value: 'all', label: 'all' },
+                    { value: 'zero', label: '0' },
+                    { value: 'low', label: '<3' },
+                    { value: 'high', label: '3+' }
+                  ].map((filter) => (
+                    <button
+                      key={filter.value}
+                      type="button"
+                      className={`filter-pill ${myRatingsFilter === filter.value ? 'active' : ''}`}
+                      onClick={() => setMyRatingsFilter(filter.value as 'all' | 'zero' | 'low' | 'high')}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    className={`filter-pill ${myRatingsSort === 'greenest' ? 'active' : ''}`}
+                    onClick={() => setMyRatingsSort('greenest')}
+                  >
+                    green
+                  </button>
+                </div>
+
                 <div className="ratings-search-shell">
                   <span className="ratings-search-icon" aria-hidden="true">⌕</span>
                   <input
                     type="text"
                     className="form-control ratings-search-input"
-                    placeholder="Search location or notes"
+                    placeholder="Search"
                     value={myLogsSearchTerm}
                     onChange={(event) => setMyLogsSearchTerm(event.target.value)}
                   />
-                </div>
-                <div className="ratings-filter-group">
-                  <select
-                    className="form-select modern-select"
-                    value={myRatingsFilter}
-                    onChange={(event) => setMyRatingsFilter(event.target.value as 'all' | 'zero' | 'low' | 'high')}
-                    aria-label="Filter my ratings"
-                  >
-                    <option value="all">All ratings</option>
-                    <option value="zero">0 stars</option>
-                    <option value="low">Under 3 stars</option>
-                    <option value="high">3 stars and up</option>
-                  </select>
-                  <select
-                    className="form-select modern-select"
-                    value={myRatingsSort}
-                    onChange={(event) => setMyRatingsSort(event.target.value as 'highest' | 'lowest' | 'greenest')}
-                    aria-label="Sort my ratings"
-                  >
-                    <option value="highest">Highest → lowest</option>
-                    <option value="lowest">Lowest → highest</option>
-                    <option value="greenest">Greenest first</option>
-                  </select>
                 </div>
               </div>
             </div>
