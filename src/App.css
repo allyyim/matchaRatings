@@ -458,6 +458,7 @@ textarea.form-control {
 .ratings-toolbar {
   width: 100%;
   justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .ratings-search-shell {
@@ -484,6 +485,7 @@ textarea.form-control {
   border: 1.5px solid rgba(207, 227, 191, 0.9);
   border-radius: 0.8rem;
   box-shadow: inset 0 1px 2px rgba(17, 60, 32, 0.02);
+  width: 100%;
 }
 
 .modern-select {
@@ -965,6 +967,8 @@ textarea.form-control {
   .ratings-toolbar {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.45rem;
+    width: 100%;
   }
 
   .ratings-search-shell,
@@ -972,6 +976,7 @@ textarea.form-control {
     max-width: none;
     width: 100%;
     min-width: 0;
+    flex: 1 1 auto;
   }
 
   .entry-card .card-body {
