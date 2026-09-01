@@ -1701,10 +1701,7 @@ function App() {
                   className="btn btn-success w-100 text-start"
                   onClick={() => {
                     setIsUploadMenuOpen(false)
-                    if (photoInputRef.current) {
-                      photoInputRef.current.value = ''
-                      setTimeout(() => photoInputRef.current?.click(), 100)
-                    }
+                    photoInputRef.current?.click()
                   }}
                 >
                   Photo Library
@@ -1713,8 +1710,9 @@ function App() {
                   id="photo-library-input"
                   ref={photoInputRef}
                   type="file"
-                  className="visually-hidden"
+                  style={{ display: 'none' }}
                   accept="image/*"
+                  capture="environment"
                   onChange={handlePhotoSelection}
                 />
               </div>
@@ -2384,7 +2382,7 @@ function App() {
           <section>
             <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
               <h3 className="h4 fw-bold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => setIsFriendLogsExpanded(!isFriendLogsExpanded)}>
-                {selectedFriend ? selectedFriend : 'Choose friend'} {selectedFriend && (isFriendLogsExpanded ? '▼' : '▶')}
+                {selectedFriend ? selectedFriend : 'Choose friend'}
               </h3>
               {selectedFriend && (
                 isFriendSearchOpen ? (
