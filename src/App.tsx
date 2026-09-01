@@ -2403,24 +2403,27 @@ function App() {
               {!isMyRatingsLoading && filteredMine.length === 0 && <div className="alert alert-light border">No ratings match this filter.</div>}
 
               {!isMyRatingsLoading && (isMyLogsExpanded ? filteredMine : filteredMine.slice(0, 3)).map((entry) => (
-                <article key={entry.id} className="card border-0 shadow-sm entry-card" onClick={() => openEntryOverlay(entry)}>
-                  <div className="card-body d-flex gap-3 align-items-start">
-                    <div className="entry-media-col">
-                      <img src={entry.photo} alt="Matcha" className="entry-thumb" loading="lazy" decoding="async" />
-                      <div className="entry-rank-circle">#{myRankById.get(entry.id) || 0}</div>
-                    </div>
-                    <div className="flex-grow-1">
-                      <div className="d-flex justify-content-between flex-wrap gap-2">
-                        <strong>{entry.location || 'Unknown location'}</strong>
-                        <span className="text-muted small">{entry.date}</span>
+                <article key={entry.id} className="card border-0 shadow-sm entry-card cursor-pointer" onClick={() => openEntryOverlay(entry)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openEntryOverlay(entry) }}>
+                  <div className="card-body d-flex gap-3 align-items-start justify-content-between">
+                    <div className="d-flex gap-3 flex-grow-1 align-items-start">
+                      <div className="entry-media-col">
+                        <img src={entry.photo} alt="Matcha" className="entry-thumb" loading="lazy" decoding="async" />
+                        <div className="entry-rank-circle">#{myRankById.get(entry.id) || 0}</div>
                       </div>
-                      <div className="entry-metrics">
-                        <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
-                        <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
-                        <div>Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                      <div className="flex-grow-1">
+                        <div className="d-flex justify-content-between flex-wrap gap-2">
+                          <strong>{entry.location || 'Unknown location'}</strong>
+                          <span className="text-muted small">{entry.date}</span>
+                        </div>
+                        <div className="entry-metrics">
+                          <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
+                          <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                          <div>Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                        </div>
+                        {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
                       </div>
-                      {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
                     </div>
+                    <div className="entry-hint-icon" aria-hidden="true">✎</div>
                   </div>
 
                   {selectedEntryId === entry.id && (
