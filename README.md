@@ -10,7 +10,7 @@ This project uses a split frontend/backend architecture.
 - Frontend: React + TypeScript SPA (`src/App.tsx`) built with Vite.
 - Backend: Express API (`server/index.js`) serving JSON endpoints.
 - Data: PostgreSQL via `pg` pool (`server/db.js`).
-- ML assist: A custom TensorFlow.js drink-area segmentation model in `public/ml/drink-area/model.json` for locating the liquid region before greenness analysis.
+- ML assist: A custom TensorFlow.js drink-area segmentation model in `public/ml/drink-area/model.json` that finds the cup/liquid in the photo before measuring green pixels inside that region.
 - Monitoring: Free Sentry tier for frontend + backend crash monitoring and release tracking.
 - Release tagging: GitHub Releases should include a version tag like `v1.0.0` and match the app release value used in Sentry.
 - Scoring:
@@ -44,13 +44,28 @@ flowchart TD
 
 The app uses a custom TensorFlow.js model to estimate where the drink sits inside the photo before measuring green intensity.
 
-### What was created
-This is not a general-purpose image classifier. It is a lightweight binary segmentation model whose job is to answer:
+### What the machine learning is doing
+This is not a model that guesses taste or quality. It is a lightweight image segmentation model whose job is to answer:
 
 - “Which pixels in this image are likely part of the drink?”
 - “Which pixels are background, cup edge, table, or other objects?”
 
-The segmentation mask is then used to restrict greenness analysis to the drink region instead of scanning the whole photo.
+This matters because the app is not trying to score the whole photo. It only wants to measure the drink itself.
+
+The segmentation mask is then used to restrict greenness analysis to the actual drink region instead of counting green background, shadows, table surfaces, or cup edges.
+
+### What “greenness” means
+Greenness is a visual proxy score for how much the drink looks like matcha, not a scientific matcha test.
+
+The app computes a score based on:
+
+- how much of the drink region is green
+- how saturated or vivid that green is
+- how much of the drink area is matcha-like instead of neutral/white/brown
+
+It is a rough estimate of “does this look like a vibrant green matcha drink?” on a scale from 0 to 100.
+
+This is intentionally a simple visual feature, not a chemistry assay or a lab-quality metric. It helps rank photos relative to each other, while the user still decides the final taste rating.
 
 ### Model technical details
 - Framework: TensorFlow.js
@@ -218,17 +233,19 @@ GitHub Pages deploys from `main` via GitHub Actions.
 The app sends `browserId` to `POST /api/users/session`. If no existing `browser_users` row exists for that browser and no name is provided, API returns `requiresName: true`, and the UI prompts for a name.
 
 ### 2) What does the greenness score really mean?
-In plain English, the greenness score is a rough measure of how much the drink looks like matcha: greener, more vibrant, and more “tea-like” it looks, the higher the number.
+In plain English, the greenness score is a rough estimate of how much the drink in the photo looks like matcha.
+
+It is not measuring quality, taste, nutrition, or chemistry. It is a visual proxy based on the photo: more vivid green, more coverage of the drink area, and a stronger matcha-like color all push the score higher.
 
 Think of it like this:
 
 - `0` = no obvious matcha green in the photo, or no photo was analyzed
-- `25` = a little green is present, but mostly neutral or weak
-- `50` = clearly green and matcha-like, but not super intense
-- `75` = strong matcha colour and depth
-- `100` = extremely green, very intense, and texture/coverage strongly suggests matcha
+- `25` = a little green is visible, but it is weak or patchy
+- `50` = clearly green and matcha-like, but not especially intense
+- `75` = strong green coverage and a rich matcha look
+- `100` = extremely green and visually very matcha-like
 
-The app uses this as a helpful signal, not as a perfect lab measurement. It is designed to support the overall rating, not replace your opinion.
+The app uses this as a support signal, not as a perfect scientific test. It helps compare photos and adds a second dimension alongside your taste rating.
 
 For rankings, the app combines the star rating and the green score together, with the green score weighted a bit less when the star rating is below `4` stars. In everyday terms: the app is rewarding both “how much you liked it” and “how green the drink looked.”
 
