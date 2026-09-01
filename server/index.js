@@ -512,7 +512,7 @@ app.post('/api/migrate/ali', async (req, res) => {
   }
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as any
+    const payload = jwt.verify(token, JWT_SECRET)
     const currentUserName = payload.userName
 
     const aliAccount = await pool.query(
