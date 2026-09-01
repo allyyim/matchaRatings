@@ -612,6 +612,7 @@ function App() {
 
   const [myEntries, setMyEntries] = useState<RatingEntry[]>([])
   const [myRatingsFilter, setMyRatingsFilter] = useState<'all' | 'zero' | 'low' | 'high'>('all')
+  const [myRatingsSort, setMyRatingsSort] = useState<'highest' | 'lowest' | 'greenest'>('highest')
   const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null)
   const [isEditingEntry, setIsEditingEntry] = useState(false)
   const [editRating, setEditRating] = useState(0)
@@ -665,17 +666,37 @@ function App() {
   }, [rankedMine, myLogsSearchTerm])
 
   const filteredMine = useMemo(() => {
+    const next = [...sortedMine]
+
     switch (myRatingsFilter) {
       case 'zero':
-        return sortedMine.filter((entry) => entry.rating === 0)
+        next.splice(0, next.length, ...next.filter((entry) => entry.rating === 0))
+        break
       case 'low':
-        return sortedMine.filter((entry) => entry.rating > 0 && entry.rating < 3)
+        next.splice(0, next.length, ...next.filter((entry) => entry.rating > 0 && entry.rating < 3))
+        break
       case 'high':
-        return sortedMine.filter((entry) => entry.rating >= 3)
+        next.splice(0, next.length, ...next.filter((entry) => entry.rating >= 3))
+        break
       default:
-        return sortedMine
+        break
     }
-  }, [sortedMine, myRatingsFilter])
+
+    switch (myRatingsSort) {
+      case 'lowest':
+        next.sort((a, b) => a.comboScore - b.comboScore || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        break
+      case 'greenest':
+        next.sort((a, b) => b.greenness - a.greenness || b.rating - a.rating || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        break
+      case 'highest':
+      default:
+        next.sort((a, b) => b.comboScore - a.comboScore || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        break
+    }
+
+    return next
+  }, [sortedMine, myRatingsFilter, myRatingsSort])
 
   const rankedFriendEntries = useMemo(() => {
     return [...friendEntries].sort(compareEntriesForRank)
@@ -1752,11 +1773,11 @@ function App() {
               </div>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold">Thoughts</label>
+                <label className="form-label fw-semibold">Notes</label>
                 <textarea
                   className="form-control"
                   rows={3}
-                  placeholder="What did you like about this matcha?"
+                  placeholder="What stood out about this matcha?"
                   value={thoughts}
                   onChange={(event) => setThoughts(event.target.value)}
                 />
@@ -1797,18 +1818,19 @@ function App() {
                   <small className="text-muted">Tap to edit</small>
                 </div>
               </div>
-              <div className="d-flex gap-2 align-items-center flex-wrap">
-                <input
-                  type="text"
-                  className="form-control"
-                  style={{ maxWidth: '200px' }}
-                  placeholder="Search by Location"
-                  value={myLogsSearchTerm}
-                  onChange={(event) => setMyLogsSearchTerm(event.target.value)}
-                />
+              <div className="d-flex gap-2 align-items-center flex-wrap ratings-toolbar">
+                <div className="ratings-search-shell">
+                  <span className="ratings-search-icon" aria-hidden="true">⌕</span>
+                  <input
+                    type="text"
+                    className="form-control ratings-search-input"
+                    placeholder="Search location or notes"
+                    value={myLogsSearchTerm}
+                    onChange={(event) => setMyLogsSearchTerm(event.target.value)}
+                  />
+                </div>
                 <select
-                  className="form-select"
-                  style={{ maxWidth: '165px' }}
+                  className="form-select modern-select"
                   value={myRatingsFilter}
                   onChange={(event) => setMyRatingsFilter(event.target.value as 'all' | 'zero' | 'low' | 'high')}
                   aria-label="Filter my ratings"
@@ -1817,6 +1839,16 @@ function App() {
                   <option value="zero">0 stars</option>
                   <option value="low">Under 3 stars</option>
                   <option value="high">3 stars and up</option>
+                </select>
+                <select
+                  className="form-select modern-select"
+                  value={myRatingsSort}
+                  onChange={(event) => setMyRatingsSort(event.target.value as 'highest' | 'lowest' | 'greenest')}
+                  aria-label="Sort my ratings"
+                >
+                  <option value="highest">Highest → lowest</option>
+                  <option value="lowest">Lowest → highest</option>
+                  <option value="greenest">Greenest first</option>
                 </select>
               </div>
             </div>
@@ -1949,7 +1981,7 @@ function App() {
                             rows={2}
                             value={editThoughts}
                             onChange={(event) => setEditThoughts(event.target.value)}
-                            placeholder="Thoughts"
+                            placeholder="Your notes"
                           />
 
                           <div className="d-flex gap-2">

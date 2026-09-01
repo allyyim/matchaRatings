@@ -455,6 +455,47 @@ textarea.form-control {
   justify-content: center;
 }
 
+.ratings-toolbar {
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.ratings-search-shell {
+  position: relative;
+  min-width: 0;
+  flex: 1 1 220px;
+  max-width: 260px;
+}
+
+.ratings-search-icon {
+  position: absolute;
+  left: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-secondary);
+  font-size: 1rem;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.ratings-search-input {
+  padding-left: 2.3rem;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1.5px solid rgba(207, 227, 191, 0.9);
+  border-radius: 0.8rem;
+  box-shadow: inset 0 1px 2px rgba(17, 60, 32, 0.02);
+}
+
+.modern-select {
+  min-width: 150px;
+  max-width: 180px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1.5px solid rgba(207, 227, 191, 0.9);
+  border-radius: 0.8rem;
+  color: var(--text-primary);
+  box-shadow: inset 0 1px 2px rgba(17, 60, 32, 0.02);
+}
+
 /* Rating Badge Styles */
 .rating-badge {
   display: inline-flex;
@@ -522,20 +563,21 @@ textarea.form-control {
 }
 
 .entry-metrics {
-  padding: 0.4rem 0;
+  padding: 0.45rem 0 0.1rem;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.6rem 1.2rem;
-  font-size: 0.9rem;
+  gap: 0.45rem 1rem;
+  font-size: 0.82rem;
   line-height: 1.4;
   color: var(--text-secondary);
+  letter-spacing: 0.01em;
 }
 
 .entry-metrics div {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
-  font-weight: 500;
+  gap: 0.35rem;
+  font-weight: 600;
 }
 
 .entry-card {
@@ -556,6 +598,24 @@ textarea.form-control {
 
 .entry-card .card-body {
   padding: 1.25rem;
+}
+
+.entry-card strong {
+  font-size: 0.96rem;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.entry-card .text-muted.small {
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+.entry-card p {
+  margin-top: 0.7rem;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
 }
 
 .entry-overlay {
@@ -898,13 +958,33 @@ textarea.form-control {
 
   .entry-metrics {
     grid-template-columns: 1fr;
-    gap: 0.4rem;
-    font-size: 0.85rem;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+  }
+
+  .ratings-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .ratings-search-shell,
+  .modern-select {
+    max-width: none;
+    width: 100%;
+    min-width: 0;
   }
 
   .entry-card .card-body {
     padding: 1rem;
     gap: 0.75rem;
+  }
+
+  .entry-card strong {
+    font-size: 0.92rem;
+  }
+
+  .entry-card p {
+    font-size: 0.82rem;
   }
 
   .card-body {
