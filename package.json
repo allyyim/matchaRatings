@@ -12,6 +12,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-oauth/google": "^0.13.5",
     "@sentry/node": "^10.70.0",
     "@sentry/react": "^10.70.0",
     "@tensorflow/tfjs": "^4.22.0",
@@ -20,6 +21,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.2",
+    "google-auth-library": "^11.0.2",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.21.0",
     "react": "^19.2.6",

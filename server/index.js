@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken'
 import * as Sentry from '@sentry/node'
 import rateLimit from 'express-rate-limit'
 import { Resend } from 'resend'
+import { OAuth2Client } from 'google-auth-library'
 import { initDb, pool } from './db.js'
 import { findBestMatch } from 'string-similarity'
 
@@ -29,6 +30,7 @@ const LOGIN_TOKEN_TTL_MS = 1000 * 60 * 15
 const APP_ORIGIN = String(process.env.APP_ORIGIN || 'https://allyyim.github.io/matchaRatings').replace(/\/$/, '')
 const EMAIL_FROM = process.env.EMAIL_FROM || 'Sip & Score <onboarding@resend.dev>'
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
+const googleClient = process.env.GOOGLE_CLIENT_ID ? new OAuth2Client(process.env.GOOGLE_CLIENT_ID) : null
 const telemetryBuffer = []
 const LOW_RATING_GREENNESS_WEIGHT = 0.8
 const FULL_GREENNESS_WEIGHT = 1
@@ -430,6 +432,61 @@ app.post('/api/auth/verify', authRateLimiter, async (req, res) => {
 
   const token = generateToken(userName, browserId)
   return res.json({ userName, email: record.email, token })
+})
+
+// Verifies Google OAuth token and creates/links account
+app.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
+  const googleToken = String(req.body?.token || '').trim()
+  const browserId = String(req.body?.browserId || '').trim()
+
+  if (!googleToken || !googleClient) {
+    return res.status(400).json({ error: 'Google authentication not configured' })
+  }
+
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: googleToken,
+      audience: process.env.GOOGLE_CLIENT_ID
+    })
+    const payload = ticket.getPayload()
+    const googleId = payload.sub
+    const email = payload.email
+    const name = payload.name
+
+    // Find or create account by Google ID
+    let account = await pool.query(
+      'SELECT user_name, email FROM accounts WHERE google_id = $1',
+      [googleId]
+    )
+
+    let userName
+    if (account.rowCount > 0) {
+      userName = account.rows[0].user_name
+    } else {
+      // Create new account with Google info
+      const sanitizedName = sanitizeUserName(name || email.split('@')[0])
+
+      // Check if username is available
+      const nameTaken = await pool.query(
+        'SELECT 1 FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+        [sanitizedName]
+      )
+
+      const finalName = nameTaken.rowCount > 0 ? `${sanitizedName}_${googleId.slice(0, 6)}` : sanitizedName
+
+      await pool.query(
+        'INSERT INTO accounts (email, user_name, google_id) VALUES ($1, $2, $3)',
+        [email, finalName, googleId]
+      )
+      userName = finalName
+    }
+
+    const token = generateToken(userName, browserId)
+    return res.json({ userName, email, token })
+  } catch (error) {
+    console.error('Google OAuth verification failed:', error)
+    return res.status(400).json({ error: 'Invalid Google token' })
+  }
 })
 
 app.post('/api/users/session', async (req, res) => {

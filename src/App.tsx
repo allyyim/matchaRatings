@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
+import { useGoogleLogin } from '@react-oauth/google'
 import * as Sentry from '@sentry/react'
 import * as tf from '@tensorflow/tfjs'
 import './App.css'
@@ -862,6 +863,32 @@ function App() {
     return refreshedEntries
   }
 
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (codeResponse) => {
+      try {
+        setIsSubmittingName(true)
+        setAuthError('')
+        const response = await apiFetch<{ userName: string; email: string; token: string }>('/auth/google/verify', {
+          method: 'POST',
+          body: JSON.stringify({ token: codeResponse.access_token, browserId })
+        })
+        setSessionToken(response.token || '')
+        localStorage.setItem('matchaUserName', response.userName)
+        setCurrentUserName(response.userName)
+        setRequiresManualName(false)
+        setIsUserReady(true)
+        setLoadingMessage('')
+        void loadDrinkAreaModel().catch(() => undefined)
+      } catch (error) {
+        setAuthError(error instanceof Error ? error.message : 'Google sign-in failed')
+      } finally {
+        setIsSubmittingName(false)
+      }
+    },
+    onError: () => setAuthError('Google sign-in failed'),
+    flow: 'implicit'
+  })
+
   useEffect(() => {
     let mounted = true
 
@@ -1685,9 +1712,26 @@ function App() {
                 <p className="text-muted mb-0">Signing you in…</p>
               ) : (
                 <>
-                  <p className="text-muted mb-3">
-                    Sign in with your email. We'll send you a secure link — no password needed. New here? Add a username too, and we'll create your account.
+                  <p className="text-muted mb-4">
+                    Sign in with Google to access your matcha ratings from any device.
                   </p>
+                  <button
+                    type="button"
+                    className="btn btn-light w-100 mb-3 d-flex align-items-center justify-content-center gap-2"
+                    onClick={() => googleLogin()}
+                    disabled={isSubmittingName}
+                    style={{ border: '1px solid #e0e0e0', padding: '0.75rem' }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24">
+                      <text x="2" y="16" fontSize="14" fill="#1f5f34">G</text>
+                    </svg>
+                    {isSubmittingName ? 'Signing in…' : 'Sign in with Google'}
+                  </button>
+
+                  <div className="mb-3 text-center">
+                    <small className="text-muted">or continue with email</small>
+                  </div>
+
                   <label className="form-label fw-semibold" htmlFor="auth-email">Email</label>
                   <input
                     id="auth-email"

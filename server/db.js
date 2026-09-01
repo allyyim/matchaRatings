@@ -92,6 +92,26 @@ export async function initDb() {
     ON accounts (email);
   `)
 
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'accounts'
+          AND column_name = 'google_id'
+      ) THEN
+        ALTER TABLE accounts ADD COLUMN google_id TEXT;
+      END IF;
+    END $$;
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_accounts_google_id
+    ON accounts (google_id);
+  `)
+
   // Single-use magic-link tokens for passwordless sign-in and account linking/migration.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS login_tokens (
