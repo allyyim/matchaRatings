@@ -1855,7 +1855,7 @@ function App() {
             <div className="camera-modal-content">
               {!photoDataUrl && (
                 <>
-                  <div className="camera-wrap mb-2">
+                  <div className="camera-wrap">
                     <video ref={videoRef} className="camera-video" autoPlay playsInline muted />
                   </div>
 
