@@ -437,23 +437,29 @@ app.post('/api/auth/verify', authRateLimiter, async (req, res) => {
 // Verifies Google OAuth token and creates/links account
 app.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
   const googleToken = String(req.body?.token || '').trim()
+  const providedUserName = String(req.body?.userName || '').trim()
   const browserId = String(req.body?.browserId || '').trim()
 
-  if (!googleToken || !googleClient) {
-    return res.status(400).json({ error: 'Google authentication not configured' })
+  if (!googleToken) {
+    return res.status(400).json({ error: 'Missing authentication token' })
   }
 
   try {
-    const ticket = await googleClient.verifyIdToken({
-      idToken: googleToken,
-      audience: process.env.GOOGLE_CLIENT_ID
+    // Use access token to get user info from Google
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${googleToken}` }
     })
-    const payload = ticket.getPayload()
-    const googleId = payload.sub
-    const email = payload.email
-    const name = payload.name
 
-    // Find or create account by Google ID
+    if (!userInfoResponse.ok) {
+      return res.status(401).json({ error: 'Invalid Google token' })
+    }
+
+    const userInfo = await userInfoResponse.json()
+    const googleId = userInfo.id
+    const email = userInfo.email
+    const name = userInfo.name
+
+    // Find existing account by Google ID
     let account = await pool.query(
       'SELECT user_name, email FROM accounts WHERE google_id = $1',
       [googleId]
@@ -463,8 +469,12 @@ app.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
     if (account.rowCount > 0) {
       userName = account.rows[0].user_name
     } else {
-      // Create new account with Google info
-      const sanitizedName = sanitizeUserName(name || email.split('@')[0])
+      // New user - use provided name or auto-generate
+      if (!providedUserName) {
+        return res.status(400).json({ error: 'New user requires name', isNewUser: true })
+      }
+
+      const sanitizedName = sanitizeUserName(providedUserName)
 
       // Check if username is available
       const nameTaken = await pool.query(

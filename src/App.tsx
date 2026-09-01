@@ -868,17 +868,29 @@ function App() {
       try {
         setIsSubmittingName(true)
         setAuthError('')
-        const response = await apiFetch<{ userName: string; email: string; token: string }>('/auth/google/verify', {
+        const response = await apiFetch<{ userName: string; email: string; token: string; isNewUser?: boolean }>('/auth/google/verify', {
           method: 'POST',
           body: JSON.stringify({ token: codeResponse.access_token, browserId })
+        }).catch(async (error) => {
+          const errorData = error instanceof Response ? await error.json() : { error: error.message }
+          if (errorData.isNewUser) {
+            sessionStorage.setItem('googleAccessToken', codeResponse.access_token)
+            setRequiresManualName(true)
+            setPendingUserName('')
+            return null
+          }
+          throw error
         })
-        setSessionToken(response.token || '')
-        localStorage.setItem('matchaUserName', response.userName)
-        setCurrentUserName(response.userName)
-        setRequiresManualName(false)
-        setIsUserReady(true)
-        setLoadingMessage('')
-        void loadDrinkAreaModel().catch(() => undefined)
+
+        if (response) {
+          setSessionToken(response.token || '')
+          localStorage.setItem('matchaUserName', response.userName)
+          setCurrentUserName(response.userName)
+          setRequiresManualName(false)
+          setIsUserReady(true)
+          setLoadingMessage('')
+          void loadDrinkAreaModel().catch(() => undefined)
+        }
       } catch (error) {
         setAuthError(error instanceof Error ? error.message : 'Google sign-in failed')
       } finally {
@@ -1034,6 +1046,34 @@ function App() {
     }
   }
 
+  async function handleNewUserNameSubmit() {
+    const userName = pendingUserName.trim()
+    if (!userName) {
+      setAuthError('Please enter a name.')
+      return
+    }
+
+    try {
+      setIsSubmittingName(true)
+      setAuthError('')
+      const response = await apiFetch<{ userName: string; email: string; token: string }>('/auth/google/verify', {
+        method: 'POST',
+        body: JSON.stringify({ token: sessionStorage.getItem('googleAccessToken'), userName, browserId })
+      })
+      setSessionToken(response.token || '')
+      localStorage.setItem('matchaUserName', response.userName)
+      setCurrentUserName(response.userName)
+      setRequiresManualName(false)
+      setIsUserReady(true)
+      setLoadingMessage('')
+      sessionStorage.removeItem('googleAccessToken')
+      void loadDrinkAreaModel().catch(() => undefined)
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Failed to create account.')
+    } finally {
+      setIsSubmittingName(false)
+    }
+  }
 
   useEffect(() => {
     if (!isUserReady || !currentUserName) return
@@ -1695,77 +1735,60 @@ function App() {
           <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
             <div className="card-body p-3 p-md-4">
               <h1 className="h4 fw-bold text-success mb-2">Welcome to Sip &amp; Score</h1>
-              {authStage === 'sent' ? (
-                <>
-                  <p className="text-muted mb-3">
-                    Check <strong>{authEmail.trim()}</strong> for a sign-in link. Open it on any device to access your account.
-                  </p>
-                  <button
-                    type="button"
-                    className="btn btn-outline-success w-100"
-                    onClick={() => setAuthStage('form')}
-                  >
-                    Use a different email
-                  </button>
-                </>
-              ) : authStage === 'verifying' ? (
-                <p className="text-muted mb-0">Signing you in…</p>
-              ) : (
-                <>
-                  <p className="text-muted mb-4">
-                    Sign in with Google to access your matcha ratings from any device.
-                  </p>
-                  <button
-                    type="button"
-                    className="btn btn-light w-100 mb-3 d-flex align-items-center justify-content-center gap-2"
-                    onClick={() => googleLogin()}
-                    disabled={isSubmittingName}
-                    style={{ border: '1px solid #e0e0e0', padding: '0.75rem' }}
-                  >
-                    <svg width="20" height="20" viewBox="0 0 24 24">
-                      <text x="2" y="16" fontSize="14" fill="#1f5f34">G</text>
-                    </svg>
-                    {isSubmittingName ? 'Signing in…' : 'Sign in with Google'}
-                  </button>
-
-                  <div className="mb-3 text-center">
-                    <small className="text-muted">or continue with email</small>
-                  </div>
-
-                  <label className="form-label fw-semibold" htmlFor="auth-email">Email</label>
-                  <input
-                    id="auth-email"
-                    type="email"
-                    className="form-control mb-3"
-                    value={authEmail}
-                    onChange={(event) => setAuthEmail(event.target.value)}
-                    placeholder="you@example.com"
-                    autoComplete="email"
-                  />
-                  <label className="form-label fw-semibold" htmlFor="auth-username">Username <span className="text-muted fw-normal">(new accounts only)</span></label>
-                  <input
-                    id="auth-username"
-                    type="text"
-                    className="form-control mb-3"
-                    value={pendingUserName}
-                    onChange={(event) => setPendingUserName(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') {
-                        event.preventDefault()
-                        void submitAuthEmail()
-                      }
-                    }}
-                    placeholder="Your name"
-                    autoComplete="name"
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-success w-100"
-                    onClick={() => void submitAuthEmail()}
-                    disabled={!authEmail.trim() || isSubmittingName}
-                  >
-                    {isSubmittingName ? 'Sending…' : 'Send sign-in link'}
-                  </button>
+              <p className="text-muted mb-4">
+                What's your name?
+              </p>
+              <input
+                type="text"
+                className="form-control mb-3"
+                value={pendingUserName}
+                onChange={(event) => setPendingUserName(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && pendingUserName.trim()) {
+                    event.preventDefault()
+                    void handleNewUserNameSubmit()
+                  }
+                }}
+                placeholder="Enter your name"
+                autoFocus
+              />
+              <button
+                type="button"
+                className="btn btn-success w-100"
+                onClick={() => void handleNewUserNameSubmit()}
+                disabled={!pendingUserName.trim() || isSubmittingName}
+              >
+                {isSubmittingName ? 'Creating account…' : 'Continue'}
+              </button>
+              {authError && <div className="alert alert-danger border mt-3 mb-0">{authError}</div>}
+            </div>
+          </section>
+        ) : (
+          <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
+            <div className="card-body p-3 p-md-4">
+              <h1 className="h4 fw-bold text-success mb-2">Welcome to Sip &amp; Score</h1>
+              <p className="text-muted mb-4">
+                Sign in with Google to access your matcha ratings from any device.
+              </p>
+              <button
+                type="button"
+                className="btn btn-light w-100 d-flex align-items-center justify-content-center gap-2"
+                onClick={() => googleLogin()}
+                disabled={isSubmittingName}
+                style={{ border: '1px solid #e0e0e0', padding: '0.75rem' }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24">
+                  <text x="2" y="16" fontSize="14" fill="#1f5f34">G</text>
+                </svg>
+                {isSubmittingName ? 'Signing in…' : 'Sign in with Google'}
+              </button>
+              {authError && <div className="alert alert-danger border mt-3 mb-0">{authError}</div>}
+            </div>
+          </section>
+        )}
+      </main>
+    )
+  }
                   {authError && <div className="alert alert-warning border mt-3 mb-0">{authError}</div>}
                 </>
               )}
@@ -2091,82 +2114,6 @@ function App() {
                   </div>
                 </div>
               )}
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {needsEmailLink && !linkEmailSent && createPortal(
-        <div className="email-link-modal-overlay" role="dialog" aria-modal="true" aria-label="Link email to account" onClick={() => {/* prevent closing on overlay click */}}>
-          <div className="email-link-modal card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="card-body p-4">
-              <h3 className="h5 fw-bold text-success mb-3">Secure Your Account</h3>
-              <p className="text-muted mb-3">
-                Add an email to your account so you can sign back in from any device without losing your ratings.
-              </p>
-
-              <div className="mb-3">
-                <label className="form-label fw-semibold" htmlFor="modal-email-input">Email address</label>
-                <input
-                  id="modal-email-input"
-                  type="email"
-                  className="form-control"
-                  value={linkEmail}
-                  onChange={(event) => setLinkEmail(event.target.value)}
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                />
-              </div>
-
-              <button
-                type="button"
-                className="btn btn-success w-100"
-                onClick={() => void submitLinkEmail()}
-                disabled={!linkEmail.trim() || isSubmittingLinkEmail}
-              >
-                {isSubmittingLinkEmail ? 'Sending…' : 'Send verification link'}
-              </button>
-
-              {linkEmailError && <div className="alert alert-danger border mt-3 mb-0">{linkEmailError}</div>}
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-
-      {linkEmailSent && needsEmailLink && createPortal(
-        <div className="email-link-modal-overlay" role="dialog" aria-modal="true" aria-label="Verification link sent">
-          <div className="email-link-modal card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="card-body p-4">
-              <h3 className="h5 fw-bold text-success mb-3">Check Your Email</h3>
-              <p className="text-muted mb-2">
-                A verification link has been sent to <strong>{linkEmail.trim()}</strong>
-              </p>
-              <p className="text-muted mb-3">
-                Click the link in your email to finish securing your account. The link expires in 15 minutes.
-              </p>
-
-              {emailLinkVerificationUrl && (
-                <>
-                  <div className="alert alert-info border mb-3">
-                    <p className="small fw-semibold mb-2">Dev mode: Direct link</p>
-                    <p className="small mb-0"><a href={emailLinkVerificationUrl} target="_blank" rel="noopener noreferrer">{emailLinkVerificationUrl}</a></p>
-                  </div>
-                </>
-              )}
-
-              <button
-                type="button"
-                className="btn btn-outline-success w-100"
-                onClick={() => {
-                  setLinkEmailSent(false)
-                  setLinkEmail('')
-                  setEmailLinkVerificationUrl('')
-                }}
-              >
-                Try another email
-              </button>
             </div>
           </div>
         </div>,
