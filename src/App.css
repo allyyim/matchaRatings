@@ -842,6 +842,26 @@ textarea.form-control {
   align-items: flex-start;
   justify-content: center;
   padding: 1rem;
+  overflow-y: auto;
+  z-index: 100;
+}
+
+.entry-overlay-actions {
+  padding: 1.5rem;
+  background: rgba(8, 22, 14, 0.85);
+  backdrop-filter: blur(8px);
+  border-radius: 0.75rem;
+  margin-top: 1rem;
+}
+
+.entry-overlay-actions .btn {
+  min-width: 120px;
+}
+
+.entry-card:has(+ .entry-overlay) {
+  box-shadow: 0 0 0 3px var(--primary-green);
+  border-color: var(--primary-green);
+}
   z-index: 2;
   overflow-y: auto;
   overflow-x: hidden;

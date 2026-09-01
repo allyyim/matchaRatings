@@ -975,7 +975,8 @@ function App() {
     }
   }
 
-  async function submitAuthEmail() {
+
+  async function submitAuthEmail() {
     const email = authEmail.trim().toLowerCase()
     if (!validateEmail(email)) {
       setAuthError('Please enter a valid email address.')
@@ -1576,6 +1577,13 @@ function App() {
     setEditRating(entry.rating)
     setEditLocation(entry.location)
     setEditThoughts(entry.thoughts)
+
+    setTimeout(() => {
+      const element = document.querySelector(`[data-entry-id="${entry.id}"]`)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }
+    }, 0)
   }
 
   function startEntryEdit(entry: RatingEntry) {
@@ -2175,7 +2183,7 @@ function App() {
 
               <div className="mb-3">
                 <label className="form-label fw-semibold" htmlFor="location-input">Matcha place name</label>
-                <div className="form-text mb-2">Enter the cafe or shop name (not an address) — e.g. "Cha Cha Matcha".</div>
+                <div className="form-text mb-2">Enter the cafe or shop name".</div>
                 <div className="location-autocomplete">
                   <input
                     id="location-input"
@@ -2403,7 +2411,7 @@ function App() {
               {!isMyRatingsLoading && filteredMine.length === 0 && <div className="alert alert-light border">No ratings match this filter.</div>}
 
               {!isMyRatingsLoading && (isMyLogsExpanded ? filteredMine : filteredMine.slice(0, 3)).map((entry) => (
-                <article key={entry.id} className="card border-0 shadow-sm entry-card cursor-pointer" onClick={() => openEntryOverlay(entry)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openEntryOverlay(entry) }}>
+                <article key={entry.id} data-entry-id={entry.id} className="card border-0 shadow-sm entry-card cursor-pointer" onClick={() => openEntryOverlay(entry)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openEntryOverlay(entry) }}>
                   <div className="card-body d-flex gap-3 align-items-start justify-content-between">
                     <div className="d-flex gap-3 flex-grow-1 align-items-start">
                       <div className="entry-media-col">
@@ -2429,7 +2437,8 @@ function App() {
                   {selectedEntryId === entry.id && (
                     <div className="entry-overlay" onClick={(event) => event.stopPropagation()}>
                       {!isEditingEntry && (
-                        <div className="entry-overlay-actions d-flex gap-2">
+                        <div className="entry-overlay-actions d-flex flex-column gap-2 align-items-center">
+                          <div className="text-white small fw-semibold mb-2">Tap to edit</div>
                           <button type="button" className="btn btn-light btn-sm" onClick={() => startEntryEdit(entry)} aria-label="Edit rating">
                             <span className="action-icon-wrap">
                               <img src={pencilIconUrl} alt="" className="action-icon" />
