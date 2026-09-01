@@ -1855,33 +1855,37 @@ function App() {
             )}
 
             <div className="camera-modal-content">
-              <div className="camera-wrap mb-2">
-                <video ref={videoRef} className="camera-video" autoPlay playsInline muted />
-              </div>
+              {!photoDataUrl && (
+                <>
+                  <div className="camera-wrap mb-2">
+                    <video ref={videoRef} className="camera-video" autoPlay playsInline muted />
+                  </div>
 
-              <div className="d-flex gap-2 justify-content-center flex-wrap">
-                <button
-                  type="button"
-                  className="btn btn-success"
-                  onClick={captureFromCamera}
-                  disabled={!cameraReady}
-                >
-                  Capture Photo
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary"
-                  onClick={() => {
-                    setIsCameraModalOpen(false)
-                    stopCameraAccess()
-                  }}
-                >
-                  Close
-                </button>
-              </div>
+                  <div className="d-flex gap-2 justify-content-center flex-wrap">
+                    <button
+                      type="button"
+                      className="btn btn-success"
+                      onClick={captureFromCamera}
+                      disabled={!cameraReady}
+                    >
+                      Capture Photo
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline-secondary"
+                      onClick={() => {
+                        setIsCameraModalOpen(false)
+                        stopCameraAccess()
+                      }}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </>
+              )}
 
               {photoDataUrl && (
-                <div className="camera-modal-preview mt-2">
+                <div className="camera-modal-preview">
                   <h4 className="small fw-semibold text-success mb-2">Photo Preview</h4>
                   <img src={photoDataUrl} alt="Captured preview" className="preview-image mb-2" />
                   <div className="d-flex gap-2">
