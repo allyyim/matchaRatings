@@ -844,18 +844,23 @@ function App() {
         setIsSubmittingName(true)
         setAuthError('')
 
-        console.log('Google response:', { hasAccessToken: !!codeResponse.access_token, keys: Object.keys(codeResponse) })
+        console.log('Google codeResponse:', codeResponse)
+        console.log('Access token:', codeResponse.access_token)
 
         if (!codeResponse.access_token) {
+          console.error('No access token in response')
           setAuthError('Failed to get access token from Google. Please try again.')
           setIsSubmittingName(false)
           return
         }
 
+        const payload = JSON.stringify({ token: codeResponse.access_token, browserId })
+        console.log('Sending to backend:', { url: '/auth/google/verify', tokenLength: codeResponse.access_token.length, browserId })
+
         try {
           const response = await apiFetch<{ userName: string; email: string; token: string; isNewUser?: boolean }>('/auth/google/verify', {
             method: 'POST',
-            body: JSON.stringify({ token: codeResponse.access_token, browserId })
+            body: payload
           })
           setSessionToken(response.token || '')
           localStorage.setItem('matchaUserName', response.userName)
@@ -886,7 +891,8 @@ function App() {
       }
     },
     onError: () => setAuthError('Google sign-in failed'),
-    flow: 'implicit'
+    flow: 'implicit',
+    scope: 'openid profile email'
   })
 
   useEffect(() => {
