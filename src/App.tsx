@@ -651,6 +651,7 @@ function App() {
   const [isMyRatingsLoading, setIsMyRatingsLoading] = useState(true)
   const [myRatingsSort, setMyRatingsSort] = useState<'highest' | 'lowest' | 'greenest' | 'newest' | 'oldest'>('highest')
   const [isMyRatingsFilterOpen, setIsMyRatingsFilterOpen] = useState(false)
+  const [isMyRatingsSearchOpen, setIsMyRatingsSearchOpen] = useState(false)
   const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null)
   const [isEditingEntry, setIsEditingEntry] = useState(false)
   const [editRating, setEditRating] = useState(0)
@@ -1694,73 +1695,38 @@ function App() {
         <div className="filter-menu-overlay" role="dialog" aria-modal="true" aria-label="Filter ratings" onClick={() => setIsMyRatingsFilterOpen(false)}>
           <div className="filter-menu-card card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
             <div className="card-body p-3">
-              <h3 className="h5 fw-bold text-success mb-4">Filter & Sort</h3>
+              <p className="text-secondary mb-3 small fw-normal">Sort list by</p>
               
               <div className="d-flex flex-column gap-2">
-                <label className="small fw-semibold text-secondary mb-2">Total Score</label>
                 <button
                   type="button"
-                  className={`btn btn-sm w-100 text-start ${
-                    myRatingsSort === 'highest' ? 'btn-success' : 'btn-outline-success'
-                  }`}
+                  className="btn btn-success btn-sm w-100 text-start"
                   onClick={() => {
                     setMyRatingsSort('highest')
                     setIsMyRatingsFilterOpen(false)
                   }}
                 >
-                  Highest Score
+                  Total Score
                 </button>
                 <button
                   type="button"
-                  className={`btn btn-sm w-100 text-start ${
-                    myRatingsSort === 'lowest' ? 'btn-success' : 'btn-outline-success'
-                  }`}
-                  onClick={() => {
-                    setMyRatingsSort('lowest')
-                    setIsMyRatingsFilterOpen(false)
-                  }}
-                >
-                  Lowest Score
-                </button>
-
-                <label className="small fw-semibold text-secondary mb-2 mt-3">Date Added</label>
-                <button
-                  type="button"
-                  className={`btn btn-sm w-100 text-start ${
-                    myRatingsSort === 'newest' ? 'btn-success' : 'btn-outline-success'
-                  }`}
-                  onClick={() => {
-                    setMyRatingsSort('newest')
-                    setIsMyRatingsFilterOpen(false)
-                  }}
-                >
-                  Newest
-                </button>
-                <button
-                  type="button"
-                  className={`btn btn-sm w-100 text-start ${
-                    myRatingsSort === 'oldest' ? 'btn-success' : 'btn-outline-success'
-                  }`}
-                  onClick={() => {
-                    setMyRatingsSort('oldest')
-                    setIsMyRatingsFilterOpen(false)
-                  }}
-                >
-                  Oldest
-                </button>
-
-                <label className="small fw-semibold text-secondary mb-2 mt-3">Greenness Score</label>
-                <button
-                  type="button"
-                  className={`btn btn-sm w-100 text-start ${
-                    myRatingsSort === 'greenest' ? 'btn-success' : 'btn-outline-success'
-                  }`}
+                  className="btn btn-success btn-sm w-100 text-start"
                   onClick={() => {
                     setMyRatingsSort('greenest')
                     setIsMyRatingsFilterOpen(false)
                   }}
                 >
-                  Greenest
+                  Greenness score
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-success btn-sm w-100 text-start"
+                  onClick={() => {
+                    setMyRatingsSort('newest')
+                    setIsMyRatingsFilterOpen(false)
+                  }}
+                >
+                  Date added
                 </button>
               </div>
             </div>
@@ -2066,42 +2032,59 @@ function App() {
               </div>
 
               <div className="my-ratings-controls">
-                <div className="my-ratings-action-row">
-                  <div className="score-sort-bubble">
+                {isMyRatingsSearchOpen ? (
+                  <div className="my-ratings-search-bar">
+                    <div className="search-bar-wrapper">
+                      <span className="search-bar-icon">⌕</span>
+                      <input
+                        id="my-ratings-search-input"
+                        type="text"
+                        className="form-control search-bar-input"
+                        placeholder="Search your list"
+                        value={myLogsSearchTerm}
+                        onChange={(event) => setMyLogsSearchTerm(event.target.value)}
+                        autoFocus
+                      />
+                    </div>
                     <button
                       type="button"
-                      className="filter-bubble-button"
-                      onClick={() => setIsMyRatingsFilterOpen(true)}
-                      aria-label="Open filter menu"
-                      title="Filter and sort"
-                    >
-                      <span className="filter-icon">⚙️</span>
-                      <span className="score-sort-label">Score</span>
-                    </button>
-                  </div>
-
-                  <div className="ratings-search-shell">
-                    <button
-                      type="button"
-                      className="search-icon-button"
-                      aria-label="Search ratings"
+                      className="search-bar-close"
                       onClick={() => {
-                        const input = document.getElementById('my-ratings-search-input') as HTMLInputElement | null
-                        input?.focus()
+                        setIsMyRatingsSearchOpen(false)
+                        setMyLogsSearchTerm('')
                       }}
+                      aria-label="Close search"
                     >
-                      <span aria-hidden="true">⌕</span>
+                      Close
                     </button>
-                    <input
-                      id="my-ratings-search-input"
-                      type="text"
-                      className="form-control ratings-search-input"
-                      placeholder="Search"
-                      value={myLogsSearchTerm}
-                      onChange={(event) => setMyLogsSearchTerm(event.target.value)}
-                    />
                   </div>
-                </div>
+                ) : (
+                  <div className="my-ratings-action-row">
+                    <div className="score-sort-bubble">
+                      <button
+                        type="button"
+                        className="filter-bubble-button"
+                        onClick={() => setIsMyRatingsFilterOpen(true)}
+                        aria-label="Open filter menu"
+                        title="Filter and sort"
+                      >
+                        <span className="filter-icon">☰</span>
+                        <span className="score-sort-label">Filter by</span>
+                      </button>
+                    </div>
+
+                    <div className="ratings-search-shell">
+                      <button
+                        type="button"
+                        className="search-icon-button"
+                        aria-label="Search ratings"
+                        onClick={() => setIsMyRatingsSearchOpen(true)}
+                      >
+                        <span aria-hidden="true">⌕</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             <div className="d-flex flex-column gap-3">
