@@ -80,6 +80,16 @@ const pixelStarUrl = `${import.meta.env.BASE_URL}blank.png`
 const pixelStarFilledUrl = `${import.meta.env.BASE_URL}filled.png`
 const pencilIconUrl = `${import.meta.env.BASE_URL}pencil.svg`
 const trashIconUrl = `${import.meta.env.BASE_URL}trash.svg`
+const noPhotoPlaceholderUrl = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`
+  <svg xmlns="http://www.w3.org/2000/svg" width="640" height="640" viewBox="0 0 640 640">
+    <rect width="640" height="640" rx="36" fill="#edf6ea"/>
+    <rect x="52" y="52" width="536" height="536" rx="28" fill="#f9fbf7" stroke="#d0e3c3" stroke-width="8"/>
+    <path d="M180 388c26-56 64-90 132-90s106 34 132 90" fill="none" stroke="#a7c79d" stroke-width="18" stroke-linecap="round"/>
+    <circle cx="320" cy="242" r="86" fill="#dfeecf"/>
+    <path d="M196 422h248" stroke="#b9d2ad" stroke-width="12" stroke-linecap="round"/>
+    <text x="320" y="552" text-anchor="middle" fill="#58755e" font-family="Arial, sans-serif" font-size="34" font-weight="600">No photo</text>
+  </svg>
+`)}`
 
 const drinkAreaModelConfig = {
   modelUrl: `${import.meta.env.BASE_URL}ml/drink-area/model.json`,
@@ -601,6 +611,7 @@ function App() {
   const cameraStreamRef = useRef<MediaStream | null>(null)
 
   const [myEntries, setMyEntries] = useState<RatingEntry[]>([])
+  const [myRatingsFilter, setMyRatingsFilter] = useState<'all' | 'zero' | 'low' | 'high'>('all')
   const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null)
   const [isEditingEntry, setIsEditingEntry] = useState(false)
   const [editRating, setEditRating] = useState(0)
@@ -652,6 +663,19 @@ function App() {
       entry.thoughts.toLowerCase().includes(searchLower)
     )
   }, [rankedMine, myLogsSearchTerm])
+
+  const filteredMine = useMemo(() => {
+    switch (myRatingsFilter) {
+      case 'zero':
+        return sortedMine.filter((entry) => entry.rating === 0)
+      case 'low':
+        return sortedMine.filter((entry) => entry.rating > 0 && entry.rating < 3)
+      case 'high':
+        return sortedMine.filter((entry) => entry.rating >= 3)
+      default:
+        return sortedMine
+    }
+  }, [sortedMine, myRatingsFilter])
 
   const rankedFriendEntries = useMemo(() => {
     return [...friendEntries].sort(compareEntriesForRank)
@@ -1110,21 +1134,29 @@ function App() {
   }
 
   async function saveEntry() {
-    if (matchaGreenness === null || !photoDataUrl || !currentUserName) {
-      alert('Please upload/capture a photo and analyze greenness first.')
+    if (!currentUserName) {
+      alert('Please set your name before saving a rating.')
+      return
+    }
+
+    if (currentRating < 0 || currentRating > 5) {
+      alert('Rating must be between 0 and 5 stars.')
       return
     }
 
     setIsSavingEntry(true)
     const overlayShownAt = Date.now()
     try {
+      const resolvedPhoto = photoDataUrl || noPhotoPlaceholderUrl
+      const resolvedGreenness = matchaGreenness ?? 0
+
       await apiFetch<{ rating: RatingEntry }>('/ratings', {
         method: 'POST',
         body: JSON.stringify({
           userName: currentUserName,
-          photo: photoDataUrl,
+          photo: resolvedPhoto,
           rating: currentRating,
-          greenness: matchaGreenness,
+          greenness: resolvedGreenness,
           location: location.trim(),
           thoughts: thoughts.trim()
         })
@@ -1683,6 +1715,7 @@ function App() {
 
               <div className="mb-3">
                 <label className="form-label fw-semibold d-block">Rating</label>
+                <div className="small text-muted mb-2">Half-star and 0-star ratings are allowed. Drag or tap on a star to set a value.</div>
                 <div id="star-rating" className="d-flex gap-2 rating-star-row">
                   {Array.from({ length: 5 }, (_, idx) => {
                     const starIndex = idx + 1
@@ -1729,6 +1762,25 @@ function App() {
                 />
               </div>
 
+              <div className="d-flex flex-column flex-sm-row align-items-sm-center gap-2 mb-2">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={() => {
+                    const resolvedPhoto = photoDataUrl || noPhotoPlaceholderUrl
+                    setPhotoDataUrl('')
+                    setMatchaGreenness(0)
+                    setMlCoveragePercent(null)
+                    setMlConfidencePercent(null)
+                    setMlStatus('No photo was included for this rating; green score was not analyzed.')
+                    setCurrentRating((previous) => previous)
+                    console.info('No photo selected for this rating; saving without image.', resolvedPhoto)
+                  }}
+                >
+                  Skip photo / Save without image
+                </button>
+              </div>
+
               <button type="button" className="btn btn-success w-100" onClick={() => void saveEntry()} disabled={isSavingEntry}>
                 {isSavingEntry ? 'Saving...' : 'Save Rating'}
               </button>
@@ -1736,7 +1788,7 @@ function App() {
           </div>
 
           <section className="mt-4 mb-5">
-            <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
               <div className="d-flex align-items-center gap-2 flex-grow-1">
                 <div>
                   <h2 className="h4 fw-bold text-success mb-0">
@@ -1745,19 +1797,33 @@ function App() {
                   <small className="text-muted">Tap to edit</small>
                 </div>
               </div>
-              <input
-                type="text"
-                className="form-control"
-                style={{ maxWidth: '200px' }}
-                placeholder="Search by Location"
-                value={myLogsSearchTerm}
-                onChange={(event) => setMyLogsSearchTerm(event.target.value)}
-              />
+              <div className="d-flex gap-2 align-items-center flex-wrap">
+                <input
+                  type="text"
+                  className="form-control"
+                  style={{ maxWidth: '200px' }}
+                  placeholder="Search by Location"
+                  value={myLogsSearchTerm}
+                  onChange={(event) => setMyLogsSearchTerm(event.target.value)}
+                />
+                <select
+                  className="form-select"
+                  style={{ maxWidth: '165px' }}
+                  value={myRatingsFilter}
+                  onChange={(event) => setMyRatingsFilter(event.target.value as 'all' | 'zero' | 'low' | 'high')}
+                  aria-label="Filter my ratings"
+                >
+                  <option value="all">All ratings</option>
+                  <option value="zero">0 stars</option>
+                  <option value="low">Under 3 stars</option>
+                  <option value="high">3 stars and up</option>
+                </select>
+              </div>
             </div>
             <div className="d-flex flex-column gap-3">
-              {sortedMine.length === 0 && <div className="alert alert-light border">No ratings yet.</div>}
+              {filteredMine.length === 0 && <div className="alert alert-light border">No ratings match this filter.</div>}
 
-              {(isMyLogsExpanded ? sortedMine : sortedMine.slice(0, 3)).map((entry) => (
+              {(isMyLogsExpanded ? filteredMine : filteredMine.slice(0, 3)).map((entry) => (
                 <article key={entry.id} className="card border-0 shadow-sm entry-card" onClick={() => openEntryOverlay(entry)}>
                   <div className="card-body d-flex gap-3 align-items-start">
                     <div className="entry-media-col">
@@ -1900,7 +1966,7 @@ function App() {
                   )}
                 </article>
               ))}
-              {sortedMine.length > 3 && (
+              {filteredMine.length > 3 && (
                 <button
                   type="button"
                   className="btn btn-outline-success w-100 mt-2"
