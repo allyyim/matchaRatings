@@ -843,27 +843,38 @@ function App() {
       try {
         setIsSubmittingName(true)
         setAuthError('')
-        const response = await apiFetch<{ userName: string; email: string; token: string; isNewUser?: boolean }>('/auth/google/verify', {
-          method: 'POST',
-          body: JSON.stringify({ token: codeResponse.access_token, browserId })
-        }).catch(async (error) => {
-          const errorData = error instanceof Response ? await error.json() : { error: error.message }
-          if (errorData.isNewUser) {
-            sessionStorage.setItem('googleAccessToken', codeResponse.access_token)
-            setRequiresManualName(true)
-            setPendingUserName('')
-            return null
-          }
-          throw error
-        })
 
-        if (response) {
+        if (!codeResponse.access_token) {
+          setAuthError('Failed to get access token from Google. Please try again.')
+          return
+        }
+
+        try {
+          const response = await apiFetch<{ userName: string; email: string; token: string; isNewUser?: boolean }>('/auth/google/verify', {
+            method: 'POST',
+            body: JSON.stringify({ token: codeResponse.access_token, browserId })
+          })
           setSessionToken(response.token || '')
           localStorage.setItem('matchaUserName', response.userName)
           setCurrentUserName(response.userName)
           setRequiresManualName(false)
           setIsUserReady(true)
           void loadDrinkAreaModel().catch(() => undefined)
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error)
+          try {
+            const errorData = JSON.parse(errorMsg)
+            if (errorData.isNewUser) {
+              sessionStorage.setItem('googleAccessToken', codeResponse.access_token)
+              setRequiresManualName(true)
+              setPendingUserName('')
+              return
+            }
+            throw new Error(errorData.error || errorMsg)
+          } catch (parseError) {
+            if (parseError instanceof Error) throw parseError
+            throw error
+          }
         }
       } catch (error) {
         setAuthError(error instanceof Error ? error.message : 'Google sign-in failed')
