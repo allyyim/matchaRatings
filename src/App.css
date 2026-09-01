@@ -405,27 +405,36 @@ textarea.form-control {
   background: transparent;
   overflow: hidden;
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotate(0deg);
+  transform-origin: center;
   transition: transform 0.15s ease, filter 0.15s ease;
   filter: drop-shadow(0 1px 3px rgba(26, 155, 142, 0.15));
 }
 
 .star:hover {
-  transform: scale(1.15);
+  transform: scale(1.15) rotate(0deg);
   filter: drop-shadow(0 3px 8px rgba(26, 155, 142, 0.3));
 }
 
 .star img {
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 100%;
+  height: 100%;
   display: block;
+  object-fit: contain;
   image-rendering: pixelated;
+  transform: rotate(0deg);
 }
 
 .star-base,
 .star-fill-clip {
   position: absolute;
-  left: 0;
-  top: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(0deg);
 }
 
 .star-fill-clip {
@@ -534,7 +543,7 @@ textarea.form-control {
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
   border-radius: 1rem;
-  overflow: hidden;
+  overflow: visible;
   border: 1px solid #f0f0f0;
   background: white;
 }
@@ -556,10 +565,12 @@ textarea.form-control {
   backdrop-filter: blur(2px);
   border-radius: inherit;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 1rem;
   z-index: 2;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .entry-overlay-actions {
@@ -588,6 +599,8 @@ textarea.form-control {
 
 .entry-edit-panel {
   width: min(32rem, 100%);
+  max-height: min(70vh, 34rem);
+  overflow-y: auto;
   background: white;
   border-radius: 1rem;
   border: 1px solid var(--border-light);
