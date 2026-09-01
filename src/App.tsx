@@ -1344,6 +1344,18 @@ function App() {
     setMlStatus('ML drink-area detector will load when you analyze a photo.')
   }
 
+  function openPhotoLibrary() {
+    const input = photoInputRef.current
+    if (!input) {
+      alert('Photo library is not ready yet. Please try again.')
+      return
+    }
+
+    input.value = ''
+    input.click()
+    setIsUploadMenuOpen(false)
+  }
+
   async function handlePhotoSelection(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     if (!file) return
@@ -1621,6 +1633,17 @@ function App() {
         document.body
       )}
 
+      <input
+        id="photo-library-input"
+        ref={photoInputRef}
+        type="file"
+        className="photo-library-input"
+        accept="image/*"
+        onChange={handlePhotoSelection}
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+
       {isExplorePlaceModalOpen && createPortal(
         <div className="explore-place-modal-overlay" role="dialog" aria-modal="true" aria-label={`${selectedExplorePlaceName} ratings`}>
           <div className="explore-place-modal card border-0 shadow-lg">
@@ -1699,22 +1722,10 @@ function App() {
                 <button
                   type="button"
                   className="btn btn-success w-100 text-start"
-                  onClick={() => {
-                    setIsUploadMenuOpen(false)
-                    photoInputRef.current?.click()
-                  }}
+                  onClick={openPhotoLibrary}
                 >
                   Photo Library
                 </button>
-                <input
-                  id="photo-library-input"
-                  ref={photoInputRef}
-                  type="file"
-                  style={{ display: 'none' }}
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handlePhotoSelection}
-                />
               </div>
             </div>
           </div>

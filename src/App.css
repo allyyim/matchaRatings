@@ -1536,6 +1536,16 @@ a:focus-visible {
   border-radius: 0.75rem;
 }
 
+.photo-library-input {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .filter-menu-overlay {
   position: fixed;
   inset: 0;
