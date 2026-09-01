@@ -135,7 +135,7 @@ async function sendMagicLinkEmail(email, rawToken, purpose) {
 
   if (!resend) {
     console.log(`[dev] Magic sign-in link for ${email}: ${link}`)
-    return
+    return link
   }
 
   const subject = purpose === 'link' ? 'Link your Sip & Score account' : 'Your Sip & Score sign-in link'
@@ -149,6 +149,8 @@ async function sendMagicLinkEmail(email, rawToken, purpose) {
       <p>If you didn't request this, you can safely ignore this email.</p>
     `
   })
+
+  return null
 }
 
 function getSessionFromRequest(req) {
@@ -524,8 +526,8 @@ app.post('/api/auth/link-email', authRateLimiter, async (req, res) => {
   }
 
   const rawToken = await createLoginToken(email, 'link', req.session.userName)
-  await sendMagicLinkEmail(email, rawToken, 'link')
-  return res.json({ ok: true })
+  const verificationLink = await sendMagicLinkEmail(email, rawToken, 'link')
+  return res.json({ ok: true, verificationLink: verificationLink || undefined })
 })
 
 app.post('/api/ratings', async (req, res) => {

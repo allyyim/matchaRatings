@@ -630,6 +630,7 @@ function App() {
   const [linkEmailSent, setLinkEmailSent] = useState(false)
   const [linkEmailError, setLinkEmailError] = useState('')
   const [isSubmittingLinkEmail, setIsSubmittingLinkEmail] = useState(false)
+  const [emailLinkVerificationUrl, setEmailLinkVerificationUrl] = useState('')
 
   const [currentRating, setCurrentRating] = useState(0)
   const [location, setLocation] = useState('')
@@ -961,10 +962,11 @@ function App() {
     setIsSubmittingLinkEmail(true)
     setLinkEmailError('')
     try {
-      await apiFetch<{ ok: boolean }>('/auth/link-email', {
+      const response = await apiFetch<{ ok: boolean; verificationLink?: string }>('/auth/link-email', {
         method: 'POST',
         body: JSON.stringify({ email })
       })
+      setEmailLinkVerificationUrl(response.verificationLink || '')
       setLinkEmailSent(true)
     } catch (error) {
       setLinkEmailError(error instanceof Error ? error.message : 'Unable to send link. Please try again.')
@@ -2008,6 +2010,82 @@ function App() {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {needsEmailLink && !linkEmailSent && createPortal(
+        <div className="email-link-modal-overlay" role="dialog" aria-modal="true" aria-label="Link email to account" onClick={() => {/* prevent closing on overlay click */}}>
+          <div className="email-link-modal card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="card-body p-4">
+              <h3 className="h5 fw-bold text-success mb-3">Secure Your Account</h3>
+              <p className="text-muted mb-3">
+                Add an email to your account so you can sign back in from any device without losing your ratings.
+              </p>
+
+              <div className="mb-3">
+                <label className="form-label fw-semibold" htmlFor="modal-email-input">Email address</label>
+                <input
+                  id="modal-email-input"
+                  type="email"
+                  className="form-control"
+                  value={linkEmail}
+                  onChange={(event) => setLinkEmail(event.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                />
+              </div>
+
+              <button
+                type="button"
+                className="btn btn-success w-100"
+                onClick={() => void submitLinkEmail()}
+                disabled={!linkEmail.trim() || isSubmittingLinkEmail}
+              >
+                {isSubmittingLinkEmail ? 'Sending…' : 'Send verification link'}
+              </button>
+
+              {linkEmailError && <div className="alert alert-danger border mt-3 mb-0">{linkEmailError}</div>}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {linkEmailSent && needsEmailLink && createPortal(
+        <div className="email-link-modal-overlay" role="dialog" aria-modal="true" aria-label="Verification link sent">
+          <div className="email-link-modal card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="card-body p-4">
+              <h3 className="h5 fw-bold text-success mb-3">Check Your Email</h3>
+              <p className="text-muted mb-2">
+                A verification link has been sent to <strong>{linkEmail.trim()}</strong>
+              </p>
+              <p className="text-muted mb-3">
+                Click the link in your email to finish securing your account. The link expires in 15 minutes.
+              </p>
+
+              {emailLinkVerificationUrl && (
+                <>
+                  <div className="alert alert-info border mb-3">
+                    <p className="small fw-semibold mb-2">Dev mode: Direct link</p>
+                    <p className="small mb-0"><a href={emailLinkVerificationUrl} target="_blank" rel="noopener noreferrer">{emailLinkVerificationUrl}</a></p>
+                  </div>
+                </>
+              )}
+
+              <button
+                type="button"
+                className="btn btn-outline-success w-100"
+                onClick={() => {
+                  setLinkEmailSent(false)
+                  setLinkEmail('')
+                  setEmailLinkVerificationUrl('')
+                }}
+              >
+                Try another email
+              </button>
             </div>
           </div>
         </div>,

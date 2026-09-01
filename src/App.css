@@ -1546,6 +1546,27 @@ a:focus-visible {
   pointer-events: none;
 }
 
+.email-link-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10002;
+  background: rgba(8, 22, 14, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.email-link-modal {
+  width: min(90vw, 400px);
+  background: white;
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s ease;
+}
+
 .filter-menu-overlay {
   position: fixed;
   inset: 0;
