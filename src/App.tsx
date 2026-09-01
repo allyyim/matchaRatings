@@ -644,6 +644,7 @@ function App() {
   const locationLookupInFlightRef = useRef<Map<string, Promise<string[]>>>(new Map())
   const [thoughts, setThoughts] = useState('')
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false)
+  const [milestoneMessage, setMilestoneMessage] = useState('')
   const [photoDataUrl, setPhotoDataUrl] = useState('')
   const [matchaGreenness, setMatchaGreenness] = useState<number | null>(null)
   const [mlStatus, setMlStatus] = useState('ML drink-area detector will load when you analyze a photo.')
@@ -694,7 +695,7 @@ function App() {
 
   const showLoadingOverlay = isSavingEntry || isLoadingFriendRatings || isLoadingExplorePlaces
   const loadingOverlayText = isSavingEntry
-    ? 'Saving your rating...'
+    ? 'Brewing your memory...'
     : isLoadingExplorePlaces
       ? 'Loading explore data...'
       : 'Loading friend ratings...'
@@ -1466,6 +1467,24 @@ function App() {
 
       const updated = await apiFetch<{ ratings: RatingEntry[] }>(`/ratings?userName=${encodeURIComponent(currentUserName)}`)
       setMyEntries(updated.ratings)
+
+      // Check for milestones
+      const count = updated.ratings.length
+      if (count === 1) {
+        setMilestoneMessage('🎉 Your matcha journey starts here!')
+      } else if (count === 10) {
+        setMilestoneMessage('🏆 10 ratings! You\'re a true matcha enthusiast!')
+      } else if (count === 25) {
+        setMilestoneMessage('✨ 25 ratings! You\'re building an incredible collection!')
+      } else if (count === 50) {
+        setMilestoneMessage('🌟 50 ratings! You\'re a matcha connoisseur!')
+      } else if (count === 100) {
+        setMilestoneMessage('👑 100 ratings! You\'re a matcha legend!')
+      }
+
+      if (milestoneMessage) {
+        setTimeout(() => setMilestoneMessage(''), 4000)
+      }
 
       setCurrentRating(0)
       setLocation('')
