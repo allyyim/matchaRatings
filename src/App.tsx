@@ -2004,9 +2004,7 @@ function App() {
             <div className="d-flex flex-column gap-3">
               {isMyRatingsLoading && (
                 <div className="rating-loading-shell" aria-live="polite">
-                  <div className="text-muted small mb-2">Loading your log…</div>
-                  <div className="rating-loading-card" />
-                  <div className="rating-loading-card short" />
+                  <div className="text-muted small">Loading your log…</div>
                 </div>
               )}
 
