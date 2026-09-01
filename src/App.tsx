@@ -642,6 +642,7 @@ function App() {
   const [cameraReady, setCameraReady] = useState(false)
   const [cameraError, setCameraError] = useState('')
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false)
+  const [isUploadMenuOpen, setIsUploadMenuOpen] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
   const cameraStreamRef = useRef<MediaStream | null>(null)
@@ -1641,6 +1642,59 @@ function App() {
         document.body
       )}
 
+      {isUploadMenuOpen && createPortal(
+        <div className="upload-menu-overlay" role="dialog" aria-modal="true" aria-label="Upload picture options" onClick={() => setIsUploadMenuOpen(false)}>
+          <div className="upload-menu-card card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="card-body p-3">
+              <h3 className="h5 fw-bold text-success mb-4">Upload Picture</h3>
+              
+              <div className="d-flex flex-column gap-2">
+                <button
+                  type="button"
+                  className="btn btn-success w-100 text-start"
+                  onClick={() => {
+                    setIsUploadMenuOpen(false)
+                    setIsCameraModalOpen(true)
+                  }}
+                >
+                  📷 Open Camera
+                </button>
+                
+                <label
+                  htmlFor="photo-library-input"
+                  className="btn btn-success w-100 text-start mb-0"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setIsUploadMenuOpen(false)}
+                >
+                  🖼️ Photo Library
+                </label>
+                <input
+                  id="photo-library-input"
+                  ref={photoInputRef}
+                  type="file"
+                  className="visually-hidden"
+                  accept="image/*,.jpg,.jpeg,.png,.jfif,.webp"
+                  onChange={handlePhotoSelection}
+                />
+                
+                <button
+                  type="button"
+                  className="btn btn-outline-success w-100"
+                  onClick={() => {
+                    setPhotoDataUrl(noPhotoPlaceholderUrl)
+                    setIsUploadMenuOpen(false)
+                    stopCameraAccess()
+                  }}
+                >
+                  ✕ I Have No Picture
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {isCameraModalOpen && createPortal(
         <div className="camera-modal-overlay" role="dialog" aria-modal="true" aria-label="Camera capture">
           <div className="camera-modal-container card border-0 shadow-lg">
@@ -1812,42 +1866,26 @@ function App() {
               </div>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold">Camera</label>
+                <label className="form-label fw-semibold">Picture</label>
                 <div className="d-flex gap-2 flex-wrap align-items-center justify-content-center justify-content-md-start">
                   <button 
                     type="button" 
                     className="btn btn-success" 
-                    onClick={() => setIsCameraModalOpen(true)}
+                    onClick={() => setIsUploadMenuOpen(true)}
                   >
-                    Open Camera
+                    Upload Picture
                   </button>
-                  {photoDataUrl && (
+                  {photoDataUrl && photoDataUrl !== noPhotoPlaceholderUrl && (
                     <span className="small text-success fw-semibold">Photo ready</span>
+                  )}
+                  {photoDataUrl === noPhotoPlaceholderUrl && (
+                    <span className="small text-muted fw-semibold">No photo selected</span>
                   )}
                   {cameraError && <span className="small text-danger align-self-center">{cameraError}</span>}
                 </div>
               </div>
 
-              <div className="mb-3">
-                <label className="form-label fw-semibold d-block">Photo</label>
-                <label
-                  htmlFor="photo-library-input"
-                  className="btn btn-success mb-2"
-                  aria-label="Open photo library"
-                >
-                  Open Photo Library
-                </label>
-                <input
-                  id="photo-library-input"
-                  ref={photoInputRef}
-                  type="file"
-                  className="visually-hidden"
-                  accept="image/*,.jpg,.jpeg,.png,.jfif,.webp"
-                  onChange={handlePhotoSelection}
-                />
-              </div>
-
-              {photoDataUrl && (
+              {photoDataUrl && photoDataUrl !== noPhotoPlaceholderUrl && (
                 <div className="preview-wrap mb-3">
                   <img src={photoDataUrl} alt="Matcha preview" className="preview-image" loading="lazy" decoding="async" />
                 </div>
@@ -1870,7 +1908,7 @@ function App() {
 
               <div className="mb-3">
                 <label className="form-label fw-semibold d-block">Rating</label>
-                <div className="small text-muted mb-2">Half-star and 0-star ratings are allowed. Drag or tap on a star to set a value.</div>
+                <div className="small text-muted mb-2">Half-star and 0-star ratings are allowed. Tap on a star to set a value.</div>
                 <div id="star-rating" className="d-flex gap-2 rating-star-row">
                   {Array.from({ length: 5 }, (_, idx) => {
                     const starIndex = idx + 1
