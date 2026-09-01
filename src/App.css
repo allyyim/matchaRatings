@@ -858,10 +858,6 @@ textarea.form-control {
   min-width: 120px;
 }
 
-.entry-card:has(+ .entry-overlay) {
-  box-shadow: 0 0 0 3px var(--primary-green);
-  border-color: var(--primary-green);
-}
   z-index: 2;
   overflow-y: auto;
   overflow-x: hidden;
