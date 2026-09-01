@@ -648,7 +648,6 @@ function App() {
 
   const [myEntries, setMyEntries] = useState<RatingEntry[]>([])
   const [isMyRatingsLoading, setIsMyRatingsLoading] = useState(true)
-  const [myRatingsFilter, setMyRatingsFilter] = useState<'all' | 'zero' | 'low' | 'high'>('all')
   const [myRatingsSort, setMyRatingsSort] = useState<'highest' | 'lowest' | 'greenest'>('highest')
   const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null)
   const [isEditingEntry, setIsEditingEntry] = useState(false)
@@ -705,20 +704,6 @@ function App() {
   const filteredMine = useMemo(() => {
     const next = [...sortedMine]
 
-    switch (myRatingsFilter) {
-      case 'zero':
-        next.splice(0, next.length, ...next.filter((entry) => entry.rating === 0))
-        break
-      case 'low':
-        next.splice(0, next.length, ...next.filter((entry) => entry.rating > 0 && entry.rating < 3))
-        break
-      case 'high':
-        next.splice(0, next.length, ...next.filter((entry) => entry.rating >= 3))
-        break
-      default:
-        break
-    }
-
     switch (myRatingsSort) {
       case 'lowest':
         next.sort((a, b) => a.comboScore - b.comboScore || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -733,7 +718,7 @@ function App() {
     }
 
     return next
-  }, [sortedMine, myRatingsFilter, myRatingsSort])
+  }, [sortedMine, myRatingsSort])
 
   const rankedFriendEntries = useMemo(() => {
     return [...friendEntries].sort(compareEntriesForRank)
@@ -1969,46 +1954,26 @@ function App() {
               </div>
 
               <div className="my-ratings-controls">
-                <div className="my-ratings-pill-row" aria-label="Filter my ratings">
-                  {[
-                    { value: 'all', label: 'All' },
-                    { value: 'zero', label: '0' },
-                    { value: 'low', label: 'Under 3' },
-                    { value: 'high', label: '3+' }
-                  ].map((filter) => (
-                    <button
-                      key={filter.value}
-                      type="button"
-                      className={`filter-chip ${myRatingsFilter === filter.value ? 'active' : ''}`}
-                      onClick={() => setMyRatingsFilter(filter.value as 'all' | 'zero' | 'low' | 'high')}
-                    >
-                      {filter.label}
-                    </button>
-                  ))}
-                </div>
-
                 <div className="my-ratings-action-row">
                   <div className="score-sort-cluster">
-                    <div className="score-sort-buttongroup">
-                      <button
-                        type="button"
-                        className={`score-sort-button ${myRatingsSort === 'highest' ? 'active' : ''}`}
-                        onClick={() => setMyRatingsSort('highest')}
-                        aria-label="Sort by score descending"
-                        title="Highest score first"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        className={`score-sort-button ${myRatingsSort === 'lowest' ? 'active' : ''}`}
-                        onClick={() => setMyRatingsSort('lowest')}
-                        aria-label="Sort by score ascending"
-                        title="Lowest score first"
-                      >
-                        ↓
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      className={`score-sort-button ${myRatingsSort === 'lowest' ? 'active' : ''}`}
+                      onClick={() => setMyRatingsSort('lowest')}
+                      aria-label="Sort by score ascending"
+                      title="Lowest score first"
+                    >
+                      ↓
+                    </button>
+                    <button
+                      type="button"
+                      className={`score-sort-button ${myRatingsSort === 'highest' ? 'active' : ''}`}
+                      onClick={() => setMyRatingsSort('highest')}
+                      aria-label="Sort by score descending"
+                      title="Highest score first"
+                    >
+                      ↑
+                    </button>
                     <span className="score-sort-label">Score</span>
                   </div>
 
