@@ -499,6 +499,61 @@ app.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
   }
 })
 
+app.post('/api/migrate/ali', async (req, res) => {
+  const token = String(req.headers.authorization || '').replace('Bearer ', '').trim()
+
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized: please sign in first' })
+  }
+
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as any
+    const currentUserName = payload.userName
+
+    const aliAccount = await pool.query(
+      'SELECT id, email, user_name FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+      ['Ali']
+    )
+
+    if (aliAccount.rowCount === 0) {
+      return res.status(404).json({ error: 'Ali account not found' })
+    }
+
+    const ali = aliAccount.rows[0]
+
+    if (ali.email !== 'alisonyim3@gmail.com') {
+      return res.status(400).json({ error: 'Email mismatch: Ali account not linked to alisonyim3@gmail.com' })
+    }
+
+    const aliAccountId = ali.id
+
+    await pool.query('BEGIN')
+
+    await pool.query(
+      'UPDATE ratings SET user_name = $1 WHERE user_name = $2',
+      [currentUserName, 'Ali']
+    )
+
+    await pool.query('COMMIT')
+
+    return res.json({
+      success: true,
+      message: `Migrated all Ali ratings to ${currentUserName}`,
+      migratedCount: (await pool.query(
+        'SELECT COUNT(*) FROM ratings WHERE user_name = $1',
+        [currentUserName]
+      )).rows[0].count
+    })
+  } catch (error) {
+    await pool.query('ROLLBACK').catch(() => null)
+    console.error('Migration failed:', error)
+    if (error instanceof Error && error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ error: 'Invalid token' })
+    }
+    return res.status(400).json({ error: 'Migration failed' })
+  }
+})
+
 app.post('/api/users/session', async (req, res) => {
   const browserId = String(req.body?.browserId || '').trim()
   const incomingUserName = sanitizeUserName(String(req.body?.userName || '').trim())
