@@ -844,8 +844,11 @@ function App() {
         setIsSubmittingName(true)
         setAuthError('')
 
+        console.log('Google response:', { hasAccessToken: !!codeResponse.access_token, keys: Object.keys(codeResponse) })
+
         if (!codeResponse.access_token) {
           setAuthError('Failed to get access token from Google. Please try again.')
+          setIsSubmittingName(false)
           return
         }
 
