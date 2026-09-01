@@ -10,7 +10,7 @@ This project uses a split frontend/backend architecture.
 - Frontend: React + TypeScript SPA (`src/App.tsx`) built with Vite.
 - Backend: Express API (`server/index.js`) serving JSON endpoints.
 - Data: PostgreSQL via `pg` pool (`server/db.js`).
-- ML assist: Optional TensorFlow.js model in `public/ml/drink-area/model.json` for drink-area segmentation before greenness scoring.
+- ML assist: A custom TensorFlow.js drink-area segmentation model in `public/ml/drink-area/model.json` for locating the liquid region before greenness analysis.
 - Monitoring: Free Sentry tier for frontend + backend crash monitoring and release tracking.
 - Release tagging: GitHub Releases should include a version tag like `v1.0.0` and match the app release value used in Sentry.
 - Scoring:
@@ -36,6 +36,44 @@ flowchart TD
    E --> F
    F --> G
 ```
+
+</details>
+
+<details open>
+<summary><strong>ML Model: Drink-Area Segmentation</strong></summary>
+
+The app uses a custom TensorFlow.js model to estimate where the drink sits inside the photo before measuring green intensity.
+
+### What was created
+This is not a general-purpose image classifier. It is a lightweight binary segmentation model whose job is to answer:
+
+- “Which pixels in this image are likely part of the drink?”
+- “Which pixels are background, cup edge, table, or other objects?”
+
+The segmentation mask is then used to restrict greenness analysis to the drink region instead of scanning the whole photo.
+
+### Model technical details
+- Framework: TensorFlow.js
+- Model format: `model.json` + weight shards in `public/ml/drink-area/`
+- Input: RGB image, resized to `224 x 224`
+- Output: a mask tensor that resolves to a 2D heatmap of the drink region
+- Threshold: mask values above `0.45` are treated as drink pixels
+- Runtime loading: `tf.loadGraphModel(...)` first, then `tf.loadLayersModel(...)` as a fallback
+- Fallback mode: if the model is missing, incompatible, or fails at runtime, the app falls back to a heuristic circular mask centered on the image
+
+### Why this is useful
+Without a region mask, the green-score calculation can accidentally count green background, shadows, table surfaces, or cup edges. The model narrows the greenness calculation to the actual drink area, which makes the score more stable and more aligned with what a human would call “matcha green.”
+
+### Processing pipeline
+1. User uploads or captures an image.
+2. The app lightly downscales it for performance.
+3. The image is passed into the drink-area model.
+4. A binary mask is generated for drink pixels.
+5. Greenness analysis runs only inside that mask.
+6. The final score is combined with the star rating to produce the overall entry score.
+
+### Failure behavior
+If the model is unavailable or inference fails, the app keeps working by falling back to the heuristic region detector and still allows the user to save a rating without a photo.
 
 </details>
 
@@ -174,7 +212,7 @@ GitHub Pages deploys from `main` via GitHub Actions.
 </details>
 
 <details open>
-<summary><strong>FAQ (Top 7)</strong></summary>
+<summary><strong>FAQ </strong></summary>
 
 ### 1) How does the app know a new user is registering?
 The app sends `browserId` to `POST /api/users/session`. If no existing `browser_users` row exists for that browser and no name is provided, API returns `requiresName: true`, and the UI prompts for a name.
