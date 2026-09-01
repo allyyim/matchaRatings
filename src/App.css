@@ -858,11 +858,6 @@ textarea.form-control {
   min-width: 120px;
 }
 
-  z-index: 2;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
 .entry-overlay-actions {
   flex-wrap: wrap;
   justify-content: center;
