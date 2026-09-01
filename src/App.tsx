@@ -1695,7 +1695,17 @@ function App() {
         <div className="filter-menu-overlay" role="dialog" aria-modal="true" aria-label="Filter ratings" onClick={() => setIsMyRatingsFilterOpen(false)}>
           <div className="filter-menu-card card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
             <div className="card-body p-3">
-              <p className="text-secondary mb-3 small fw-normal">Sort list by</p>
+              <div className="filter-menu-header">
+                <p className="text-secondary small fw-normal">Sort list by</p>
+                <button
+                  type="button"
+                  className="filter-menu-close"
+                  onClick={() => setIsMyRatingsFilterOpen(false)}
+                  aria-label="Close filter menu"
+                >
+                  ✕
+                </button>
+              </div>
               
               <div className="d-flex flex-column gap-2">
                 <button

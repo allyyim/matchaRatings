@@ -493,7 +493,7 @@ textarea.form-control {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
+  gap: 0.4rem;
   padding: 0.6rem 1rem;
   border-radius: 999px;
   cursor: pointer;
@@ -519,6 +519,7 @@ textarea.form-control {
   color: inherit;
   letter-spacing: 0.03em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .ratings-search-shell {
@@ -1557,6 +1558,37 @@ a:focus-visible {
   padding: 0.6rem 0.9rem;
   font-size: 0.9rem;
   border-radius: 0.65rem;
+}
+
+.filter-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.filter-menu-header p {
+  margin: 0;
+}
+
+.filter-menu-close {
+  appearance: none;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s ease;
+}
+
+.filter-menu-close:hover {
+  color: var(--text-primary);
 }
 
 @media (max-width: 576px) {
