@@ -19,6 +19,7 @@ Sentry.init({
 })
 
 const app = express()
+app.set('trust proxy', 1)
 const port = Number(process.env.PORT || 4000)
 const APP_SECRET = process.env.APP_SECRET || 'matcha-development-secret-change-me'
 const JWT_SECRET = process.env.JWT_SECRET || APP_SECRET

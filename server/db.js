@@ -33,20 +33,38 @@ export async function initDb() {
   `)
 
   await pool.query(`
-    ALTER TABLE ratings
-    ALTER COLUMN greenness TYPE NUMERIC(4,1)
-    USING ROUND(greenness::NUMERIC, 1);
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'ratings'
+          AND column_name = 'greenness'
+          AND data_type <> 'numeric'
+      ) THEN
+        ALTER TABLE ratings
+          ALTER COLUMN greenness TYPE NUMERIC(4,1)
+          USING ROUND(greenness::NUMERIC, 1);
+      END IF;
+    END $$;
   `)
 
   await pool.query(`
-    ALTER TABLE ratings
-    DROP CONSTRAINT IF EXISTS ratings_greenness_check;
-  `)
-
-  await pool.query(`
-    ALTER TABLE ratings
-    ADD CONSTRAINT ratings_greenness_check
-    CHECK (greenness >= 0 AND greenness <= 100);
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.table_constraints
+        WHERE table_schema = 'public'
+          AND table_name = 'ratings'
+          AND constraint_name = 'ratings_greenness_check'
+      ) THEN
+        ALTER TABLE ratings
+          ADD CONSTRAINT ratings_greenness_check
+          CHECK (greenness >= 0 AND greenness <= 100);
+      END IF;
+    END $$;
   `)
 
   await pool.query(`
