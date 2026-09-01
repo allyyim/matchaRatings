@@ -676,6 +676,9 @@ function App() {
   const [myLogsSearchTerm, setMyLogsSearchTerm] = useState('')
   const [isFriendLogsExpanded, setIsFriendLogsExpanded] = useState(false)
   const [friendLogsSearchTerm, setFriendLogsSearchTerm] = useState('')
+  const [friendSort, setFriendSort] = useState<'highest' | 'lowest' | 'greenest' | 'newest' | 'oldest'>('highest')
+  const [isFriendFilterOpen, setIsFriendFilterOpen] = useState(false)
+  const [isFriendSearchOpen, setIsFriendSearchOpen] = useState(false)
   const [isRatingDragActive, setIsRatingDragActive] = useState(false)
   const [isEditRatingDragActive, setIsEditRatingDragActive] = useState(false)
 
@@ -738,14 +741,39 @@ function App() {
   }, [rankedFriendEntries])
 
   const filteredFriendEntries = useMemo(() => {
-    if (!friendLogsSearchTerm.trim()) return rankedFriendEntries
+    let filtered = rankedFriendEntries
+    
+    if (friendLogsSearchTerm.trim()) {
+      const searchLower = friendLogsSearchTerm.toLowerCase()
+      filtered = rankedFriendEntries.filter((entry) =>
+        entry.location.toLowerCase().includes(searchLower) ||
+        entry.thoughts.toLowerCase().includes(searchLower)
+      )
+    }
 
-    const searchLower = friendLogsSearchTerm.toLowerCase()
-    return rankedFriendEntries.filter((entry) =>
-      entry.location.toLowerCase().includes(searchLower) ||
-      entry.thoughts.toLowerCase().includes(searchLower)
-    )
-  }, [rankedFriendEntries, friendLogsSearchTerm])
+    const sorted = [...filtered]
+
+    switch (friendSort) {
+      case 'lowest':
+        sorted.sort((a, b) => a.comboScore - b.comboScore || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        break
+      case 'greenest':
+        sorted.sort((a, b) => b.greenness - a.greenness || b.rating - a.rating || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        break
+      case 'newest':
+        sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        break
+      case 'oldest':
+        sorted.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+        break
+      case 'highest':
+      default:
+        sorted.sort((a, b) => b.comboScore - a.comboScore || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        break
+    }
+
+    return sorted
+  }, [rankedFriendEntries, friendLogsSearchTerm, friendSort])
 
   async function fetchWithRetry<T>(work: () => Promise<T>, maxRetries = 2): Promise<T> {
     let lastError: unknown
@@ -1668,20 +1696,25 @@ function App() {
                   Open Camera
                 </button>
                 
-                <label
-                  htmlFor="photo-library-input"
-                  className="btn btn-success w-100 text-start mb-0"
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => setIsUploadMenuOpen(false)}
+                <button
+                  type="button"
+                  className="btn btn-success w-100 text-start"
+                  onClick={() => {
+                    setIsUploadMenuOpen(false)
+                    if (photoInputRef.current) {
+                      photoInputRef.current.value = ''
+                      setTimeout(() => photoInputRef.current?.click(), 100)
+                    }
+                  }}
                 >
                   Photo Library
-                </label>
+                </button>
                 <input
                   id="photo-library-input"
                   ref={photoInputRef}
                   type="file"
                   className="visually-hidden"
-                  accept="image/*,.jpg,.jpeg,.png,.jfif,.webp"
+                  accept="image/*"
                   onChange={handlePhotoSelection}
                 />
               </div>
@@ -1745,10 +1778,64 @@ function App() {
         document.body
       )}
 
+      {isFriendFilterOpen && createPortal(
+        <div className="filter-menu-overlay" role="dialog" aria-modal="true" aria-label="Filter friend ratings" onClick={() => setIsFriendFilterOpen(false)}>
+          <div className="filter-menu-card card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="card-body p-3">
+              <div className="filter-menu-header">
+                <p className="text-secondary small fw-normal">Sort list by</p>
+                <button
+                  type="button"
+                  className="filter-menu-close"
+                  onClick={() => setIsFriendFilterOpen(false)}
+                  aria-label="Close filter menu"
+                >
+                  ✕
+                </button>
+              </div>
+              
+              <div className="d-flex flex-column gap-2">
+                <button
+                  type="button"
+                  className="btn btn-success btn-sm w-100 text-start"
+                  onClick={() => {
+                    setFriendSort('highest')
+                    setIsFriendFilterOpen(false)
+                  }}
+                >
+                  Total Score
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-success btn-sm w-100 text-start"
+                  onClick={() => {
+                    setFriendSort('greenest')
+                    setIsFriendFilterOpen(false)
+                  }}
+                >
+                  Greenness score
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-success btn-sm w-100 text-start"
+                  onClick={() => {
+                    setFriendSort('newest')
+                    setIsFriendFilterOpen(false)
+                  }}
+                >
+                  Date added
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {isCameraModalOpen && createPortal(
         <div className="camera-modal-overlay" role="dialog" aria-modal="true" aria-label="Camera capture">
           <div className="camera-modal-container card border-0 shadow-lg">
-            <div className="camera-modal-header d-flex justify-content-between align-items-center mb-3">
+            <div className="camera-modal-header d-flex justify-content-between align-items-center mb-2">
               <h3 className="h5 fw-bold text-success mb-0">Take Photo</h3>
               <button
                 type="button"
@@ -1764,11 +1851,11 @@ function App() {
             </div>
 
             {cameraError && (
-              <div className="alert alert-danger border mb-3">{cameraError}</div>
+              <div className="alert alert-danger border mb-2">{cameraError}</div>
             )}
 
             <div className="camera-modal-content">
-              <div className="camera-wrap mb-3">
+              <div className="camera-wrap mb-2">
                 <video ref={videoRef} className="camera-video" autoPlay playsInline muted />
               </div>
 
@@ -1794,7 +1881,7 @@ function App() {
               </div>
 
               {photoDataUrl && (
-                <div className="camera-modal-preview mt-4">
+                <div className="camera-modal-preview mt-2">
                   <h4 className="small fw-semibold text-success mb-2">Photo Preview</h4>
                   <img src={photoDataUrl} alt="Captured preview" className="preview-image mb-2" />
                   <div className="d-flex gap-2">
@@ -2296,14 +2383,56 @@ function App() {
                 {selectedFriend ? selectedFriend : 'Choose friend'} {selectedFriend && (isFriendLogsExpanded ? '▼' : '▶')}
               </h3>
               {selectedFriend && (
-                <input
-                  type="text"
-                  className="form-control"
-                  style={{ maxWidth: '200px' }}
-                  placeholder="Search Ratings"
-                  value={friendLogsSearchTerm}
-                  onChange={(event) => setFriendLogsSearchTerm(event.target.value)}
-                />
+                isFriendSearchOpen ? (
+                  <div className="search-bar-wrapper">
+                    <input
+                      id="friend-logs-search-input"
+                      type="text"
+                      className="form-control search-bar-input"
+                      placeholder="Search ratings"
+                      value={friendLogsSearchTerm}
+                      onChange={(event) => setFriendLogsSearchTerm(event.target.value)}
+                      autoFocus
+                    />
+                    <button
+                      type="button"
+                      className="search-bar-close"
+                      onClick={() => {
+                        setIsFriendSearchOpen(false)
+                        setFriendLogsSearchTerm('')
+                      }}
+                      aria-label="Close search"
+                    >
+                      Close
+                    </button>
+                  </div>
+                ) : (
+                  <div className="my-ratings-action-row">
+                    <div className="score-sort-bubble">
+                      <button
+                        type="button"
+                        className="filter-bubble-button"
+                        onClick={() => setIsFriendFilterOpen(true)}
+                        aria-label="Open filter menu"
+                        title="Filter and sort"
+                      >
+                        <span className="filter-icon">☰</span>
+                        <span className="score-sort-label">Filter by</span>
+                      </button>
+                    </div>
+
+                    <div className="ratings-search-shell">
+                      <button
+                        type="button"
+                        className="search-icon-button"
+                        aria-label="Search ratings"
+                        onClick={() => setIsFriendSearchOpen(true)}
+                      >
+                        <span aria-hidden="true">⌕</span>
+                      </button>
+                    </div>
+                  </div>
+                )
               )}
             </div>
             <div className="d-flex flex-column gap-3">
