@@ -522,22 +522,6 @@ function getGreennessRefreshKey(userName: string) {
   return `matchaGreennessRefreshed:${userName.trim().toLowerCase()}`
 }
 
-function sanitizeInput(input: string, maxLength = 500): string {
-  return input
-    .trim()
-    .slice(0, maxLength)
-    .replace(/[<>\"']/g, '')
-}
-
-function sanitizeUsername(username: string): string {
-  return sanitizeInput(username, 100).replace(/[^a-zA-Z0-9._-]/g, '')
-}
-
-function validateEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email) && email.length <= 254
-}
-
 function getSessionToken() {
   if (typeof window === 'undefined') return ''
   return window.localStorage.getItem('matchaAuthToken') || window.sessionStorage.getItem('matchaAuthToken') || ''
@@ -622,16 +606,7 @@ function App() {
   const [requiresManualName, setRequiresManualName] = useState(false)
   const [isSubmittingName, setIsSubmittingName] = useState(false)
   const [isUserReady, setIsUserReady] = useState(false)
-  const [loadingMessage, setLoadingMessage] = useState('Connecting to ratings service...')
-  const [authEmail, setAuthEmail] = useState('')
-  const [authStage, setAuthStage] = useState<'form' | 'sent' | 'verifying'>('form')
   const [authError, setAuthError] = useState('')
-  const [needsEmailLink, setNeedsEmailLink] = useState(false)
-  const [linkEmail, setLinkEmail] = useState('')
-  const [linkEmailSent, setLinkEmailSent] = useState(false)
-  const [linkEmailError, setLinkEmailError] = useState('')
-  const [isSubmittingLinkEmail, setIsSubmittingLinkEmail] = useState(false)
-  const [emailLinkVerificationUrl, setEmailLinkVerificationUrl] = useState('')
 
   const [currentRating, setCurrentRating] = useState(0)
   const [location, setLocation] = useState('')
@@ -888,7 +863,6 @@ function App() {
           setCurrentUserName(response.userName)
           setRequiresManualName(false)
           setIsUserReady(true)
-          setLoadingMessage('')
           void loadDrinkAreaModel().catch(() => undefined)
         }
       } catch (error) {
@@ -906,32 +880,6 @@ function App() {
 
     async function initUserSession() {
       try {
-        const url = new URL(window.location.href)
-        const authToken = url.searchParams.get('authToken')
-
-        if (authToken) {
-          setAuthStage('verifying')
-          url.searchParams.delete('authToken')
-          url.searchParams.delete('purpose')
-          window.history.replaceState({}, '', url.toString())
-
-          const session = await apiFetch<{ userName: string; email: string; token: string }>('/auth/verify', {
-            method: 'POST',
-            body: JSON.stringify({ token: authToken, browserId })
-          })
-
-          if (!mounted) return
-
-          setSessionToken(session.token || '')
-          localStorage.setItem('matchaUserName', session.userName)
-          setCurrentUserName(session.userName)
-          setRequiresManualName(false)
-          setIsUserReady(true)
-          setLoadingMessage('')
-          void loadDrinkAreaModel().catch(() => undefined)
-          return
-        }
-
         const savedName = localStorage.getItem('matchaUserName') || ''
         const savedToken = getSessionToken()
 
@@ -941,7 +889,6 @@ function App() {
             setCurrentUserName(savedName)
             setRequiresManualName(false)
             setIsUserReady(true)
-            setLoadingMessage('')
           }
           void loadDrinkAreaModel().catch(() => undefined)
           return
@@ -949,14 +896,11 @@ function App() {
 
         if (mounted) {
           setRequiresManualName(true)
-          setLoadingMessage('')
         }
       } catch {
         if (!mounted) return
-        setAuthStage('form')
-        setAuthError('That link is invalid or has expired. Please request a new one below.')
+        setAuthError('An error occurred. Please try signing in again.')
         setRequiresManualName(true)
-        setLoadingMessage('')
       }
     }
 
@@ -971,79 +915,9 @@ function App() {
     localStorage.removeItem('matchaUserName')
     setCurrentUserName('')
     setPendingUserName('')
-    setAuthEmail('')
-    setAuthStage('form')
     setAuthError('')
     setRequiresManualName(true)
     setIsUserReady(false)
-  }
-
-  useEffect(() => {
-    if (!isUserReady || !currentUserName) return
-
-    let mounted = true
-    apiFetch<{ linked: boolean }>('/auth/link-status')
-      .then((status) => {
-        if (mounted) setNeedsEmailLink(!status.linked)
-      })
-      .catch(() => undefined)
-
-    return () => {
-      mounted = false
-    }
-  }, [isUserReady, currentUserName])
-
-  async function submitLinkEmail() {
-    const email = linkEmail.trim().toLowerCase()
-    if (!validateEmail(email)) {
-      setLinkEmailError('Please enter a valid email address.')
-      return
-    }
-
-    setIsSubmittingLinkEmail(true)
-    setLinkEmailError('')
-    try {
-      const response = await apiFetch<{ ok: boolean; verificationLink?: string }>('/auth/link-email', {
-        method: 'POST',
-        body: JSON.stringify({ email })
-      })
-      setEmailLinkVerificationUrl(response.verificationLink || '')
-      setLinkEmailSent(true)
-    } catch (error) {
-      setLinkEmailError(error instanceof Error ? error.message : 'Unable to send link. Please try again.')
-    } finally {
-      setIsSubmittingLinkEmail(false)
-    }
-  }
-
-
-  async function submitAuthEmail() {
-    const email = authEmail.trim().toLowerCase()
-    if (!validateEmail(email)) {
-      setAuthError('Please enter a valid email address.')
-      return
-    }
-
-    setIsSubmittingName(true)
-    setAuthError('')
-    try {
-      const safeCandidate = sanitizeUsername(pendingUserName.trim())
-      const response = await apiFetch<{ ok: boolean; mode: 'login' | 'signup' | 'needs-username' }>('/auth/request-link', {
-        method: 'POST',
-        body: JSON.stringify({ email, userName: safeCandidate })
-      })
-
-      if (response.mode === 'needs-username') {
-        setAuthError('This email is new. Please also enter a username to create your account.')
-        return
-      }
-
-      setAuthStage('sent')
-    } catch (error) {
-      setAuthError(error instanceof Error ? error.message : 'Unable to send sign-in link. Please try again.')
-    } finally {
-      setIsSubmittingName(false)
-    }
   }
 
   async function handleNewUserNameSubmit() {
@@ -1065,7 +939,6 @@ function App() {
       setCurrentUserName(response.userName)
       setRequiresManualName(false)
       setIsUserReady(true)
-      setLoadingMessage('')
       sessionStorage.removeItem('googleAccessToken')
       void loadDrinkAreaModel().catch(() => undefined)
     } catch (error) {
@@ -1789,18 +1662,6 @@ function App() {
       </main>
     )
   }
-                  {authError && <div className="alert alert-warning border mt-3 mb-0">{authError}</div>}
-                </>
-              )}
-              {loadingMessage && <div className="alert alert-warning border mt-3 mb-0">{loadingMessage}</div>}
-            </div>
-          </section>
-        ) : (
-          <div className="alert alert-warning border">{loadingMessage}</div>
-        )}
-      </main>
-    )
-  }
 
   return (
     <>
@@ -2216,39 +2077,6 @@ function App() {
           <div className="card shadow-sm border-0 matcha-shell">
             <div className="card-body p-3 p-md-4">
               <h1 className="display-6 fw-bold mb-3 text-success">Log Rating</h1>
-
-              {needsEmailLink && (
-                <div className="alert alert-warning border mb-3">
-                  {linkEmailSent ? (
-                    <span>Check <strong>{linkEmail.trim()}</strong> for a link to finish securing your account.</span>
-                  ) : (
-                    <>
-                      <p className="mb-2">
-                        Add an email to your account so you can sign back in from any device without losing your ratings.
-                      </p>
-                      <div className="d-flex flex-column flex-sm-row gap-2">
-                        <input
-                          type="email"
-                          className="form-control"
-                          value={linkEmail}
-                          onChange={(event) => setLinkEmail(event.target.value)}
-                          placeholder="you@example.com"
-                          autoComplete="email"
-                        />
-                        <button
-                          type="button"
-                          className="btn btn-success text-nowrap"
-                          onClick={() => void submitLinkEmail()}
-                          disabled={!linkEmail.trim() || isSubmittingLinkEmail}
-                        >
-                          {isSubmittingLinkEmail ? 'Sending…' : 'Add email'}
-                        </button>
-                      </div>
-                      {linkEmailError && <div className="text-danger small mt-2 mb-0">{linkEmailError}</div>}
-                    </>
-                  )}
-                </div>
-              )}
 
               <div className="mb-3">
                 <div className="form-label fw-semibold">Enter the cafe or shop name.</div>
