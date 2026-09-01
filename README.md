@@ -179,13 +179,20 @@ GitHub Pages deploys from `main` via GitHub Actions.
 ### 1) How does the app know a new user is registering?
 The app sends `browserId` to `POST /api/users/session`. If no existing `browser_users` row exists for that browser and no name is provided, API returns `requiresName: true`, and the UI prompts for a name.
 
-### 2) How are scores calculated?
-Per entry: `rating * 20 + greennessWeight * greenness`.
+### 2) What does the greenness score really mean?
+In plain English, the greenness score is a rough measure of how much the drink looks like matcha: greener, more vibrant, and more “tea-like” it looks, the higher the number.
 
-- If the rating is `4.0/5` or higher, greenness counts at full value.
-- If the rating is below `4.0/5`, greenness is discounted to `0.8x`.
-- Greenness is saved to one decimal place.
-- `0`-star ratings are always pushed to the bottom of rankings, and then sorted by greenness within that `0`-star group.
+Think of it like this:
+
+- `0` = no obvious matcha green in the photo, or no photo was analyzed
+- `25` = a little green is present, but mostly neutral or weak
+- `50` = clearly green and matcha-like, but not super intense
+- `75` = strong matcha colour and depth
+- `100` = extremely green, very intense, and texture/coverage strongly suggests matcha
+
+The app uses this as a helpful signal, not as a perfect lab measurement. It is designed to support the overall rating, not replace your opinion.
+
+For rankings, the app combines the star rating and the green score together, with the green score weighted a bit less when the star rating is below `4` stars. In everyday terms: the app is rewarding both “how much you liked it” and “how green the drink looked.”
 
 Explore place rankings use the average score out of 200 for each merged place.
 

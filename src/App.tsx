@@ -99,6 +99,13 @@ const drinkAreaModelConfig = {
 
 const LOW_RATING_GREENNESS_WEIGHT = 0.8
 const FULL_GREENNESS_WEIGHT = 1
+const API_REQUEST_TIMEOUT_MS = 20000
+const IMAGE_PROCESS_TIMEOUT_MS = 15000
+const LOCATION_LOOKUP_DEBOUNCE_MS = 180
+const LOCATION_RESULTS_LIMIT = 5
+const INITIAL_GREENSCORE_REFRESH_LIMIT = 4
+const MIN_BACKGROUND_GREENSCORE_DIFF = 5
+const BACKGROUND_GREENSCORE_TIMEOUT_MS = 5000
 
 function getWeightedScore(rating: number, greenness: number) {
   const greennessWeight = rating >= 4 ? FULL_GREENNESS_WEIGHT : LOW_RATING_GREENNESS_WEIGHT
@@ -565,18 +572,45 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     headers.set('Authorization', `Bearer ${token}`)
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers,
-    credentials: 'same-origin'
-  })
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS)
 
-  if (!response.ok) {
-    const text = await response.text()
-    throw new Error(text || `Request failed with status ${response.status}`)
+  const requestSignal = init?.signal
+  const stopAbortListener = () => controller.abort()
+  if (requestSignal) {
+    if (requestSignal.aborted) {
+      controller.abort()
+    } else {
+      requestSignal.addEventListener('abort', stopAbortListener, { once: true })
+    }
   }
 
-  return response.json() as Promise<T>
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers,
+      credentials: 'same-origin',
+      signal: controller.signal
+    })
+
+    if (!response.ok) {
+      const text = await response.text()
+      throw new Error(text || `Request failed with status ${response.status}`)
+    }
+
+    return response.json() as Promise<T>
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error('The request timed out or was cancelled.')
+    }
+
+    throw error
+  } finally {
+    window.clearTimeout(timeoutId)
+    if (requestSignal) {
+      requestSignal.removeEventListener('abort', stopAbortListener)
+    }
+  }
 }
 
 function App() {
@@ -597,6 +631,8 @@ function App() {
   const locationDebounceRef = useRef<number | null>(null)
   const locationBlurTimeoutRef = useRef<number | null>(null)
   const locationLookupSequenceRef = useRef(0)
+  const locationResultsCacheRef = useRef<Map<string, string[]>>(new Map())
+  const locationLookupInFlightRef = useRef<Map<string, Promise<string[]>>>(new Map())
   const [thoughts, setThoughts] = useState('')
   const [photoDataUrl, setPhotoDataUrl] = useState('')
   const [matchaGreenness, setMatchaGreenness] = useState<number | null>(null)
@@ -611,6 +647,7 @@ function App() {
   const cameraStreamRef = useRef<MediaStream | null>(null)
 
   const [myEntries, setMyEntries] = useState<RatingEntry[]>([])
+  const [isMyRatingsLoading, setIsMyRatingsLoading] = useState(true)
   const [myRatingsFilter, setMyRatingsFilter] = useState<'all' | 'zero' | 'low' | 'high'>('all')
   const [myRatingsSort, setMyRatingsSort] = useState<'highest' | 'lowest' | 'greenest'>('highest')
   const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null)
@@ -716,6 +753,82 @@ function App() {
     )
   }, [rankedFriendEntries, friendLogsSearchTerm])
 
+  async function fetchWithRetry<T>(work: () => Promise<T>, maxRetries = 2): Promise<T> {
+    let lastError: unknown
+
+    for (let attempt = 0; attempt <= maxRetries; attempt += 1) {
+      try {
+        return await work()
+      } catch (error) {
+        lastError = error
+        if (attempt >= maxRetries) {
+          throw error
+        }
+
+        await new Promise((resolve) => window.setTimeout(resolve, 350 * (attempt + 1)))
+      }
+    }
+
+    throw lastError instanceof Error ? lastError : new Error('Request failed after retries.')
+  }
+
+  async function refreshGreennessForEntries(entries: RatingEntry[], persistUserName?: string, limit = INITIAL_GREENSCORE_REFRESH_LIMIT) {
+    const candidates = entries.slice(0, Math.min(limit, entries.length))
+    if (!candidates.length) {
+      return []
+    }
+
+    const refreshedEntries = await Promise.all(
+      candidates.map(async (entry) => {
+        if (!entry.photo || entry.photo === noPhotoPlaceholderUrl) {
+          return entry
+        }
+
+        try {
+          const { score } = await Promise.race([
+            analyzeGreennessFromDataUrl(entry.photo),
+            new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Greenness refresh timed out.')), BACKGROUND_GREENSCORE_TIMEOUT_MS))
+          ])
+
+          const adjustedEntry = withUpdatedGreenness(entry, score)
+          const difference = Math.abs(adjustedEntry.greenness - entry.greenness)
+          if (difference < MIN_BACKGROUND_GREENSCORE_DIFF) {
+            return entry
+          }
+
+          return adjustedEntry
+        } catch {
+          return entry
+        }
+      })
+    )
+
+    if (persistUserName) {
+      const changedEntries = refreshedEntries.filter((entry, index) => {
+        const original = candidates[index]
+        if (!original) return false
+        return Math.abs(entry.greenness - original.greenness) >= MIN_BACKGROUND_GREENSCORE_DIFF
+      })
+
+      await Promise.allSettled(
+        changedEntries.map((entry) =>
+          apiFetch<{ rating: RatingEntry }>(`/ratings/${entry.id}`, {
+            method: 'PUT',
+            body: JSON.stringify({
+              userName: persistUserName,
+              rating: entry.rating,
+              greenness: entry.greenness,
+              location: entry.location,
+              thoughts: entry.thoughts
+            })
+          }).catch(() => null)
+        )
+      )
+    }
+
+    return refreshedEntries
+  }
+
   useEffect(() => {
     let mounted = true
 
@@ -741,10 +854,13 @@ function App() {
         }
 
         const safeCandidate = sanitizeUsername(candidate)
-        const session = await apiFetch<{ requiresName: boolean; userName: string; token: string }>('/users/session', {
-          method: 'POST',
-          body: JSON.stringify({ browserId, userName: safeCandidate })
-        })
+        const session = await fetchWithRetry(() =>
+          apiFetch<{ requiresName: boolean; userName: string; token: string }>('/users/session', {
+            method: 'POST',
+            body: JSON.stringify({ browserId, userName: safeCandidate })
+          }),
+          2
+        )
 
         if (!mounted) return
 
@@ -755,9 +871,16 @@ function App() {
         setRequiresManualName(false)
         setIsUserReady(true)
         setLoadingMessage('')
+
+        void loadDrinkAreaModel().catch(() => undefined)
       } catch {
         if (!mounted) return
-        setLoadingMessage('Unable to connect to API. Start PostgreSQL API server and refresh.')
+        setLoadingMessage('Unable to connect to API. Retrying…')
+        window.setTimeout(() => {
+          if (mounted) {
+            void initUserSession()
+          }
+        }, 1200)
       }
     }
 
@@ -816,23 +939,38 @@ function App() {
     let cancelled = false
 
     async function loadMyRatings() {
+      setIsMyRatingsLoading(true)
       try {
-        const response = await apiFetch<{ ratings: RatingEntry[] }>(`/ratings?userName=${encodeURIComponent(currentUserName)}`)
+        const response = await fetchWithRetry(
+          () => apiFetch<{ ratings: RatingEntry[] }>(`/ratings?userName=${encodeURIComponent(currentUserName)}`),
+          2
+        )
         if (cancelled) return
+
         setMyEntries(response.ratings)
 
         const refreshKey = getGreennessRefreshKey(currentUserName)
         const hasRefreshed = localStorage.getItem(refreshKey) === '1'
         if (!hasRefreshed) {
-          const refreshedEntries = await refreshGreennessForEntries(response.ratings, currentUserName)
+          const refreshedEntries = await refreshGreennessForEntries(response.ratings, currentUserName, INITIAL_GREENSCORE_REFRESH_LIMIT)
           if (!cancelled) {
-            setMyEntries(refreshedEntries)
+            setMyEntries((previous) => {
+              const byId = new Map(previous.map((entry) => [entry.id, entry]))
+              for (const refreshed of refreshedEntries) {
+                byId.set(refreshed.id, refreshed)
+              }
+              return Array.from(byId.values())
+            })
             localStorage.setItem(refreshKey, '1')
           }
         }
       } catch {
         if (!cancelled) {
           setMyEntries([])
+        }
+      } finally {
+        if (!cancelled) {
+          setIsMyRatingsLoading(false)
         }
       }
     }
@@ -857,15 +995,67 @@ function App() {
       return
     }
 
+    const normalizedQuery = query.toLowerCase()
+    const cachedSuggestions = locationResultsCacheRef.current.get(normalizedQuery)
+    if (cachedSuggestions) {
+      setLocationSuggestions(cachedSuggestions)
+      setIsLocationLookupPending(false)
+      return
+    }
+
+    if (locationLookupInFlightRef.current.has(normalizedQuery)) {
+      setIsLocationLookupPending(true)
+      void locationLookupInFlightRef.current.get(normalizedQuery)?.then((results) => {
+        setLocationSuggestions(results)
+        setIsLocationLookupPending(false)
+      })
+      return
+    }
+
     const lookupId = ++locationLookupSequenceRef.current
     const controller = new AbortController()
     setIsLocationLookupPending(true)
 
-    locationDebounceRef.current = window.setTimeout(() => {
-      void (async () => {
-        try {
-          const photonResponse = await fetch(
-            `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=8&osm_tag=amenity:cafe&osm_tag=amenity:restaurant&osm_tag=amenity:fast_food&osm_tag=shop:coffee`,
+    const lookupTask = (async () => {
+      try {
+        const photonResponse = await fetch(
+          `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=${LOCATION_RESULTS_LIMIT}&osm_tag=amenity:cafe&osm_tag=amenity:restaurant&osm_tag=amenity:fast_food&osm_tag=shop:coffee`,
+          {
+            signal: controller.signal,
+            headers: {
+              'Accept-Language': 'en'
+            }
+          }
+        )
+
+        let suggestionList: string[] = []
+
+        if (photonResponse.ok) {
+          const photonPayload = (await photonResponse.json()) as {
+            features?: Array<{
+              properties?: {
+                name?: string
+                city?: string
+                state?: string
+                country?: string
+              }
+            }>
+          }
+
+          suggestionList = (photonPayload.features || [])
+            .map((feature) => {
+              const name = String(feature.properties?.name || '').trim()
+              const locality = String(feature.properties?.city || feature.properties?.state || feature.properties?.country || '').trim()
+              if (name && locality) return `${name}, ${locality}`
+              return name
+            })
+            .filter(Boolean)
+        }
+
+        if (suggestionList.length === 0) {
+          const venueBiasedQuery = `${query} cafe restaurant coffee shop`
+          const nominatimResponse = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=${LOCATION_RESULTS_LIMIT + 2}&addressdetails=1&namedetails=1&q=${encodeURIComponent(venueBiasedQuery)}`,
             {
               signal: controller.signal,
               headers: {
@@ -874,89 +1064,61 @@ function App() {
             }
           )
 
-          let suggestionList: string[] = []
+          if (nominatimResponse.ok) {
+            const payload = (await nominatimResponse.json()) as Array<{
+              class?: string
+              type?: string
+              name?: string
+              display_name: string
+              address?: {
+                city?: string
+                town?: string
+                village?: string
+                state?: string
+                country?: string
+              }
+            }>
 
-          if (photonResponse.ok) {
-            const photonPayload = (await photonResponse.json()) as {
-              features?: Array<{
-                properties?: {
-                  name?: string
-                  city?: string
-                  state?: string
-                  country?: string
-                }
-              }>
-            }
+            const venueTypes = new Set(['cafe', 'restaurant', 'fast_food', 'food_court', 'coffee', 'tea', 'bubble_tea'])
 
-            suggestionList = (photonPayload.features || [])
-              .map((feature) => {
-                const name = String(feature.properties?.name || '').trim()
-                const locality = String(feature.properties?.city || feature.properties?.state || feature.properties?.country || '').trim()
-                if (name && locality) return `${name}, ${locality}`
-                return name
+            suggestionList = payload
+              .filter((item) => (item.class === 'amenity' || item.class === 'shop') && venueTypes.has(String(item.type || '')))
+              .map((item) => {
+                const placeName = String(item.name || '').trim()
+                const locality = String(item.address?.city || item.address?.town || item.address?.village || item.address?.state || item.address?.country || '').trim()
+                if (placeName && locality) return `${placeName}, ${locality}`
+                if (placeName) return placeName
+                return String(item.display_name || '').trim()
               })
               .filter(Boolean)
           }
-
-          if (suggestionList.length === 0) {
-            const venueBiasedQuery = `${query} cafe restaurant coffee shop`
-            const nominatimResponse = await fetch(
-              `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=10&addressdetails=1&namedetails=1&q=${encodeURIComponent(venueBiasedQuery)}`,
-              {
-                signal: controller.signal,
-                headers: {
-                  'Accept-Language': 'en'
-                }
-              }
-            )
-
-            if (nominatimResponse.ok) {
-              const payload = (await nominatimResponse.json()) as Array<{
-                class?: string
-                type?: string
-                name?: string
-                display_name: string
-                address?: {
-                  city?: string
-                  town?: string
-                  village?: string
-                  state?: string
-                  country?: string
-                }
-              }>
-
-              const venueTypes = new Set(['cafe', 'restaurant', 'fast_food', 'food_court', 'coffee', 'tea', 'bubble_tea'])
-
-              suggestionList = payload
-                .filter((item) => (item.class === 'amenity' || item.class === 'shop') && venueTypes.has(String(item.type || '')))
-                .map((item) => {
-                  const placeName = String(item.name || '').trim()
-                  const locality = String(item.address?.city || item.address?.town || item.address?.village || item.address?.state || item.address?.country || '').trim()
-                  if (placeName && locality) return `${placeName}, ${locality}`
-                  if (placeName) return placeName
-                  return String(item.display_name || '').trim()
-                })
-                .filter(Boolean)
-            }
-          }
-
-          if (lookupId !== locationLookupSequenceRef.current) return
-
-          const deduped = Array.from(new Set(suggestionList)).slice(0, 5)
-          setLocationSuggestions(deduped)
-        } catch {
-          if (lookupId !== locationLookupSequenceRef.current) return
-          setLocationSuggestions([])
-        } finally {
-          if (lookupId === locationLookupSequenceRef.current) {
-            setIsLocationLookupPending(false)
-          }
         }
-      })()
-    }, 350)
+
+        const deduped = Array.from(new Set(suggestionList)).slice(0, LOCATION_RESULTS_LIMIT)
+        locationResultsCacheRef.current.set(normalizedQuery, deduped)
+        return deduped
+      } catch {
+        return []
+      }
+    })()
+
+    locationLookupInFlightRef.current.set(normalizedQuery, lookupTask)
+
+    locationDebounceRef.current = window.setTimeout(() => {
+      void lookupTask.then((deduped) => {
+        if (lookupId !== locationLookupSequenceRef.current) return
+        setLocationSuggestions(deduped)
+        setIsLocationLookupPending(false)
+      }).finally(() => {
+        locationLookupInFlightRef.current.delete(normalizedQuery)
+      })
+    }, LOCATION_LOOKUP_DEBOUNCE_MS)
 
     return () => {
       controller.abort()
+      if (locationDebounceRef.current !== null) {
+        window.clearTimeout(locationDebounceRef.current)
+      }
     }
   }, [location])
 
@@ -1006,9 +1168,12 @@ function App() {
       }
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' } }
-        })
+        const stream = await Promise.race([
+          navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'environment' } }
+          }),
+          new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Camera access timed out.')), API_REQUEST_TIMEOUT_MS))
+        ])
         if (!mounted) {
           stream.getTracks().forEach((track) => track.stop())
           return
@@ -1017,13 +1182,16 @@ function App() {
         cameraStreamRef.current = stream
         if (videoRef.current) {
           videoRef.current.srcObject = stream
-          await videoRef.current.play()
+          await Promise.race([
+            videoRef.current.play(),
+            new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Camera start timed out.')), API_REQUEST_TIMEOUT_MS))
+          ])
         }
         setCameraError('')
         setCameraReady(true)
       } catch {
         if (mounted) {
-          setCameraError('Unable to access camera. You can still upload a photo.')
+          setCameraError('Unable to access camera. You can still upload a photo or save without one.')
           setCameraReady(false)
         }
       }
@@ -1095,19 +1263,33 @@ function App() {
     setMlCoveragePercent(null)
     setMlConfidencePercent(null)
 
-    const optimizedDataUrl = await downscaleDataUrlImage(dataUrl)
-    setPhotoDataUrl(optimizedDataUrl)
-
     try {
-      setMlStatus('Analyzing drink area...')
-      const { score, statusMessage, coveragePercent, confidencePercent } = await analyzeGreennessFromDataUrl(optimizedDataUrl)
-      setMatchaGreenness(score)
-      setMlStatus(statusMessage)
-      setMlCoveragePercent(coveragePercent)
-      setMlConfidencePercent(confidencePercent)
+      const optimizedDataUrl = await Promise.race([
+        downscaleDataUrlImage(dataUrl),
+        new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Image processing timed out.')), IMAGE_PROCESS_TIMEOUT_MS))
+      ])
+      setPhotoDataUrl(optimizedDataUrl)
+
+      try {
+        setMlStatus('Analyzing drink area...')
+        const { score, statusMessage, coveragePercent, confidencePercent } = await Promise.race([
+          analyzeGreennessFromDataUrl(optimizedDataUrl),
+          new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Greenness analysis timed out.')), IMAGE_PROCESS_TIMEOUT_MS))
+        ])
+        setMatchaGreenness(score)
+        setMlStatus(statusMessage)
+        setMlCoveragePercent(coveragePercent)
+        setMlConfidencePercent(confidencePercent)
+      } catch {
+        setMatchaGreenness(0)
+        setMlStatus('Image analysis timed out. You can still save and edit manually.')
+        setMlCoveragePercent(null)
+        setMlConfidencePercent(null)
+      }
     } catch {
       setMatchaGreenness(0)
-      setMlStatus('Image analysis failed on this device. You can still save and edit manually.')
+      setPhotoDataUrl('')
+      setMlStatus('Image processing timed out. You can still save without a photo.')
       setMlCoveragePercent(null)
       setMlConfidencePercent(null)
     }
@@ -1215,39 +1397,6 @@ function App() {
 
     const response = await apiFetch<{ friends: string[] }>(`/friends/search?q=${encodeURIComponent(query.trim())}`)
     setFriendSuggestions(response.friends)
-  }
-
-  async function refreshGreennessForEntries(entries: RatingEntry[], persistUserName?: string) {
-    const refreshedEntries = await Promise.all(
-      entries.map(async (entry) => {
-        try {
-          const { score } = await analyzeGreennessFromDataUrl(entry.photo)
-          return withUpdatedGreenness(entry, score)
-        } catch {
-          return entry
-        }
-      })
-    )
-
-    if (persistUserName) {
-      const changedEntries = refreshedEntries.filter((entry, index) => entry.greenness !== entries[index].greenness)
-      await Promise.all(
-        changedEntries.map((entry) =>
-          apiFetch<{ rating: RatingEntry }>(`/ratings/${entry.id}`, {
-            method: 'PUT',
-            body: JSON.stringify({
-              userName: persistUserName,
-              rating: entry.rating,
-              greenness: entry.greenness,
-              location: entry.location,
-              thoughts: entry.thoughts
-            })
-          }).catch(() => null)
-        )
-      )
-    }
-
-    return refreshedEntries
   }
 
   async function fetchExploreData(showOverlay: boolean) {
@@ -1818,7 +1967,7 @@ function App() {
                   <small className="text-muted">Tap to edit</small>
                 </div>
               </div>
-              <div className="d-flex gap-2 align-items-center flex-wrap ratings-toolbar">
+              <div className="d-flex flex-wrap gap-2 align-items-center justify-content-end ratings-toolbar">
                 <div className="ratings-search-shell">
                   <span className="ratings-search-icon" aria-hidden="true">⌕</span>
                   <input
@@ -1829,33 +1978,43 @@ function App() {
                     onChange={(event) => setMyLogsSearchTerm(event.target.value)}
                   />
                 </div>
-                <select
-                  className="form-select modern-select"
-                  value={myRatingsFilter}
-                  onChange={(event) => setMyRatingsFilter(event.target.value as 'all' | 'zero' | 'low' | 'high')}
-                  aria-label="Filter my ratings"
-                >
-                  <option value="all">All ratings</option>
-                  <option value="zero">0 stars</option>
-                  <option value="low">Under 3 stars</option>
-                  <option value="high">3 stars and up</option>
-                </select>
-                <select
-                  className="form-select modern-select"
-                  value={myRatingsSort}
-                  onChange={(event) => setMyRatingsSort(event.target.value as 'highest' | 'lowest' | 'greenest')}
-                  aria-label="Sort my ratings"
-                >
-                  <option value="highest">Highest → lowest</option>
-                  <option value="lowest">Lowest → highest</option>
-                  <option value="greenest">Greenest first</option>
-                </select>
+                <div className="ratings-filter-group">
+                  <select
+                    className="form-select modern-select"
+                    value={myRatingsFilter}
+                    onChange={(event) => setMyRatingsFilter(event.target.value as 'all' | 'zero' | 'low' | 'high')}
+                    aria-label="Filter my ratings"
+                  >
+                    <option value="all">All ratings</option>
+                    <option value="zero">0 stars</option>
+                    <option value="low">Under 3 stars</option>
+                    <option value="high">3 stars and up</option>
+                  </select>
+                  <select
+                    className="form-select modern-select"
+                    value={myRatingsSort}
+                    onChange={(event) => setMyRatingsSort(event.target.value as 'highest' | 'lowest' | 'greenest')}
+                    aria-label="Sort my ratings"
+                  >
+                    <option value="highest">Highest → lowest</option>
+                    <option value="lowest">Lowest → highest</option>
+                    <option value="greenest">Greenest first</option>
+                  </select>
+                </div>
               </div>
             </div>
             <div className="d-flex flex-column gap-3">
-              {filteredMine.length === 0 && <div className="alert alert-light border">No ratings match this filter.</div>}
+              {isMyRatingsLoading && (
+                <div className="rating-loading-shell" aria-live="polite">
+                  <div className="text-muted small mb-2">Loading your log…</div>
+                  <div className="rating-loading-card" />
+                  <div className="rating-loading-card short" />
+                </div>
+              )}
 
-              {(isMyLogsExpanded ? filteredMine : filteredMine.slice(0, 3)).map((entry) => (
+              {!isMyRatingsLoading && filteredMine.length === 0 && <div className="alert alert-light border">No ratings match this filter.</div>}
+
+              {!isMyRatingsLoading && (isMyLogsExpanded ? filteredMine : filteredMine.slice(0, 3)).map((entry) => (
                 <article key={entry.id} className="card border-0 shadow-sm entry-card" onClick={() => openEntryOverlay(entry)}>
                   <div className="card-body d-flex gap-3 align-items-start">
                     <div className="entry-media-col">
