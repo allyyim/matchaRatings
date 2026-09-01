@@ -643,6 +643,7 @@ function App() {
   const locationResultsCacheRef = useRef<Map<string, string[]>>(new Map())
   const locationLookupInFlightRef = useRef<Map<string, Promise<string[]>>>(new Map())
   const [thoughts, setThoughts] = useState('')
+  const [isNotesModalOpen, setIsNotesModalOpen] = useState(false)
   const [photoDataUrl, setPhotoDataUrl] = useState('')
   const [matchaGreenness, setMatchaGreenness] = useState<number | null>(null)
   const [mlStatus, setMlStatus] = useState('ML drink-area detector will load when you analyze a photo.')
@@ -2100,6 +2101,45 @@ function App() {
         document.body
       )}
 
+      {isNotesModalOpen && createPortal(
+        <div className="notes-modal-overlay" role="dialog" aria-modal="true" aria-label="Edit notes">
+          <div className="notes-modal card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="notes-modal-header d-flex justify-content-between align-items-center p-4 border-bottom">
+              <h3 className="h5 fw-bold text-success mb-0">Add Notes</h3>
+              <button
+                type="button"
+                className="btn btn-link text-muted p-0"
+                onClick={() => setIsNotesModalOpen(false)}
+                aria-label="Close notes"
+              >
+                Close
+              </button>
+            </div>
+            <div className="notes-modal-body p-4">
+              <p className="small text-muted mb-3">What stood out about this matcha? Flavor, texture, experience...</p>
+              <textarea
+                className="form-control"
+                rows={10}
+                placeholder="Share your thoughts..."
+                value={thoughts}
+                onChange={(event) => setThoughts(event.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="notes-modal-footer p-4 border-top d-flex gap-2">
+              <button
+                type="button"
+                className="btn btn-success flex-grow-1"
+                onClick={() => setIsNotesModalOpen(false)}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top soft-nav" aria-label="Main navigation">
         <div className="container d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-2">
           <div className="d-flex flex-column">
@@ -2183,7 +2223,7 @@ function App() {
 
               <div className="mb-3">
                 <label className="form-label fw-semibold" htmlFor="location-input">Matcha place name</label>
-                <div className="form-text mb-2">Enter the cafe or shop name".</div>
+                <div className="form-text mb-2">Enter the cafe or shop name.</div>
                 <div className="location-autocomplete">
                   <input
                     id="location-input"
@@ -2319,13 +2359,14 @@ function App() {
 
               <div className="mb-3">
                 <label className="form-label fw-semibold">Notes</label>
-                <textarea
-                  className="form-control"
-                  rows={3}
-                  placeholder="What stood out about this matcha?"
-                  value={thoughts}
-                  onChange={(event) => setThoughts(event.target.value)}
-                />
+                <button
+                  type="button"
+                  className="form-control text-start text-muted"
+                  onClick={() => setIsNotesModalOpen(true)}
+                  style={{ minHeight: '44px', padding: '0.375rem 0.75rem', cursor: 'pointer' }}
+                >
+                  {thoughts.trim() ? thoughts.substring(0, 50) + (thoughts.length > 50 ? '...' : '') : 'What stood out about this matcha?'}
+                </button>
               </div>
 
               <button type="button" className="btn btn-success w-100" onClick={() => void saveEntry()} disabled={isSavingEntry}>

@@ -1600,6 +1600,50 @@ a:focus-visible {
   animation: slideUp 0.3s ease;
 }
 
+.notes-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10002;
+  background: rgba(8, 22, 14, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+
+.notes-modal {
+  width: min(90vw, 600px);
+  max-height: 90vh;
+  background: white;
+  border-radius: 1.25rem;
+  box-shadow: var(--shadow-lg);
+  animation: slideUp 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.notes-modal-header {
+  flex-shrink: 0;
+}
+
+.notes-modal-body {
+  flex-grow: 1;
+  overflow-y: auto;
+}
+
+.notes-modal-footer {
+  flex-shrink: 0;
+}
+
+.notes-modal textarea {
+  resize: vertical;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
 .filter-menu-overlay {
   position: fixed;
   inset: 0;
