@@ -2161,9 +2161,19 @@ function App() {
 
       <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top soft-nav" aria-label="Main navigation">
         <div className="container d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-2">
-          <div className="d-flex flex-column">
-            <span className="navbar-brand fw-semibold text-success mb-0">Sip &amp; Score</span>
-            <small className="text-muted nav-user">
+          <div className="d-flex flex-column w-100">
+            <div className="d-flex justify-content-between align-items-center w-100">
+              <span className="navbar-brand fw-semibold text-success mb-0">Sip &amp; Score</span>
+              <button
+                type="button"
+                className="btn btn-link btn-sm text-muted p-0 d-lg-none"
+                onClick={signOut}
+                title="Sign out"
+              >
+                Sign out
+              </button>
+            </div>
+            <small className="text-muted nav-user d-none d-lg-flex">
               {currentUserName}
               <button
                 type="button"
