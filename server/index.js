@@ -450,11 +450,16 @@ app.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
       headers: { Authorization: `Bearer ${googleToken}` }
     })
 
+    console.log('Google userinfo response status:', userInfoResponse.status)
+
     if (!userInfoResponse.ok) {
+      const errorText = await userInfoResponse.text()
+      console.error('Google userinfo error:', userInfoResponse.status, errorText)
       return res.status(401).json({ error: 'Invalid Google token' })
     }
 
     const userInfo = await userInfoResponse.json()
+    console.log('Got user info from Google:', { id: userInfo.id, email: userInfo.email })
     const googleId = userInfo.id
     const email = userInfo.email
     const name = userInfo.name
