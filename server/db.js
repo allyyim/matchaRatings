@@ -71,4 +71,36 @@ export async function initDb() {
     CREATE INDEX IF NOT EXISTS idx_ratings_user_name_created_at
     ON ratings (user_name, created_at DESC);
   `)
+
+  // Stable accounts identified by email, decoupled from any single browser/device.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS accounts (
+      id BIGSERIAL PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      user_name TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `)
+
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_user_name_lower
+    ON accounts (LOWER(user_name));
+  `)
+
+  // Single-use magic-link tokens for passwordless sign-in and account linking/migration.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS login_tokens (
+      token_hash TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      user_name TEXT,
+      purpose TEXT NOT NULL,
+      expires_at TIMESTAMPTZ NOT NULL,
+      used_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_login_tokens_email ON login_tokens (email);
+  `)
 }

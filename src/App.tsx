@@ -622,6 +622,14 @@ function App() {
   const [isSubmittingName, setIsSubmittingName] = useState(false)
   const [isUserReady, setIsUserReady] = useState(false)
   const [loadingMessage, setLoadingMessage] = useState('Connecting to ratings service...')
+  const [authEmail, setAuthEmail] = useState('')
+  const [authStage, setAuthStage] = useState<'form' | 'sent' | 'verifying'>('form')
+  const [authError, setAuthError] = useState('')
+  const [needsEmailLink, setNeedsEmailLink] = useState(false)
+  const [linkEmail, setLinkEmail] = useState('')
+  const [linkEmailSent, setLinkEmailSent] = useState(false)
+  const [linkEmailError, setLinkEmailError] = useState('')
+  const [isSubmittingLinkEmail, setIsSubmittingLinkEmail] = useState(false)
 
   const [currentRating, setCurrentRating] = useState(0)
   const [location, setLocation] = useState('')
@@ -856,53 +864,57 @@ function App() {
 
     async function initUserSession() {
       try {
-        const savedName = localStorage.getItem('matchaUserName') || ''
-        let candidate = savedName.trim()
+        const url = new URL(window.location.href)
+        const authToken = url.searchParams.get('authToken')
 
-        if (!candidate) {
-          candidate = window.prompt('Enter your name to create your ratings log:')?.trim() || ''
-        }
+        if (authToken) {
+          setAuthStage('verifying')
+          url.searchParams.delete('authToken')
+          url.searchParams.delete('purpose')
+          window.history.replaceState({}, '', url.toString())
 
-        if (!candidate) {
-          if (mounted) {
-            setRequiresManualName(true)
-            setLoadingMessage('Enter your name to continue.')
-          }
+          const session = await apiFetch<{ userName: string; email: string; token: string }>('/auth/verify', {
+            method: 'POST',
+            body: JSON.stringify({ token: authToken, browserId })
+          })
+
+          if (!mounted) return
+
+          setSessionToken(session.token || '')
+          localStorage.setItem('matchaUserName', session.userName)
+          setCurrentUserName(session.userName)
+          setRequiresManualName(false)
+          setIsUserReady(true)
+          setLoadingMessage('')
+          void loadDrinkAreaModel().catch(() => undefined)
           return
         }
 
-        if (!validateEmail(candidate) && candidate.includes('@')) {
-          candidate = candidate.split('@')[0]
+        const savedName = localStorage.getItem('matchaUserName') || ''
+        const savedToken = getSessionToken()
+
+        if (savedName && savedToken) {
+          // Returning user with a cached session: skip the login prompt entirely.
+          if (mounted) {
+            setCurrentUserName(savedName)
+            setRequiresManualName(false)
+            setIsUserReady(true)
+            setLoadingMessage('')
+          }
+          void loadDrinkAreaModel().catch(() => undefined)
+          return
         }
 
-        const safeCandidate = sanitizeUsername(candidate)
-        const session = await fetchWithRetry(() =>
-          apiFetch<{ requiresName: boolean; userName: string; token: string }>('/users/session', {
-            method: 'POST',
-            body: JSON.stringify({ browserId, userName: safeCandidate })
-          }),
-          2
-        )
-
-        if (!mounted) return
-
-        setSessionToken(session.token || '')
-        localStorage.setItem('matchaUserName', session.userName)
-        setCurrentUserName(session.userName)
-        setPendingUserName('')
-        setRequiresManualName(false)
-        setIsUserReady(true)
-        setLoadingMessage('')
-
-        void loadDrinkAreaModel().catch(() => undefined)
+        if (mounted) {
+          setRequiresManualName(true)
+          setLoadingMessage('')
+        }
       } catch {
         if (!mounted) return
-        setLoadingMessage('Unable to connect to API. Retrying…')
-        window.setTimeout(() => {
-          if (mounted) {
-            void initUserSession()
-          }
-        }, 1200)
+        setAuthStage('form')
+        setAuthError('That link is invalid or has expired. Please request a new one below.')
+        setRequiresManualName(true)
+        setLoadingMessage('')
       }
     }
 
@@ -912,35 +924,84 @@ function App() {
     }
   }, [browserId])
 
-  async function submitManualName() {
-    let candidate = pendingUserName.trim()
-    if (!candidate) return
+  function signOut() {
+    setSessionToken('')
+    localStorage.removeItem('matchaUserName')
+    setCurrentUserName('')
+    setPendingUserName('')
+    setAuthEmail('')
+    setAuthStage('form')
+    setAuthError('')
+    setRequiresManualName(true)
+    setIsUserReady(false)
+  }
 
-    if (!validateEmail(candidate) && candidate.includes('@')) {
-      candidate = candidate.split('@')[0]
+  useEffect(() => {
+    if (!isUserReady || !currentUserName) return
+
+    let mounted = true
+    apiFetch<{ linked: boolean }>('/auth/link-status')
+      .then((status) => {
+        if (mounted) setNeedsEmailLink(!status.linked)
+      })
+      .catch(() => undefined)
+
+    return () => {
+      mounted = false
+    }
+  }, [isUserReady, currentUserName])
+
+  async function submitLinkEmail() {
+    const email = linkEmail.trim().toLowerCase()
+    if (!validateEmail(email)) {
+      setLinkEmailError('Please enter a valid email address.')
+      return
+    }
+
+    setIsSubmittingLinkEmail(true)
+    setLinkEmailError('')
+    try {
+      await apiFetch<{ ok: boolean }>('/auth/link-email', {
+        method: 'POST',
+        body: JSON.stringify({ email })
+      })
+      setLinkEmailSent(true)
+    } catch (error) {
+      setLinkEmailError(error instanceof Error ? error.message : 'Unable to send link. Please try again.')
+    } finally {
+      setIsSubmittingLinkEmail(false)
+    }
+  }
+
+  async function submitAuthEmail() {
+    const email = authEmail.trim().toLowerCase()
+    if (!validateEmail(email)) {
+      setAuthError('Please enter a valid email address.')
+      return
     }
 
     setIsSubmittingName(true)
+    setAuthError('')
     try {
-      const safeCandidate = sanitizeUsername(candidate)
-      const session = await apiFetch<{ requiresName: boolean; userName: string; token: string }>('/users/session', {
+      const safeCandidate = sanitizeUsername(pendingUserName.trim())
+      const response = await apiFetch<{ ok: boolean; mode: 'login' | 'signup' | 'needs-username' }>('/auth/request-link', {
         method: 'POST',
-        body: JSON.stringify({ browserId, userName: safeCandidate })
+        body: JSON.stringify({ email, userName: safeCandidate })
       })
 
-      setSessionToken(session.token || '')
-      localStorage.setItem('matchaUserName', session.userName)
-      setCurrentUserName(session.userName)
-      setPendingUserName('')
-      setRequiresManualName(false)
-      setIsUserReady(true)
-      setLoadingMessage('')
-    } catch {
-      setLoadingMessage('Unable to connect to API. Check server and network, then try again.')
+      if (response.mode === 'needs-username') {
+        setAuthError('This email is new. Please also enter a username to create your account.')
+        return
+      }
+
+      setAuthStage('sent')
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Unable to send sign-in link. Please try again.')
     } finally {
       setIsSubmittingName(false)
     }
   }
+
 
   useEffect(() => {
     if (!isUserReady || !currentUserName) return
@@ -1575,31 +1636,63 @@ function App() {
           <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
             <div className="card-body p-3 p-md-4">
               <h1 className="h4 fw-bold text-success mb-2">Welcome to Sip &amp; Score</h1>
-              <p className="text-muted mb-3">Find friend's log</p>
-              <label className="form-label fw-semibold" htmlFor="manual-user-name">Username</label>
-              <input
-                id="manual-user-name"
-                type="text"
-                className="form-control mb-3"
-                value={pendingUserName}
-                onChange={(event) => setPendingUserName(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter') {
-                    event.preventDefault()
-                    void submitManualName()
-                  }
-                }}
-                placeholder="Your name"
-                autoComplete="name"
-              />
-              <button
-                type="button"
-                className="btn btn-success w-100"
-                onClick={() => void submitManualName()}
-                disabled={!pendingUserName.trim() || isSubmittingName}
-              >
-                {isSubmittingName ? 'Opening...' : 'Open Ratings'}
-              </button>
+              {authStage === 'sent' ? (
+                <>
+                  <p className="text-muted mb-3">
+                    Check <strong>{authEmail.trim()}</strong> for a sign-in link. Open it on any device to access your account.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-outline-success w-100"
+                    onClick={() => setAuthStage('form')}
+                  >
+                    Use a different email
+                  </button>
+                </>
+              ) : authStage === 'verifying' ? (
+                <p className="text-muted mb-0">Signing you in…</p>
+              ) : (
+                <>
+                  <p className="text-muted mb-3">
+                    Sign in with your email. We'll send you a secure link — no password needed. New here? Add a username too, and we'll create your account.
+                  </p>
+                  <label className="form-label fw-semibold" htmlFor="auth-email">Email</label>
+                  <input
+                    id="auth-email"
+                    type="email"
+                    className="form-control mb-3"
+                    value={authEmail}
+                    onChange={(event) => setAuthEmail(event.target.value)}
+                    placeholder="you@example.com"
+                    autoComplete="email"
+                  />
+                  <label className="form-label fw-semibold" htmlFor="auth-username">Username <span className="text-muted fw-normal">(new accounts only)</span></label>
+                  <input
+                    id="auth-username"
+                    type="text"
+                    className="form-control mb-3"
+                    value={pendingUserName}
+                    onChange={(event) => setPendingUserName(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                        void submitAuthEmail()
+                      }
+                    }}
+                    placeholder="Your name"
+                    autoComplete="name"
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-success w-100"
+                    onClick={() => void submitAuthEmail()}
+                    disabled={!authEmail.trim() || isSubmittingName}
+                  >
+                    {isSubmittingName ? 'Sending…' : 'Send sign-in link'}
+                  </button>
+                  {authError && <div className="alert alert-warning border mt-3 mb-0">{authError}</div>}
+                </>
+              )}
               {loadingMessage && <div className="alert alert-warning border mt-3 mb-0">{loadingMessage}</div>}
             </div>
           </section>
@@ -1925,7 +2018,16 @@ function App() {
         <div className="container d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-2">
           <div className="d-flex flex-column">
             <span className="navbar-brand fw-semibold text-success mb-0">Sip &amp; Score</span>
-            <small className="text-muted nav-user">{currentUserName}</small>
+            <small className="text-muted nav-user">
+              {currentUserName}
+              <button
+                type="button"
+                className="btn btn-link btn-sm text-muted p-0 ms-2 align-baseline"
+                onClick={signOut}
+              >
+                Sign out
+              </button>
+            </small>
           </div>
 
           <div className="d-flex align-items-center gap-2 nav-actions w-100">
@@ -1960,10 +2062,45 @@ function App() {
             <div className="card-body p-3 p-md-4">
               <h1 className="display-6 fw-bold mb-3 text-success">Log Rating</h1>
 
+              {needsEmailLink && (
+                <div className="alert alert-warning border mb-3">
+                  {linkEmailSent ? (
+                    <span>Check <strong>{linkEmail.trim()}</strong> for a link to finish securing your account.</span>
+                  ) : (
+                    <>
+                      <p className="mb-2">
+                        Add an email to your account so you can sign back in from any device without losing your ratings.
+                      </p>
+                      <div className="d-flex flex-column flex-sm-row gap-2">
+                        <input
+                          type="email"
+                          className="form-control"
+                          value={linkEmail}
+                          onChange={(event) => setLinkEmail(event.target.value)}
+                          placeholder="you@example.com"
+                          autoComplete="email"
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-success text-nowrap"
+                          onClick={() => void submitLinkEmail()}
+                          disabled={!linkEmail.trim() || isSubmittingLinkEmail}
+                        >
+                          {isSubmittingLinkEmail ? 'Sending…' : 'Add email'}
+                        </button>
+                      </div>
+                      {linkEmailError && <div className="text-danger small mt-2 mb-0">{linkEmailError}</div>}
+                    </>
+                  )}
+                </div>
+              )}
+
               <div className="mb-3">
-                <label className="form-label fw-semibold">Location</label>
+                <label className="form-label fw-semibold" htmlFor="location-input">Matcha place name</label>
+                <div className="form-text mb-2">Enter the cafe or shop name (not an address) — e.g. "Cha Cha Matcha".</div>
                 <div className="location-autocomplete">
                   <input
+                    id="location-input"
                     type="text"
                     className="form-control"
                     value={location}
@@ -1984,7 +2121,7 @@ function App() {
                         setShowLocationSuggestions(false)
                       }, 120)
                     }}
-                    placeholder="Location (e.g. cafe name)"
+                    placeholder="Matcha place name (e.g. Cha Cha Matcha)"
                     autoComplete="off"
                   />
 
@@ -2305,7 +2442,7 @@ function App() {
                             className="form-control mb-2"
                             value={editLocation}
                             onChange={(event) => setEditLocation(event.target.value)}
-                            placeholder="Location (e.g. cafe name)"
+                            placeholder="Matcha place name (e.g. Cha Cha Matcha)"
                           />
 
                           <textarea

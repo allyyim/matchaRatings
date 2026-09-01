@@ -5,6 +5,7 @@ import crypto from 'node:crypto'
 import jwt from 'jsonwebtoken'
 import * as Sentry from '@sentry/node'
 import rateLimit from 'express-rate-limit'
+import { Resend } from 'resend'
 import { initDb, pool } from './db.js'
 import { findBestMatch } from 'string-similarity'
 
@@ -24,6 +25,10 @@ const port = Number(process.env.PORT || 4000)
 const APP_SECRET = process.env.APP_SECRET || 'matcha-development-secret-change-me'
 const JWT_SECRET = process.env.JWT_SECRET || APP_SECRET
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7
+const LOGIN_TOKEN_TTL_MS = 1000 * 60 * 15
+const APP_ORIGIN = String(process.env.APP_ORIGIN || 'https://allyyim.github.io/matchaRatings').replace(/\/$/, '')
+const EMAIL_FROM = process.env.EMAIL_FROM || 'Sip & Score <onboarding@resend.dev>'
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const telemetryBuffer = []
 const LOW_RATING_GREENNESS_WEIGHT = 0.8
 const FULL_GREENNESS_WEIGHT = 1
@@ -96,7 +101,54 @@ function decryptField(value) {
 }
 
 function generateToken(userName, browserId) {
-  return jwt.sign({ userName, browserId }, JWT_SECRET, { expiresIn: '7d' })
+  return jwt.sign({ userName, browserId: browserId || '' }, JWT_SECRET, { expiresIn: '7d' })
+}
+
+function normalizeEmail(value) {
+  return String(value ?? '').trim().toLowerCase().slice(0, 254)
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254
+}
+
+function hashLoginToken(rawToken) {
+  return crypto.createHash('sha256').update(rawToken).digest('hex')
+}
+
+async function createLoginToken(email, purpose, userName = null) {
+  const rawToken = crypto.randomBytes(32).toString('base64url')
+  const tokenHash = hashLoginToken(rawToken)
+  const expiresAt = new Date(Date.now() + LOGIN_TOKEN_TTL_MS)
+
+  await pool.query(
+    `INSERT INTO login_tokens (token_hash, email, user_name, purpose, expires_at)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [tokenHash, email, userName, purpose, expiresAt]
+  )
+
+  return rawToken
+}
+
+async function sendMagicLinkEmail(email, rawToken, purpose) {
+  const link = `${APP_ORIGIN}/?authToken=${encodeURIComponent(rawToken)}&purpose=${encodeURIComponent(purpose)}`
+
+  if (!resend) {
+    console.log(`[dev] Magic sign-in link for ${email}: ${link}`)
+    return
+  }
+
+  const subject = purpose === 'link' ? 'Link your Sip & Score account' : 'Your Sip & Score sign-in link'
+  await resend.emails.send({
+    from: EMAIL_FROM,
+    to: email,
+    subject,
+    html: `
+      <p>Click the link below to sign in to Sip &amp; Score. This link expires in 15 minutes and can only be used once.</p>
+      <p><a href="${link}">${link}</a></p>
+      <p>If you didn't request this, you can safely ignore this email.</p>
+    `
+  })
 }
 
 function getSessionFromRequest(req) {
@@ -111,7 +163,7 @@ function getSessionFromRequest(req) {
 
     const userName = String(payload.userName || '').trim()
     const browserId = String(payload.browserId || '').trim()
-    if (!userName || !browserId) return null
+    if (!userName) return null
 
     return {
       userName,
@@ -279,6 +331,105 @@ app.get('/api/health', async (_req, res) => {
   res.json({ ok: true })
 })
 
+const authRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please wait a minute and try again.' }
+})
+
+// Requests a magic sign-in link for a stable, email-backed account.
+// - If the email already has an account, the link signs in as that account's userName.
+// - If not, userName must be provided to create a new account (or claim an existing
+//   legacy browser-only userName, migrating it to a stable email-backed account).
+app.post('/api/auth/request-link', authRateLimiter, async (req, res) => {
+  const email = normalizeEmail(req.body?.email)
+  const requestedUserName = sanitizeUserName(String(req.body?.userName || '').trim())
+
+  if (!email || !isValidEmail(email)) {
+    return res.status(400).json({ error: 'A valid email is required' })
+  }
+
+  const existingAccount = await pool.query('SELECT user_name FROM accounts WHERE email = $1', [email])
+
+  if (existingAccount.rowCount > 0) {
+    const rawToken = await createLoginToken(email, 'login', existingAccount.rows[0].user_name)
+    await sendMagicLinkEmail(email, rawToken, 'login')
+    return res.json({ ok: true, mode: 'login' })
+  }
+
+  if (!requestedUserName) {
+    return res.status(200).json({ ok: true, mode: 'needs-username' })
+  }
+
+  const nameTaken = await pool.query(
+    'SELECT 1 FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+    [requestedUserName]
+  )
+  if (nameTaken.rowCount > 0) {
+    return res.status(409).json({ error: 'That username is already linked to another account' })
+  }
+
+  const rawToken = await createLoginToken(email, 'signup', requestedUserName)
+  await sendMagicLinkEmail(email, rawToken, 'signup')
+  return res.json({ ok: true, mode: 'signup' })
+})
+
+// Verifies a magic-link token, creating the account on first use, and returns a session.
+app.post('/api/auth/verify', authRateLimiter, async (req, res) => {
+  const rawToken = String(req.body?.token || '').trim()
+  const browserId = String(req.body?.browserId || '').trim()
+
+  if (!rawToken) {
+    return res.status(400).json({ error: 'token is required' })
+  }
+
+  const tokenHash = hashLoginToken(rawToken)
+  const tokenRow = await pool.query(
+    `SELECT email, user_name, purpose, expires_at, used_at
+     FROM login_tokens WHERE token_hash = $1`,
+    [tokenHash]
+  )
+
+  if (tokenRow.rowCount === 0) {
+    return res.status(400).json({ error: 'This link is invalid. Please request a new one.' })
+  }
+
+  const record = tokenRow.rows[0]
+  if (record.used_at || new Date(record.expires_at).getTime() < Date.now()) {
+    return res.status(400).json({ error: 'This link has expired. Please request a new one.' })
+  }
+
+  await pool.query('UPDATE login_tokens SET used_at = NOW() WHERE token_hash = $1', [tokenHash])
+
+  const existingAccount = await pool.query('SELECT user_name FROM accounts WHERE email = $1', [record.email])
+  let userName = existingAccount.rows[0]?.user_name
+
+  if (!userName) {
+    if (!record.user_name) {
+      return res.status(400).json({ error: 'No username on file for this link. Please sign up again.' })
+    }
+
+    const nameTaken = await pool.query(
+      'SELECT 1 FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+      [record.user_name]
+    )
+    if (nameTaken.rowCount > 0) {
+      return res.status(409).json({ error: 'That username was just claimed by another account. Please sign up again.' })
+    }
+
+    await pool.query(
+      'INSERT INTO accounts (email, user_name) VALUES ($1, $2)',
+      [record.email, record.user_name]
+    )
+    userName = record.user_name
+  }
+
+  const token = generateToken(userName, browserId)
+  return res.json({ userName, email: record.email, token })
+})
+
 app.post('/api/users/session', async (req, res) => {
   const browserId = String(req.body?.browserId || '').trim()
   const incomingUserName = sanitizeUserName(String(req.body?.userName || '').trim())
@@ -341,6 +492,41 @@ app.get('/api/telemetry', async (_req, res) => {
 })
 
 app.use('/api', requireSession)
+
+// Lets an already-logged-in (browser-only) user check if their account has a stable email on file.
+app.get('/api/auth/link-status', async (req, res) => {
+  const result = await pool.query(
+    'SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+    [req.session.userName]
+  )
+  return res.json({ linked: result.rowCount > 0, email: result.rows[0]?.email || null })
+})
+
+// Sends a magic link that, once clicked, attaches the current session's username to an email
+// so the account becomes accessible from any device/browser going forward.
+app.post('/api/auth/link-email', authRateLimiter, async (req, res) => {
+  const email = normalizeEmail(req.body?.email)
+  if (!email || !isValidEmail(email)) {
+    return res.status(400).json({ error: 'A valid email is required' })
+  }
+
+  const emailInUse = await pool.query('SELECT 1 FROM accounts WHERE email = $1', [email])
+  if (emailInUse.rowCount > 0) {
+    return res.status(409).json({ error: 'That email is already linked to an account' })
+  }
+
+  const nameInUse = await pool.query(
+    'SELECT 1 FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+    [req.session.userName]
+  )
+  if (nameInUse.rowCount > 0) {
+    return res.status(409).json({ error: 'This account already has an email on file' })
+  }
+
+  const rawToken = await createLoginToken(email, 'link', req.session.userName)
+  await sendMagicLinkEmail(email, rawToken, 'link')
+  return res.json({ ok: true })
+})
 
 app.post('/api/ratings', async (req, res) => {
   const userName = sanitizeUserName(String(req.body?.userName || '').trim())
