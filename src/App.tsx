@@ -1800,15 +1800,6 @@ function App() {
         document.body
       )}
 
-      <style>{`
-        @keyframes fadeInOut {
-          0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-          10% { opacity: 1; transform: translateX(-50%) translateY(0); }
-          90% { opacity: 1; transform: translateX(-50%) translateY(0); }
-          100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-        }
-      `}</style>
-
       {showLoadingOverlay && createPortal(
         <div className="saving-overlay" role="status" aria-live="polite" aria-label={loadingOverlayText}>
           <div className="saving-card">
