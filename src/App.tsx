@@ -844,23 +844,26 @@ function App() {
         setIsSubmittingName(true)
         setAuthError('')
 
-        console.log('Google codeResponse:', codeResponse)
-        console.log('Access token:', codeResponse.access_token)
+        console.log('=== Google OAuth Debug ===')
+        console.log('Full codeResponse:', JSON.stringify(codeResponse))
+        console.log('Has access_token?', !!codeResponse.access_token)
+        console.log('Has code?', !!codeResponse.code)
+        console.log('All keys:', Object.keys(codeResponse))
 
         if (!codeResponse.access_token) {
-          console.error('No access token in response')
+          console.error('❌ No access_token in response!')
           setAuthError('Failed to get access token from Google. Please try again.')
           setIsSubmittingName(false)
           return
         }
 
-        const payload = JSON.stringify({ token: codeResponse.access_token, browserId })
-        console.log('Sending to backend:', { url: '/auth/google/verify', tokenLength: codeResponse.access_token.length, browserId })
+        const requestBody = { token: codeResponse.access_token, browserId }
+        console.log('Sending to backend:', JSON.stringify(requestBody))
 
         try {
           const response = await apiFetch<{ userName: string; email: string; token: string; isNewUser?: boolean }>('/auth/google/verify', {
             method: 'POST',
-            body: payload
+            body: JSON.stringify(requestBody)
           })
           setSessionToken(response.token || '')
           localStorage.setItem('matchaUserName', response.userName)
