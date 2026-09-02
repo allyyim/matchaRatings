@@ -898,6 +898,13 @@ function App() {
   })
 
   useEffect(() => {
+    const storedToken = sessionStorage.getItem('googleAccessToken')
+    if (storedToken && !currentUserName) {
+      sessionStorage.removeItem('googleAccessToken')
+    }
+  }, [])
+
+  useEffect(() => {
     let mounted = true
 
     async function initUserSession() {
