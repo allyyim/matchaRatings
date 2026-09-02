@@ -899,8 +899,10 @@ function App() {
 
   useEffect(() => {
     const storedToken = sessionStorage.getItem('googleAccessToken')
-    if (storedToken && !currentUserName) {
+    if (storedToken) {
       sessionStorage.removeItem('googleAccessToken')
+      setRequiresManualName(false)
+      setPendingUserName('')
     }
   }, [])
 
