@@ -2132,13 +2132,6 @@ function App() {
             </div>
             <small className="text-muted nav-user d-none d-lg-flex">
               {currentUserName}
-              <button
-                type="button"
-                className="btn btn-link btn-sm text-muted p-0 ms-2 align-baseline"
-                onClick={signOut}
-              >
-                Sign out
-              </button>
             </small>
           </div>
 
@@ -2163,6 +2156,14 @@ function App() {
               onClick={() => setActivePage('explore')}
             >
               Explore
+            </button>
+            <button
+              type="button"
+              className="btn btn-link btn-sm text-muted p-0 ms-auto d-none d-lg-block"
+              onClick={signOut}
+              title="Sign out"
+            >
+              Sign out
             </button>
           </div>
         </div>
@@ -2310,14 +2311,18 @@ function App() {
               </div>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold">Notes</label>
                 <button
                   type="button"
-                  className="form-control text-start text-muted"
+                  className="btn btn-link text-start text-muted p-0 d-flex align-items-center gap-2"
                   onClick={() => setIsNotesModalOpen(true)}
-                  style={{ minHeight: '44px', padding: '0.375rem 0.75rem', cursor: 'pointer' }}
+                  style={{ textDecoration: 'none' }}
                 >
-                  {thoughts.trim() ? thoughts.substring(0, 50) + (thoughts.length > 50 ? '...' : '') : 'What stood out about this matcha?'}
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                  <span>Add notes</span>
+                  <span className="text-muted ms-auto">›</span>
                 </button>
               </div>
 
