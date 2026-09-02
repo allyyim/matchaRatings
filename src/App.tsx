@@ -1675,6 +1675,18 @@ function App() {
               >
                 {isSubmittingName ? 'Creating account…' : 'Continue'}
               </button>
+              <button
+                type="button"
+                className="btn btn-outline-secondary w-100 mt-2"
+                onClick={() => {
+                  sessionStorage.removeItem('googleAccessToken')
+                  setRequiresManualName(false)
+                  setPendingUserName('')
+                  setAuthError('')
+                }}
+              >
+                Start Over
+              </button>
               {authError && <div className="alert alert-danger border mt-3 mb-0">{authError}</div>}
             </div>
           </section>
