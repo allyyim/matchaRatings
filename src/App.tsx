@@ -608,6 +608,9 @@ function App() {
   const [isUserReady, setIsUserReady] = useState(false)
   const [authError, setAuthError] = useState('')
   const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser'>('choice')
+  const [welcomeMessage, setWelcomeMessage] = useState('')
+  const [showAccountLinking, setShowAccountLinking] = useState(false)
+  const [potentialAccounts, setPotentialAccounts] = useState<string[]>([])
 
   const [currentRating, setCurrentRating] = useState(0)
   const [location, setLocation] = useState('')
@@ -870,6 +873,8 @@ function App() {
           setCurrentUserName(response.userName)
           setRequiresManualName(false)
           setIsUserReady(true)
+          setWelcomeMessage(response.userName)
+          setTimeout(() => setWelcomeMessage(''), 1500)
           void loadDrinkAreaModel().catch(() => undefined)
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error)
@@ -1769,6 +1774,41 @@ function App() {
   return (
     <>
       <a className="skip-link" href="#main-content">Skip to content</a>
+
+      {welcomeMessage && createPortal(
+        <div style={{
+          position: 'fixed',
+          top: '2rem',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 2000,
+          animation: 'fadeInOut 1.5s ease-in-out forwards'
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #1f5f34 0%, #1a9b8e 100%)',
+            color: 'white',
+            padding: '1rem 1.5rem',
+            borderRadius: '1rem',
+            boxShadow: '0 8px 24px rgba(31, 95, 52, 0.24)',
+            textAlign: 'center',
+            fontWeight: 500,
+            fontSize: '1.1rem'
+          }}>
+            ☕ Welcome back, {welcomeMessage}!
+          </div>
+        </div>,
+        document.body
+      )}
+
+      <style>{`
+        @keyframes fadeInOut {
+          0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+          10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+          90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+          100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        }
+      `}</style>
+
       {showLoadingOverlay && createPortal(
         <div className="saving-overlay" role="status" aria-live="polite" aria-label={loadingOverlayText}>
           <div className="saving-card">
