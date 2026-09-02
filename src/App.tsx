@@ -898,12 +898,12 @@ function App() {
   })
 
   useEffect(() => {
-    const storedToken = sessionStorage.getItem('googleAccessToken')
-    if (storedToken) {
-      sessionStorage.removeItem('googleAccessToken')
-      setRequiresManualName(false)
-      setPendingUserName('')
-    }
+    sessionStorage.clear()
+    localStorage.removeItem('matchaUserName')
+    localStorage.removeItem('matchaAuthToken')
+    setRequiresManualName(false)
+    setPendingUserName('')
+    setCurrentUserName('')
   }, [])
 
   useEffect(() => {
