@@ -2347,8 +2347,6 @@ function App() {
                   <span className="text-muted">›</span>
                 </button>
               </div>
-                </button>
-              </div>
 
               <button type="button" className="btn btn-success w-100" onClick={() => void saveEntry()} disabled={isSavingEntry}>
                 {isSavingEntry ? 'Saving...' : 'Save Rating'}
