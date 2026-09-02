@@ -609,8 +609,6 @@ function App() {
   const [authError, setAuthError] = useState('')
   const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser'>('choice')
   const [welcomeMessage, setWelcomeMessage] = useState('')
-  const [showAccountLinking, setShowAccountLinking] = useState(false)
-  const [potentialAccounts, setPotentialAccounts] = useState<string[]>([])
 
   const [currentRating, setCurrentRating] = useState(0)
   const [location, setLocation] = useState('')
