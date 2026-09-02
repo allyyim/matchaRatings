@@ -1754,7 +1754,7 @@ function App() {
               {authError && <div className="alert alert-danger border mt-3 mb-0">{authError}</div>}
             </div>
           </section>
-        }}
+        )}
       </main>
     )
   }
