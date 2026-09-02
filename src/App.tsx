@@ -607,6 +607,7 @@ function App() {
   const [isSubmittingName, setIsSubmittingName] = useState(false)
   const [isUserReady, setIsUserReady] = useState(false)
   const [authError, setAuthError] = useState('')
+  const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser'>('choice')
 
   const [currentRating, setCurrentRating] = useState(0)
   const [location, setLocation] = useState('')
@@ -1698,12 +1699,35 @@ function App() {
               {authError && <div className="alert alert-danger border mt-3 mb-0">{authError}</div>}
             </div>
           </section>
+        ) : authMode === 'choice' ? (
+          <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
+            <div className="card-body p-3 p-md-4">
+              <h1 className="h4 fw-bold text-success mb-2">Welcome to Sip &amp; Score</h1>
+              <p className="text-muted mb-4">
+                Track your matcha journey and rate every sip.
+              </p>
+              <button
+                type="button"
+                className="btn btn-success w-100 mb-2"
+                onClick={() => setAuthMode('signin')}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-success w-100"
+                onClick={() => setAuthMode('newuser')}
+              >
+                Sign Up
+              </button>
+            </div>
+          </section>
         ) : (
           <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
             <div className="card-body p-3 p-md-4">
               <h1 className="h4 fw-bold text-success mb-2">Welcome to Sip &amp; Score</h1>
               <p className="text-muted mb-4">
-                Sign in with Google to access your matcha ratings from any device.
+                {authMode === 'signin' ? 'Sign in to your account' : 'Create a new account'} with Google.
               </p>
               <button
                 type="button"
@@ -1715,12 +1739,22 @@ function App() {
                 <svg width="20" height="20" viewBox="0 0 24 24">
                   <text x="2" y="16" fontSize="14" fill="#1f5f34">G</text>
                 </svg>
-                {isSubmittingName ? 'Signing in…' : 'Sign in with Google'}
+                {isSubmittingName ? (authMode === 'signin' ? 'Signing in…' : 'Signing up…') : (authMode === 'signin' ? 'Sign In with Google' : 'Sign Up with Google')}
+              </button>
+              <button
+                type="button"
+                className="btn btn-link text-muted w-100 mt-2 p-0"
+                onClick={() => {
+                  setAuthMode('choice')
+                  setAuthError('')
+                }}
+              >
+                Back
               </button>
               {authError && <div className="alert alert-danger border mt-3 mb-0">{authError}</div>}
             </div>
           </section>
-        )}
+        }}
       </main>
     )
   }
