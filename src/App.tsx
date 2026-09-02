@@ -847,7 +847,6 @@ function App() {
         console.log('=== Google OAuth Debug ===')
         console.log('Full codeResponse:', JSON.stringify(codeResponse))
         console.log('Has access_token?', !!codeResponse.access_token)
-        console.log('Has code?', !!codeResponse.code)
         console.log('All keys:', Object.keys(codeResponse))
 
         if (!codeResponse.access_token) {
