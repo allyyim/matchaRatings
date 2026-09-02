@@ -926,7 +926,7 @@ function App() {
         }
 
         if (mounted) {
-          setRequiresManualName(true)
+          setRequiresManualName(false)
         }
       } catch {
         if (!mounted) return
