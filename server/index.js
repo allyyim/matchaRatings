@@ -464,7 +464,7 @@ app.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
     const email = userInfo.email
     const name = userInfo.name
 
-    // Find existing account by Google ID
+    // Find existing account by Google ID first
     let account = await pool.query(
       'SELECT user_name, email FROM accounts WHERE google_id = $1',
       [googleId]
@@ -472,28 +472,46 @@ app.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
 
     let userName
     if (account.rowCount > 0) {
+      // Already linked to this Google ID
       userName = account.rows[0].user_name
     } else {
-      // New user - use provided name or auto-generate
-      if (!providedUserName) {
-        return res.status(400).json({ error: 'New user requires name', isNewUser: true })
+      // Check if email already exists (migrating from old system)
+      const emailExists = await pool.query(
+        'SELECT user_name FROM accounts WHERE email = $1',
+        [email]
+      )
+
+      if (emailExists.rowCount > 0) {
+        // Link existing email account to this Google ID
+        const existingUserName = emailExists.rows[0].user_name
+        await pool.query(
+          'UPDATE accounts SET google_id = $1 WHERE email = $2',
+          [googleId, email]
+        )
+        userName = existingUserName
+        console.log(`Linked ${email} to Google ID, username: ${userName}`)
+      } else {
+        // New user - require name
+        if (!providedUserName) {
+          return res.status(400).json({ error: 'New user requires name', isNewUser: true })
+        }
+
+        const sanitizedName = sanitizeUserName(providedUserName)
+
+        // Check if username is available
+        const nameTaken = await pool.query(
+          'SELECT 1 FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+          [sanitizedName]
+        )
+
+        const finalName = nameTaken.rowCount > 0 ? `${sanitizedName}_${googleId.slice(0, 6)}` : sanitizedName
+
+        await pool.query(
+          'INSERT INTO accounts (email, user_name, google_id) VALUES ($1, $2, $3)',
+          [email, finalName, googleId]
+        )
+        userName = finalName
       }
-
-      const sanitizedName = sanitizeUserName(providedUserName)
-
-      // Check if username is available
-      const nameTaken = await pool.query(
-        'SELECT 1 FROM accounts WHERE LOWER(user_name) = LOWER($1)',
-        [sanitizedName]
-      )
-
-      const finalName = nameTaken.rowCount > 0 ? `${sanitizedName}_${googleId.slice(0, 6)}` : sanitizedName
-
-      await pool.query(
-        'INSERT INTO accounts (email, user_name, google_id) VALUES ($1, $2, $3)',
-        [email, finalName, googleId]
-      )
-      userName = finalName
     }
 
     const token = generateToken(userName, browserId)
