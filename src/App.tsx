@@ -1776,26 +1776,8 @@ function App() {
       <a className="skip-link" href="#main-content">Skip to content</a>
 
       {welcomeMessage && createPortal(
-        <div style={{
-          position: 'fixed',
-          top: '2rem',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 2000,
-          animation: 'fadeInOut 1.5s ease-in-out forwards'
-        }}>
-          <div style={{
-            background: 'linear-gradient(135deg, #1f5f34 0%, #1a9b8e 100%)',
-            color: 'white',
-            padding: '1rem 1.5rem',
-            borderRadius: '1rem',
-            boxShadow: '0 8px 24px rgba(31, 95, 52, 0.24)',
-            textAlign: 'center',
-            fontWeight: 500,
-            fontSize: '1.1rem'
-          }}>
-            ☕ Welcome back, {welcomeMessage}!
-          </div>
+        <div className="welcome-toast">
+          <div>☕ Welcome back, {welcomeMessage}!</div>
         </div>,
         document.body
       )}
