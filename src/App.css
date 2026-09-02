@@ -5,11 +5,9 @@
   --light-green: #2f7a3e;
   --green-soft: #dfeecf;
   --accent-green: #3d8048;
-  --warm-accent: #d49b4a;
-  --warm-accent-soft: #f8e6c7;
-  --warm-accent-subtle: #f4e4d0;
   --accent-teal: #1a9b8e;
   --accent-teal-soft: #d4f4f1;
+  --accent-teal-subtle: #e8f7f5;
   --bg-light: #f6fbf2;
   --bg-lighter: #f3fbe7;
   --bg-strong: #edf8e8;
@@ -703,7 +701,7 @@ textarea.form-control {
 .rating-value {
   font-size: 1.3rem;
   font-weight: 800;
-  background: linear-gradient(135deg, var(--accent-teal), var(--warm-accent));
+  background: linear-gradient(135deg, var(--accent-teal), var(--accent-teal));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -739,15 +737,15 @@ textarea.form-control {
   width: 2rem;
   height: 2rem;
   border-radius: 999px;
-  border: 2px solid var(--warm-accent);
-  color: var(--warm-accent);
+  border: 2px solid var(--accent-teal);
+  color: var(--accent-teal);
   font-size: 0.75rem;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
-  background: var(--warm-accent-subtle);
+  background: var(--accent-teal-subtle);
   letter-spacing: -0.02em;
   box-shadow: 0 2px 8px rgba(212, 155, 74, 0.12);
 }
@@ -783,7 +781,7 @@ textarea.form-control {
 .entry-card:hover {
   box-shadow: var(--shadow-lg);
   transform: translateY(-3px);
-  border-color: var(--warm-accent-subtle);
+  border-color: var(--accent-teal-subtle);
 }
 
 .entry-card .card-body {

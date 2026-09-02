@@ -1702,36 +1702,43 @@ function App() {
         ) : authMode === 'choice' ? (
           <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
             <div className="card-body p-3 p-md-4">
-              <h1 className="h4 fw-bold text-success mb-2">Welcome to Sip &amp; Score</h1>
-              <p className="text-muted mb-4">
-                Track your matcha journey and rate every sip.
+              <div className="text-center mb-4">
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🍵</div>
+                <h1 className="h3 fw-bold text-success mb-2">Sip &amp; Score</h1>
+                <p className="text-muted small">Track your matcha journey, one sip at a time</p>
+              </div>
+              <p className="text-muted mb-4 text-center">
+                Whether you're a matcha enthusiast or just starting, let's rate every tea experience together.
               </p>
               <button
                 type="button"
-                className="btn btn-success w-100 mb-2"
+                className="btn btn-success w-100 mb-2 fw-semibold"
                 onClick={() => setAuthMode('signin')}
               >
-                Sign In
+                I have an account
               </button>
               <button
                 type="button"
-                className="btn btn-outline-success w-100"
+                className="btn btn-outline-success w-100 fw-semibold"
                 onClick={() => setAuthMode('newuser')}
               >
-                Sign Up
+                I'm new here
               </button>
             </div>
           </section>
         ) : (
           <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
             <div className="card-body p-3 p-md-4">
-              <h1 className="h4 fw-bold text-success mb-2">Welcome to Sip &amp; Score</h1>
-              <p className="text-muted mb-4">
-                {authMode === 'signin' ? 'Sign in to your account' : 'Create a new account'} with Google.
+              <div className="text-center mb-4">
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🍵</div>
+                <h1 className="h4 fw-bold text-success mb-1">Welcome back</h1>
+              </div>
+              <p className="text-muted mb-4 text-center small">
+                {authMode === 'signin' ? 'Sign in to continue your matcha story' : 'Let\'s start your matcha adventure'}
               </p>
               <button
                 type="button"
-                className="btn btn-light w-100 d-flex align-items-center justify-content-center gap-2"
+                className="btn btn-light w-100 d-flex align-items-center justify-content-center gap-2 mb-3"
                 onClick={() => googleLogin()}
                 disabled={isSubmittingName}
                 style={{ border: '1px solid #e0e0e0', padding: '0.75rem' }}
@@ -1743,15 +1750,15 @@ function App() {
               </button>
               <button
                 type="button"
-                className="btn btn-link text-muted w-100 mt-2 p-0"
+                className="btn btn-link text-muted w-100 p-0 small"
                 onClick={() => {
                   setAuthMode('choice')
                   setAuthError('')
                 }}
               >
-                Back
+                ← Back to options
               </button>
-              {authError && <div className="alert alert-danger border mt-3 mb-0">{authError}</div>}
+              {authError && <div className="alert alert-danger border mt-3 mb-0 small">{authError}</div>}
             </div>
           </section>
         )}
