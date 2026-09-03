@@ -1366,21 +1366,6 @@ function App() {
   }, [communityActiveTab, currentUserName, userFlavors])
 
   useEffect(() => {
-    if (!isPreferencesModalOpen) return
-
-    void apiFetch<{ flavors?: string[] }>('/preferences')
-
-      .then((data) => {
-        if (data.flavors && Array.isArray(data.flavors)) {
-          setUserFlavors(data.flavors)
-        }
-      })
-      .catch((error) => {
-        console.error('Failed to load preferences:', error)
-      })
-  }, [isPreferencesModalOpen])
-
-  useEffect(() => {
     let mounted = true
 
     async function startCamera() {
