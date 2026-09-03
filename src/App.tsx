@@ -688,7 +688,6 @@ function App() {
   const [isMagicLinkSent, setIsMagicLinkSent] = useState(false)
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false)
   const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false)
-  const [isChangeEmailOpen, setIsChangeEmailOpen] = useState(false)
   const [newEmail, setNewEmail] = useState('')
   const [userFlavors, setUserFlavors] = useState<string[]>([])
   const [likedRatingsSet, setLikedRatingsSet] = useState<Set<number>>(new Set())
@@ -1364,6 +1363,20 @@ function App() {
         setIsLoadingSimilarPlaces(false)
       })
   }, [communityActiveTab, currentUserName, userFlavors])
+
+  useEffect(() => {
+    if (!isPreferencesModalOpen) return
+
+    void apiFetch<{ flavors?: string[] }>('/api/preferences')
+      .then((data) => {
+        if (data.flavors && Array.isArray(data.flavors)) {
+          setUserFlavors(data.flavors)
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to load preferences:', error)
+      })
+  }, [isPreferencesModalOpen])
 
   useEffect(() => {
     let mounted = true
@@ -2767,44 +2780,40 @@ function App() {
             </div>
 
             <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef' }}>
-              <button
-                type="button"
-                className="btn btn-link btn-sm text-start p-0 w-100 mb-2"
-                onClick={() => setIsChangeEmailOpen(!isChangeEmailOpen)}
-                style={{ textDecoration: 'none', color: '#198754' }}
-              >
-                Change Email
-              </button>
-              {isChangeEmailOpen && (
-                <div className="mt-2">
+              <div>
+                <label className="form-label fw-semibold text-success mb-2">Email</label>
+                <div className="d-flex gap-2">
                   <input
                     type="email"
-                    className="form-control form-control-sm mb-2"
-                    placeholder="New email"
+                    className="form-control form-control-sm"
+                    placeholder="Update email"
                     value={newEmail}
                     onChange={(e) => setNewEmail(e.target.value)}
                   />
                   <button
                     type="button"
-                    className="btn btn-sm btn-success w-100"
+                    className="btn btn-sm btn-success"
                     onClick={async () => {
+                      if (!newEmail.trim()) {
+                        alert('Please enter an email')
+                        return
+                      }
                       try {
                         await apiFetch('/account/email', {
                           method: 'POST',
                           body: JSON.stringify({ newEmail })
                         })
                         setNewEmail('')
-                        setIsChangeEmailOpen(false)
-                        alert('Email change sent to your current email for confirmation')
+                        alert('Email updated!')
                       } catch (error) {
-                        alert(error instanceof Error ? error.message : 'Failed to change email')
+                        alert(error instanceof Error ? error.message : 'Failed to update email')
                       }
                     }}
                   >
-                    Send Link
+                    Update
                   </button>
                 </div>
-              )}
+              </div>
             </div>
 
             <div style={{ padding: '0.75rem', flex: 1, overflowY: 'auto' }}>
