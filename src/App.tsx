@@ -653,7 +653,7 @@ function App() {
   const [editLocation, setEditLocation] = useState('')
   const [editThoughts, setEditThoughts] = useState('')
   const [friendQuery, setFriendQuery] = useState('')
-  const [friendSuggestions, setFriendSuggestions] = useState<Array<{ userName: string; ratingCount: number }>>([])
+  const [friendSuggestions, setFriendSuggestions] = useState<Array<{ userName: string; placeCount: number }>>([])
   const [selectedFriend, setSelectedFriend] = useState('')
   const [friendEntries, setFriendEntries] = useState<RatingEntry[]>([])
   const [isSavingEntry, setIsSavingEntry] = useState(false)
@@ -1669,7 +1669,7 @@ function App() {
     }
 
     try {
-      const response = await apiFetch<{ friends: Array<{ userName: string; ratingCount: number }> }>(`/friends/search?q=${encodeURIComponent(query.trim())}`)
+      const response = await apiFetch<{ friends: Array<{ userName: string; placeCount: number }> }>(`/friends/search?q=${encodeURIComponent(query.trim())}`)
       setFriendSuggestions(response.friends || [])
     } catch (error) {
       console.error('Search failed:', error)
@@ -2998,7 +2998,7 @@ function App() {
               className={`btn btn-sm ${activePage === 'friends' ? 'btn-success' : 'btn-outline-success'}`}
               onClick={() => setActivePage('friends')}
             >
-              Community
+              Explore
             </button>
             <button
               type="button"
@@ -3532,14 +3532,17 @@ function App() {
         <main id="main-content" className="container py-3 py-md-5 px-3 px-md-4" tabIndex={-1}>
           <section className="card border-0 shadow-sm matcha-shell mb-4">
             <div className="card-body p-3 p-md-4">
-              <h2 className="h3 fw-bold text-success mb-4">Community</h2>
+              <h2 className="h3 fw-bold text-success mb-4">Explore</h2>
 
               {/* Navigation Tabs */}
               <div className="nav nav-tabs border-bottom mb-4" role="tablist">
                 <button
                   type="button"
                   className={`nav-link ${communityActiveTab === 'search' ? 'active' : ''}`}
-                  onClick={() => setCommunityActiveTab('search')}
+                  onClick={() => {
+                    setCommunityActiveTab('search')
+                    setSelectedFriend('')
+                  }}
                 >
                   Search Users
                 </button>
@@ -3548,6 +3551,7 @@ function App() {
                   className={`nav-link ${communityActiveTab === 'following' ? 'active' : ''}`}
                   onClick={() => {
                     setCommunityActiveTab('following')
+                    setSelectedFriend('')
                     setFriendSuggestions([])
                     setFriendQuery('')
                   }}
@@ -3559,6 +3563,7 @@ function App() {
                   className={`nav-link ${communityActiveTab === 'recommendations' ? 'active' : ''}`}
                   onClick={() => {
                     setCommunityActiveTab('recommendations')
+                    setSelectedFriend('')
                     setFriendSuggestions([])
                     setFriendQuery('')
                   }}
@@ -3603,7 +3608,7 @@ function App() {
                             <div className="d-flex justify-content-between align-items-start mb-2">
                               <div>
                                 <h6 className="fw-semibold mb-1">{friend.userName}</h6>
-                                <p className="text-muted small mb-0">{friend.ratingCount} ratings</p>
+                                <p className="text-muted small mb-0">{friend.placeCount} places</p>
                               </div>
                               <button
                                 type="button"

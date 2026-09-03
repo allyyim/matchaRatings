@@ -1056,18 +1056,18 @@ app.get('/api/friends/search', async (req, res) => {
       `
         SELECT
           a.user_name,
-          COUNT(r.id) as rating_count
+          COUNT(DISTINCT r.location) as place_count
         FROM accounts a
-        LEFT JOIN ratings r ON a.user_name = r.user_name
+        LEFT JOIN ratings r ON a.user_name = r.user_name AND r.location IS NOT NULL AND r.location != ''
         WHERE LOWER(a.user_name) LIKE LOWER($1)
         GROUP BY a.user_name
-        ORDER BY rating_count DESC, a.user_name ASC
+        ORDER BY place_count DESC, a.user_name ASC
         LIMIT 20
       `,
       [`%${q}%`]
     )
 
-    return res.json({ friends: result.rows.map((r) => ({ userName: r.user_name, ratingCount: Number(r.rating_count) })) })
+    return res.json({ friends: result.rows.map((r) => ({ userName: r.user_name, placeCount: Number(r.place_count) })) })
   } catch (error) {
     console.error('Search failed:', error)
     return res.status(500).json({ error: 'Search failed', friends: [] })
