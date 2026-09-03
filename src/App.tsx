@@ -72,6 +72,11 @@ const API_BASE_URL = (() => {
   const isPhoneOrLanClient = host !== 'localhost' && host !== '127.0.0.1'
   const apiPointsToLocalhost = /https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(rawApiBaseUrl)
 
+  // If on GitHub Pages, use Render backend
+  if (host.includes('github.io')) {
+    return 'https://matcharatings.onrender.com/api'
+  }
+
   // If opened from a phone/LAN host, never call localhost from env config.
   if (isPhoneOrLanClient && apiPointsToLocalhost) {
     return '/api'
