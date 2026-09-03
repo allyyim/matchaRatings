@@ -102,7 +102,7 @@ const noPhotoPlaceholderUrl = `data:image/svg+xml;charset=UTF-8,${encodeURICompo
 const drinkAreaModelConfig = {
   modelUrl: `${import.meta.env.BASE_URL}ml/drink-area/model.json`,
   inputSize: 224,
-  maskThreshold: 0.45
+  maskThreshold: 0.1
 }
 
 const LOW_RATING_GREENNESS_WEIGHT = 0.8
