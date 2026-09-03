@@ -666,8 +666,6 @@ function App() {
   const [selectedExplorePlaceEntries, setSelectedExplorePlaceEntries] = useState<RatingEntry[]>([])
   const [isExplorePlaceModalOpen, setIsExplorePlaceModalOpen] = useState(false)
   const [isLoadingExplorePlaceEntries, setIsLoadingExplorePlaceEntries] = useState(false)
-  const [isExplorePlacesExpanded, setIsExplorePlacesExpanded] = useState(true)
-  const [isExploreUsersExpanded, setIsExploreUsersExpanded] = useState(true)
   const [isMyLogsExpanded, setIsMyLogsExpanded] = useState(false)
   const [myLogsSearchTerm, setMyLogsSearchTerm] = useState('')
   const [isFriendLogsExpanded, setIsFriendLogsExpanded] = useState(false)
@@ -684,10 +682,8 @@ function App() {
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false)
   const [userFlavors, setUserFlavors] = useState<string[]>([])
   const [userMilkTypes, setUserMilkTypes] = useState<string[]>([])
-  const [userCountries, setUserCountries] = useState<string[]>([])
   const [followingSet, setFollowingSet] = useState<Set<string>>(new Set())
   const [likedRatingsSet, setLikedRatingsSet] = useState<Set<number>>(new Set())
-  const [ratingLikeCounts, setRatingLikeCounts] = useState<Map<number, number>>(new Map())
 
   const showLoadingOverlay = isSavingEntry || isLoadingFriendRatings || isLoadingExplorePlaces
   const loadingOverlayText = isSavingEntry
@@ -2621,7 +2617,7 @@ function App() {
                       body: JSON.stringify({
                         flavors: userFlavors,
                         milk_type: userMilkTypes,
-                        visited_countries: userCountries
+                        visited_countries: []
                       })
                     })
                     setIsPreferencesModalOpen(false)
