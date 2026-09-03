@@ -2994,11 +2994,11 @@ function App() {
                       fontSize: '0.8rem',
                       padding: '0.375rem 0.75rem',
                       borderRadius: '0.5rem',
-                      border: '1px solid ' + (userFlavors.includes(flavor) ? 'rgba(144, 202, 193, 0.4)' : 'rgba(176, 222, 214, 0.3)'),
+                      border: '1px solid ' + (userFlavors.includes(flavor) ? 'rgba(38, 133, 120, 0.4)' : 'rgba(176, 222, 214, 0.3)'),
                       background: userFlavors.includes(flavor)
-                        ? 'linear-gradient(135deg, #a8d8d0 0%, #b8e0d8 100%)'
+                        ? 'linear-gradient(135deg, #268578 0%, #2d9d8f 100%)'
                         : 'linear-gradient(135deg, #d4ede9 0%, #e0f3f0 100%)',
-                      color: userFlavors.includes(flavor) ? '#4a8b82' : '#6b9e95',
+                      color: userFlavors.includes(flavor) ? '#ffffff' : '#6b9e95',
                       fontWeight: userFlavors.includes(flavor) ? '600' : '500',
                       cursor: 'pointer'
                     }}
@@ -3017,6 +3017,7 @@ function App() {
                 className="btn w-100"
                 onClick={async () => {
                   try {
+                    setIsPreferencesModalOpen(false)
                     const response = await apiFetch('/preferences', {
                       method: 'POST',
                       body: JSON.stringify({
@@ -3024,17 +3025,17 @@ function App() {
                       })
                     })
                     console.log('Preferences saved:', response)
-                    setIsPreferencesModalOpen(false)
                     alert('Preferences saved!')
                   } catch (error) {
                     console.error('Failed to save preferences:', error)
+                    setIsPreferencesModalOpen(true)
                     alert(error instanceof Error ? error.message : 'Failed to save preferences')
                   }
                 }}
                 style={{
-                  background: 'linear-gradient(135deg, #a8d8d0 0%, #b8e0d8 100%)',
-                  color: '#4a8b82',
-                  border: '1px solid rgba(144, 202, 193, 0.4)',
+                  background: 'linear-gradient(135deg, #268578 0%, #2d9d8f 100%)',
+                  color: '#ffffff',
+                  border: '1px solid rgba(38, 133, 120, 0.4)',
                   fontWeight: '600'
                 }}
               >
@@ -3889,12 +3890,12 @@ function App() {
                                           </h6>
                                           <span className="badge" style={{
                                             fontSize: '0.75rem',
-                                            background: 'linear-gradient(90deg, #FF6B35 0%, #FFA500 25%, #FFD700 50%, #90EE90 75%, #20B2AA 100%)',
-                                            color: 'white',
+                                            background: 'linear-gradient(90deg, #E8A085 0%, #F0C389 25%, #E8D689 50%, #B8D9B3 75%, #7FD1C1 100%)',
+                                            color: '#4a5c5a',
                                             fontWeight: 'bold',
                                             padding: '0.35rem 0.65rem',
                                             borderRadius: '0.375rem',
-                                            boxShadow: '0 2px 8px rgba(255, 107, 53, 0.2)'
+                                            boxShadow: '0 2px 8px rgba(200, 150, 130, 0.15)'
                                           }}>
                                             {(user.matchScore * 100).toFixed(0)}% match
                                           </span>
