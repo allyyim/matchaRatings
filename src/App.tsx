@@ -3299,6 +3299,25 @@ function App() {
                   ))}
                 </div>
               )}
+
+              {followingSet.size > 0 && (
+                <div className="mt-4">
+                  <h5 className="fw-semibold text-success mb-2">My Friends</h5>
+                  <div className="d-flex flex-wrap gap-2">
+                    {Array.from(followingSet).map((friend) => (
+                      <button
+                        key={friend}
+                        type="button"
+                        className="btn btn-outline-success btn-sm"
+                        onClick={() => void openFriendRatings(friend)}
+                        disabled={isLoadingFriendRatings}
+                      >
+                        {friend}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </section>
 
@@ -3449,7 +3468,7 @@ function App() {
 
               {exploreActiveTab === 'places' && (
                 <section>
-                  <p className="text-muted mb-3">Ranked by community</p>
+                  <p className="text-muted mb-3">Top ranked matchas</p>
 
                   {explorePlaces.length === 0 && (
                     <div className="alert alert-light border mb-0">No place data yet. Add ratings to build rankings.</div>
