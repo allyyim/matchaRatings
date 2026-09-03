@@ -4274,7 +4274,10 @@ function App() {
           onClick={() => setActivePage('home')}
           title="My Log"
         >
-          <span>📝</span>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
           <span className="label">My Log</span>
         </button>
         <button
@@ -4283,7 +4286,10 @@ function App() {
           onClick={() => setActivePage('friends')}
           title="Explore"
         >
-          <span>🌍</span>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M12 6v6l4 2"></path>
+          </svg>
           <span className="label">Explore</span>
         </button>
         <button
@@ -4292,7 +4298,12 @@ function App() {
           onClick={() => setActivePage('explore')}
           title="Leaderboard"
         >
-          <span>🏆</span>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M6 9h12"></path>
+            <path d="M6 13h12"></path>
+            <path d="M6 17h12"></path>
+            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"></path>
+          </svg>
           <span className="label">Leaderboard</span>
         </button>
       </nav>

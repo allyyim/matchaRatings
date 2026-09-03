@@ -1951,6 +1951,13 @@ main.login-page {
   line-height: 1;
 }
 
+.bottom-nav-btn svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 1.5;
+  line-height: 1;
+}
+
 .bottom-nav-btn.active {
   color: var(--primary-green);
 }
