@@ -2374,7 +2374,7 @@ function App() {
         <main id="main-content" className="container py-3 py-md-5 px-3 px-md-4" tabIndex={-1}>
           <div className="card shadow-sm border-0 matcha-shell">
             <div className="card-body p-3 p-md-4">
-              <h1 className="display-6 fw-bold mb-3 text-success">Log Rating</h1>
+              <h1 className="display-6 fw-bold mb-3 text-success">New Log</h1>
 
               <div className="mb-3">
                 <div className="form-label fw-semibold">Enter the cafe or shop name.</div>
@@ -2432,11 +2432,13 @@ function App() {
                 </div>
               </div>
 
+              <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
+
               <div className="mb-3">
                 <button
                   type="button"
                   className="btn btn-link text-start text-muted p-0 d-flex align-items-center gap-2"
-                  onClick={() => setIsUploadMenuOpen(true)}
+                  onClick={openPhotoLibrary}
                   style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
@@ -2471,6 +2473,8 @@ function App() {
                   </div>
                 </div>
               )}
+
+              <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
 
               <div className="mb-3 text-success fw-semibold">
                 {matchaGreenness !== null ? `Greenness: ${matchaGreenness.toFixed(1)}/100` : 'Greenness score pending'}
@@ -2526,6 +2530,8 @@ function App() {
                   <div className="rating-badge mt-2 text-center">Selected: <span className="rating-value">{currentRating.toFixed(1)}</span> / 5.0</div>
                 </div>
               </div>
+
+              <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
 
               <div className="mb-3">
                 <button
