@@ -1982,18 +1982,19 @@ function App() {
         <div className="explore-place-modal-overlay" role="dialog" aria-modal="true" aria-label={`${selectedExplorePlaceName} ratings`}>
           <div className="explore-place-modal card border-0 shadow-lg">
             <div className="card-body p-3 p-md-4">
-              <div className="d-flex justify-content-between align-items-start gap-3 mb-3">
+              <div className="d-flex align-items-start gap-3 mb-3">
                 <div>
                   <h3 className="h5 fw-bold text-success mb-1">{selectedExplorePlaceName}</h3>
                   <div className="small text-muted">All ratings</div>
                 </div>
                 <button
                   type="button"
-                  className="btn btn-outline-secondary btn-sm explore-place-close"
+                  className="btn btn-link text-muted p-0"
                   onClick={closeExplorePlaceRatings}
                   aria-label="Close place ratings popup"
+                  style={{ marginLeft: 'auto', flexShrink: 0, fontSize: '1.5rem', lineHeight: '1' }}
                 >
-                  X
+                  ✕
                 </button>
               </div>
 
@@ -2258,15 +2259,16 @@ function App() {
       {isNotesModalOpen && createPortal(
         <div className="notes-modal-overlay" role="dialog" aria-modal="true" aria-label="Edit notes">
           <div className="notes-modal card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="notes-modal-header d-flex justify-content-between align-items-center p-4 border-bottom">
-              <h3 className="h5 fw-bold text-success mb-0">Your thoughts...</h3>
+            <div className="notes-modal-header d-flex align-items-center p-4 border-bottom" style={{ flexWrap: 'nowrap' }}>
+              <h3 className="h5 fw-bold text-success mb-0" style={{ flexShrink: 0 }}>Your thoughts...</h3>
               <button
                 type="button"
-                className="btn btn-link text-muted p-0 ms-auto"
+                className="btn btn-link text-muted p-0"
                 onClick={() => setIsNotesModalOpen(false)}
                 aria-label="Close notes"
+                style={{ marginLeft: 'auto', flexShrink: 0 }}
               >
-                Close
+                ✕
               </button>
             </div>
             <div className="notes-modal-body p-4">
