@@ -139,6 +139,22 @@ export async function initDb() {
     ON browser_users (user_name);
   `)
 
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'ratings'
+          AND column_name = 'flavor_preferences'
+      ) THEN
+        ALTER TABLE ratings
+          ADD COLUMN flavor_preferences JSONB DEFAULT '{}';
+      END IF;
+    END $$;
+  `)
+
   // User preferences for personalized filtering and recommendations
   await pool.query(`
     CREATE TABLE IF NOT EXISTS user_preferences (

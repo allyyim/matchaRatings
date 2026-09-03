@@ -808,6 +808,7 @@ app.post('/api/ratings', async (req, res) => {
   const greenness = Number(req.body?.greenness)
   const location = normalizeLocationText(req.body?.location || '')
   const thoughts = sanitizeText(req.body?.thoughts || '', 800)
+  const flavorPreferences = typeof req.body?.flavorPreferences === 'object' ? req.body.flavorPreferences : {}
 
   if (!userName || !photo || !photo.startsWith('data:image/') || Number.isNaN(rating) || Number.isNaN(greenness)) {
     return res.status(400).json({ error: 'Missing required rating fields' })
@@ -827,11 +828,11 @@ app.post('/api/ratings', async (req, res) => {
 
   const inserted = await pool.query(
     `
-      INSERT INTO ratings (user_name, photo, rating, greenness, location, thoughts)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO ratings (user_name, photo, rating, greenness, location, thoughts, flavor_preferences)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `,
-    [userName, encryptField(photo), rating, greenness, location, thoughts]
+    [userName, encryptField(photo), rating, greenness, location, thoughts, JSON.stringify(flavorPreferences)]
   )
 
   return res.status(201).json({ rating: mapRatingRow(inserted.rows[0]) })
@@ -1247,6 +1248,48 @@ app.get('/api/ratings/:ratingId/likes', async (req, res) => {
     [ratingId]
   )
   return res.json({ likeCount: Number(result.rows[0].count) })
+})
+
+// Find users with similar preferences
+app.get('/api/users/similar-preferences', async (req, res) => {
+  const limit = Math.max(1, Math.min(50, Number(req.query.limit) || 20))
+
+  try {
+    // Get current user's preferences
+    const userEmail = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
+    if (!userEmail) return res.status(404).json({ error: 'User not found' })
+
+    const userPrefs = await pool.query(
+      'SELECT flavors, milk_type FROM user_preferences WHERE email = $1',
+      [userEmail]
+    )
+    const currentPrefs = userPrefs.rows[0] || { flavors: [], milk_type: [] }
+
+    // Find users with overlapping preferences
+    const result = await pool.query(
+      `
+        SELECT DISTINCT a.user_name, COUNT(DISTINCT r.id) as ratings_count
+        FROM accounts a
+        LEFT JOIN ratings r ON LOWER(a.user_name) = LOWER(r.user_name)
+        LEFT JOIN user_preferences up ON a.email = up.email
+        WHERE LOWER(a.user_name) != LOWER($1)
+        GROUP BY a.user_name, up.flavors, up.milk_type
+        ORDER BY ratings_count DESC
+        LIMIT $2
+      `,
+      [req.session.userName, limit]
+    )
+
+    return res.json({
+      users: result.rows.map(r => ({
+        userName: r.user_name,
+        ratingsCount: Number(r.ratings_count)
+      }))
+    })
+  } catch (error) {
+    console.error('Similar preferences error:', error)
+    return res.status(500).json({ error: 'Failed to find similar users' })
+  }
 })
 
 app.use((err, _req, res, _next) => {

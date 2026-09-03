@@ -615,6 +615,7 @@ function App() {
   const [verifiedAccountName, setVerifiedAccountName] = useState<string | null>(null)
 
   const [currentRating, setCurrentRating] = useState(0)
+  const [ratingFlavorPrefs, setRatingFlavorPrefs] = useState({ bold: 0, nutty: 0, umami: 0, vegetal: 0, sweet: 0, astringent: 0 })
   const [location, setLocation] = useState('')
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([])
   const [isLocationLookupPending, setIsLocationLookupPending] = useState(false)
@@ -1526,7 +1527,8 @@ function App() {
           rating: currentRating,
           greenness: resolvedGreenness,
           location: location.trim(),
-          thoughts: thoughts.trim()
+          thoughts: thoughts.trim(),
+          flavorPreferences: ratingFlavorPrefs
         })
       })
 
@@ -1557,6 +1559,7 @@ function App() {
       }
 
       setCurrentRating(0)
+      setRatingFlavorPrefs({ bold: 0, nutty: 0, umami: 0, vegetal: 0, sweet: 0, astringent: 0 })
       setLocation('')
       setThoughts('')
       setPhotoDataUrl('')
@@ -2924,7 +2927,35 @@ function App() {
 
               <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
 
-              {mlCoveragePercent !== null && mlConfidencePercent !== null && (
+              <div className="mb-3">
+                <label className="form-label fw-semibold d-block">Flavor Profile</label>
+                <div className="small text-muted mb-3">Rate the intensity of each flavor (0 = not present, 100 = very strong)</div>
+                <div className="d-grid gap-2">
+                  {(['bold', 'nutty', 'umami', 'vegetal', 'sweet', 'astringent'] as const).map((flavor) => (
+                    <div key={flavor} className="d-flex align-items-center gap-2">
+                      <label className="form-label small mb-0" style={{ minWidth: '80px', textTransform: 'capitalize' }}>
+                        {flavor}:
+                      </label>
+                      <input
+                        type="range"
+                        className="form-range"
+                        min="0"
+                        max="100"
+                        value={ratingFlavorPrefs[flavor]}
+                        onChange={(e) => setRatingFlavorPrefs({
+                          ...ratingFlavorPrefs,
+                          [flavor]: Number(e.target.value)
+                        })}
+                      />
+                      <span className="small text-muted" style={{ minWidth: '35px' }}>
+                        {ratingFlavorPrefs[flavor]}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
                 <div className="mb-3 small detector-chip">
                   <div>{mlStatus}</div>
                   <div className="detector-metrics">
