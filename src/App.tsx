@@ -4292,7 +4292,8 @@ function App() {
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <circle cx="12" cy="12" r="10"></circle>
-            <path d="M12 6v6l4 2"></path>
+            <path d="M2 12h20"></path>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
           </svg>
           <span className="label">Explore</span>
         </button>
@@ -4303,10 +4304,9 @@ function App() {
           title="Leaderboard"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M6 9h12"></path>
-            <path d="M6 13h12"></path>
+            <path d="M6 9l6-7 6 7"></path>
+            <path d="M9 9v8a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V9"></path>
             <path d="M6 17h12"></path>
-            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"></path>
           </svg>
           <span className="label">Leaderboard</span>
         </button>

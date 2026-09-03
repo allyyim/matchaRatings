@@ -106,9 +106,9 @@ body {
 
 .soft-nav {
   backdrop-filter: blur(12px);
-  background: rgba(255, 255, 255, 0.7);
-  border-bottom: 1px solid rgba(214, 233, 200, 0.4);
-  box-shadow: var(--shadow-sm);
+  background: linear-gradient(135deg, #f1fbe6 0%, #eaf8df 100%);
+  border-bottom: none;
+  box-shadow: none;
   padding: 1.25rem 0 !important;
   min-height: 80px;
 }
@@ -1960,6 +1960,9 @@ main.login-page {
 
 .bottom-nav-btn.active {
   color: var(--primary-green);
+  border: 1.5px solid var(--accent-teal);
+  border-radius: 8px;
+  padding: 0.4rem 0.5rem;
 }
 
 .bottom-nav-btn.active span:first-child {
