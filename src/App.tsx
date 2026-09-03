@@ -1545,11 +1545,20 @@ function App() {
       const resolvedPhoto = photoDataUrl || noPhotoPlaceholderUrl
       const resolvedGreenness = matchaGreenness ?? 0
 
+      let photoUrl = resolvedPhoto
+      if (resolvedPhoto.startsWith('data:image/')) {
+        const uploadRes = await apiFetch<{ url: string }>('/upload-image', {
+          method: 'POST',
+          body: JSON.stringify({ image: resolvedPhoto })
+        })
+        photoUrl = uploadRes.url
+      }
+
       await apiFetch<{ rating: RatingEntry }>('/ratings', {
         method: 'POST',
         body: JSON.stringify({
           userName: currentUserName,
-          photo: resolvedPhoto,
+          photo: photoUrl,
           rating: currentRating,
           greenness: resolvedGreenness,
           location: location.trim(),
@@ -1612,8 +1621,13 @@ function App() {
       return
     }
 
-    const response = await apiFetch<{ friends: string[] }>(`/friends/search?q=${encodeURIComponent(query.trim())}`)
-    setFriendSuggestions(response.friends)
+    try {
+      const response = await apiFetch<{ friends: string[] }>(`/friends/search?q=${encodeURIComponent(query.trim())}`)
+      setFriendSuggestions(response.friends || [])
+    } catch (error) {
+      console.error('Search failed:', error)
+      setFriendSuggestions([])
+    }
   }
 
   async function fetchExploreData(showOverlay: boolean) {

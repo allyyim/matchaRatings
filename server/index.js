@@ -7,6 +7,7 @@ import * as Sentry from '@sentry/node'
 import rateLimit from 'express-rate-limit'
 import { Resend } from 'resend'
 import { OAuth2Client } from 'google-auth-library'
+import { v2 as cloudinary } from 'cloudinary'
 import { initDb, pool } from './db.js'
 import { findBestMatch } from 'string-similarity'
 
@@ -31,6 +32,13 @@ const APP_ORIGIN = String(process.env.APP_ORIGIN || 'https://allyyim.github.io/m
 const EMAIL_FROM = process.env.EMAIL_FROM || 'Sip & Score <onboarding@resend.dev>'
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 const googleClient = process.env.GOOGLE_CLIENT_ID ? new OAuth2Client(process.env.GOOGLE_CLIENT_ID) : null
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+})
+
 const telemetryBuffer = []
 const LOW_RATING_GREENNESS_WEIGHT = 0.8
 const FULL_GREENNESS_WEIGHT = 1
@@ -239,7 +247,7 @@ function mapRatingRow(row) {
   return {
     id: Number(row.id),
     userName: row.user_name,
-    photo: decryptField(row.photo),
+    photo: row.photo,
     rating,
     greenness,
     location: row.location || '',
@@ -854,7 +862,7 @@ app.post('/api/ratings', async (req, res) => {
   const thoughts = sanitizeText(req.body?.thoughts || '', 800)
   const flavorPreferences = typeof req.body?.flavorPreferences === 'object' ? req.body.flavorPreferences : {}
 
-  if (!userName || !photo || !photo.startsWith('data:image/') || Number.isNaN(rating) || Number.isNaN(greenness)) {
+  if (!userName || !photo || Number.isNaN(rating) || Number.isNaN(greenness)) {
     return res.status(400).json({ error: 'Missing required rating fields' })
   }
 
@@ -862,8 +870,8 @@ app.post('/api/ratings', async (req, res) => {
     return res.status(400).json({ error: 'rating and greenness must be in valid ranges' })
   }
 
-  if (photo.length > 15_000_000) {
-    return res.status(413).json({ error: 'Photo is too large' })
+  if (photo.length > 500) {
+    return res.status(413).json({ error: 'Photo URL is too long' })
   }
 
   if (userName.toLowerCase() !== req.session.userName.toLowerCase()) {
@@ -876,10 +884,31 @@ app.post('/api/ratings', async (req, res) => {
       VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `,
-    [userName, encryptField(photo), rating, greenness, location, thoughts, JSON.stringify(flavorPreferences)]
+    [userName, photo, rating, greenness, location, thoughts, JSON.stringify(flavorPreferences)]
   )
 
   return res.status(201).json({ rating: mapRatingRow(inserted.rows[0]) })
+})
+
+app.post('/api/upload-image', async (req, res) => {
+  try {
+    const image = String(req.body?.image || '').trim()
+    if (!image || !image.startsWith('data:image/')) {
+      return res.status(400).json({ error: 'Valid base64 image data is required' })
+    }
+
+    const result = await cloudinary.uploader.upload(image, {
+      folder: 'matcha-ratings',
+      resource_type: 'auto',
+      quality: 'auto',
+      fetch_format: 'auto'
+    })
+
+    return res.json({ url: result.secure_url })
+  } catch (error) {
+    console.error('Image upload failed:', error)
+    return res.status(500).json({ error: 'Image upload failed' })
+  }
 })
 
 app.put('/api/ratings/:id', async (req, res) => {
