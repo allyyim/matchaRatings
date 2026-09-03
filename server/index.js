@@ -1460,18 +1460,6 @@ app.get('/api/similar-places', async (req, res) => {
     return res.status(500).json({ error: 'Failed to find similar places' })
   }
 })
-        }
-      })
-      .filter(p => p.matchScore > 0)
-      .sort((a, b) => b.matchScore - a.matchScore)
-      .slice(0, 20)
-
-    return res.json({ similarPlaces })
-  } catch (error) {
-    console.error('Similar places lookup failed:', error)
-    return res.status(500).json({ error: 'Failed to find similar places' })
-  }
-})
 
 // Like/unlike rating endpoints
 app.post('/api/ratings/:ratingId/like', async (req, res) => {
