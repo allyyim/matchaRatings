@@ -435,11 +435,22 @@ app.post('/api/auth/verify', authRateLimiter, async (req, res) => {
       return res.status(409).json({ error: 'That username was just claimed by another account. Please sign up again.' })
     }
 
+    // Create new account with email and username
     await pool.query(
       'INSERT INTO accounts (email, user_name) VALUES ($1, $2)',
       [record.email, record.user_name]
     )
     userName = record.user_name
+  } else {
+    // Existing account found - verify email matches before using it
+    const existingAccount = await pool.query(
+      'SELECT email, user_name FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+      [userName]
+    )
+    if (existingAccount.rowCount > 0 && existingAccount.rows[0].email && existingAccount.rows[0].email !== record.email) {
+      // Email mismatch - prevent overwriting
+      return res.status(409).json({ error: 'This username is already linked to a different email address.' })
+    }
   }
 
   const token = generateToken(userName, browserId)
@@ -479,6 +490,20 @@ app.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
 
     // If user was pre-verified by name, link directly
     if (confirmedUserName) {
+      // Verify account exists and email hasn't been changed
+      const existingAccount = await pool.query(
+        'SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+        [confirmedUserName]
+      )
+      if (existingAccount.rowCount === 0) {
+        return res.status(400).json({ error: 'Account not found' })
+      }
+
+      const existingEmail = existingAccount.rows[0].email
+      if (existingEmail && existingEmail !== email) {
+        return res.status(409).json({ error: 'Email mismatch: this account is linked to a different email' })
+      }
+
       await pool.query(
         'UPDATE accounts SET google_id = $1, email = $2 WHERE LOWER(user_name) = LOWER($3)',
         [googleId, email, confirmedUserName]
@@ -512,7 +537,7 @@ app.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
           'UPDATE accounts SET google_id = $1 WHERE email = $2',
           [googleId, email]
         )
-        userName = `@${existingUserName}`
+        userName = existingUserName
         console.log(`Linked ${email} to Google ID, username: ${existingUserName}`)
       } else {
         // Check if there are existing accounts without email (from old system)
