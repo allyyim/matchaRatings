@@ -31,8 +31,10 @@
         canvas {
             border: 2px solid #ddd;
             cursor: crosshair;
-            max-width: 100%;
+            width: 100%;
+            height: auto;
             display: block;
+            background: white;
         }
         #drawing-canvas {
             display: none;
@@ -130,7 +132,7 @@
             <div class="controls">
                 <button class="btn-secondary" onclick="undo()">Undo</button>
                 <button class="btn-danger" onclick="clearCanvas()">Clear</button>
-                <label>Brush Size: <input type="range" id="brushSize" min="5" max="50" value="20" style="width: 100px;"></label>
+                <label>Brush Size: <input type="range" id="brushSize" min="10" max="100" value="40" style="width: 100px;"></label>
             </div>
             <div class="canvas-wrapper">
                 <canvas id="annotationCanvas"></canvas>
@@ -226,37 +228,43 @@
             img.src = images[index].data;
         }
 
+        function getCanvasCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            // Account for CSS scaling
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            return { x, y };
+        }
+
         function startDrawing(e) {
             isDrawing = true;
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+            const { x, y } = getCanvasCoordinates(e);
+            const brushSize = parseInt(document.getElementById('brushSize').value);
 
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
             ctx.beginPath();
-            ctx.moveTo(x, y);
+            ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            canvasStates.push(canvas.toDataURL());
         }
 
         function draw(e) {
             if (!isDrawing) return;
 
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
+            const { x, y } = getCanvasCoordinates(e);
             const brushSize = parseInt(document.getElementById('brushSize').value);
 
-            ctx.strokeStyle = '#00FF00';
-            ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
-            ctx.lineWidth = brushSize;
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
-
-            ctx.lineTo(x, y);
-            ctx.stroke();
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+            ctx.beginPath();
+            ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+            ctx.fill();
         }
 
         function stopDrawing() {
             isDrawing = false;
-            ctx.closePath();
         }
 
         function clearCanvas() {
