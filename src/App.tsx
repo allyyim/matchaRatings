@@ -2416,7 +2416,7 @@ function App() {
                             <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                             <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
                             {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
-                              <div className="d-flex flex-wrap gap-1">
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
                                 {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
                                   intensity > 0 ? (
                                     <span
@@ -2429,7 +2429,8 @@ function App() {
                                         border: '1px solid rgba(32, 201, 151, 0.5)',
                                         color: '#20c997',
                                         textTransform: 'capitalize',
-                                        padding: '0.25rem 0.5rem'
+                                        padding: '0.25rem 0.5rem',
+                                        textAlign: 'center'
                                       }}
                                     >
                                       {flavor}
@@ -2775,7 +2776,46 @@ function App() {
               )}
             </div>
 
-            <div style={{ padding: '0.75rem', flex: 0, overflowY: 'auto' }}>
+            <div style={{ padding: '0.75rem', flex: 1, overflowY: 'auto' }}>
+              <div className="mb-3">
+                <h6 className="fw-bold text-success mb-2">My Taste Profile</h6>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
+                  {['bold', 'nutty', 'umami', 'vegetal', 'sweet', 'astringent'].map((flavor) => (
+                    <button
+                      key={flavor}
+                      type="button"
+                      className={`btn btn-sm ${userFlavors.includes(flavor) ? 'btn-success' : 'btn-outline-success'}`}
+                      onClick={() => setUserFlavors(userFlavors.includes(flavor)
+                        ? userFlavors.filter(f => f !== flavor)
+                        : [...userFlavors, flavor]
+                      )}
+                      style={{ textTransform: 'capitalize', fontSize: '0.75rem' }}
+                    >
+                      {flavor}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h6 className="fw-bold text-success mb-2">Milk Preference</h6>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
+                  {['almond', 'oat', 'pistachio', 'whole'].map((milk) => (
+                    <button
+                      key={milk}
+                      type="button"
+                      className={`btn btn-sm ${userMilkTypes.includes(milk) ? 'btn-success' : 'btn-outline-success'}`}
+                      onClick={() => setUserMilkTypes(userMilkTypes.includes(milk)
+                        ? userMilkTypes.filter(m => m !== milk)
+                        : [...userMilkTypes, milk]
+                      )}
+                      style={{ textTransform: 'capitalize', fontSize: '0.75rem' }}
+                    >
+                      {milk}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div style={{ padding: '0.75rem', borderTop: '1px solid #e9ecef' }}>
@@ -3259,7 +3299,7 @@ function App() {
                           <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                           <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
-                            <div className="d-flex flex-wrap gap-1">
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
                               {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
                                 intensity > 0 ? (
                                   <span
@@ -3272,7 +3312,8 @@ function App() {
                                       border: '1px solid rgba(32, 201, 151, 0.5)',
                                       color: '#20c997',
                                       textTransform: 'capitalize',
-                                      padding: '0.25rem 0.5rem'
+                                      padding: '0.25rem 0.5rem',
+                                      textAlign: 'center'
                                     }}
                                   >
                                     {flavor}
@@ -3719,7 +3760,7 @@ function App() {
                           <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                           <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
-                            <div className="d-flex flex-wrap gap-1">
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
                               {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
                                 intensity > 0 ? (
                                   <span
@@ -3732,7 +3773,8 @@ function App() {
                                       border: '1px solid rgba(32, 201, 151, 0.5)',
                                       color: '#20c997',
                                       textTransform: 'capitalize',
-                                      padding: '0.25rem 0.5rem'
+                                      padding: '0.25rem 0.5rem',
+                                      textAlign: 'center'
                                     }}
                                   >
                                     {flavor}
