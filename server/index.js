@@ -782,6 +782,67 @@ app.post('/api/admin/fix-ali', async (req, res) => {
   }
 })
 
+app.post('/api/users/session', async (req, res) => {
+  const browserId = String(req.body?.browserId || '').trim()
+  const incomingUserName = sanitizeUserName(String(req.body?.userName || '').trim())
+
+  if (!browserId || browserId.length > 128) {
+    return res.status(400).json({ error: 'browserId is required and must be valid' })
+  }
+
+  const existing = await pool.query(
+    'SELECT user_name FROM browser_users WHERE browser_id = $1',
+    [browserId]
+  )
+
+  if (!incomingUserName && existing.rowCount === 0) {
+    return res.status(200).json({ requiresName: true, userName: '', token: '' })
+  }
+
+  const userName = incomingUserName || existing.rows[0].user_name
+  const token = generateToken(userName, browserId)
+
+  await pool.query(
+    `
+      INSERT INTO browser_users (browser_id, user_name)
+      VALUES ($1, $2)
+      ON CONFLICT (browser_id)
+      DO UPDATE SET user_name = EXCLUDED.user_name
+    `,
+    [browserId, userName]
+  )
+
+  return res.json({ requiresName: false, userName, token })
+})
+
+app.post('/api/telemetry', async (req, res) => {
+  const eventName = sanitizeText(String(req.body?.event || '').trim(), 80)
+  const page = sanitizeText(String(req.body?.page || '').trim(), 40)
+  const properties = req.body?.properties && typeof req.body.properties === 'object' ? req.body.properties : {}
+
+  if (!eventName) {
+    return res.status(400).json({ error: 'event is required' })
+  }
+
+  telemetryBuffer.push({
+    eventName,
+    page,
+    properties,
+    createdAt: new Date().toISOString(),
+    userName: req.session?.userName || null
+  })
+
+  if (telemetryBuffer.length > 500) {
+    telemetryBuffer.splice(0, telemetryBuffer.length - 500)
+  }
+
+  return res.json({ ok: true })
+})
+
+app.get('/api/telemetry', async (_req, res) => {
+  res.json({ events: telemetryBuffer.slice(-50) })
+})
+
 app.post('/api/admin/migrate-photos-to-cloudinary', async (req, res) => {
   try {
     console.log('Starting photo migration to Cloudinary...')
@@ -850,67 +911,6 @@ app.post('/api/admin/migrate-photos-to-cloudinary', async (req, res) => {
     console.error('Photo migration failed:', error)
     return res.status(500).json({ error: 'Photo migration failed', details: String(error.message) })
   }
-})
-
-app.post('/api/users/session', async (req, res) => {
-  const browserId = String(req.body?.browserId || '').trim()
-  const incomingUserName = sanitizeUserName(String(req.body?.userName || '').trim())
-
-  if (!browserId || browserId.length > 128) {
-    return res.status(400).json({ error: 'browserId is required and must be valid' })
-  }
-
-  const existing = await pool.query(
-    'SELECT user_name FROM browser_users WHERE browser_id = $1',
-    [browserId]
-  )
-
-  if (!incomingUserName && existing.rowCount === 0) {
-    return res.status(200).json({ requiresName: true, userName: '', token: '' })
-  }
-
-  const userName = incomingUserName || existing.rows[0].user_name
-  const token = generateToken(userName, browserId)
-
-  await pool.query(
-    `
-      INSERT INTO browser_users (browser_id, user_name)
-      VALUES ($1, $2)
-      ON CONFLICT (browser_id)
-      DO UPDATE SET user_name = EXCLUDED.user_name
-    `,
-    [browserId, userName]
-  )
-
-  return res.json({ requiresName: false, userName, token })
-})
-
-app.post('/api/telemetry', async (req, res) => {
-  const eventName = sanitizeText(String(req.body?.event || '').trim(), 80)
-  const page = sanitizeText(String(req.body?.page || '').trim(), 40)
-  const properties = req.body?.properties && typeof req.body.properties === 'object' ? req.body.properties : {}
-
-  if (!eventName) {
-    return res.status(400).json({ error: 'event is required' })
-  }
-
-  telemetryBuffer.push({
-    eventName,
-    page,
-    properties,
-    createdAt: new Date().toISOString(),
-    userName: req.session?.userName || null
-  })
-
-  if (telemetryBuffer.length > 500) {
-    telemetryBuffer.splice(0, telemetryBuffer.length - 500)
-  }
-
-  return res.json({ ok: true })
-})
-
-app.get('/api/telemetry', async (_req, res) => {
-  res.json({ events: telemetryBuffer.slice(-50) })
 })
 
 app.use('/api', requireSession)
