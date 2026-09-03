@@ -3160,29 +3160,64 @@ function App() {
             </div>
 
             <div style={{ padding: '1rem', overflowY: 'auto', flex: 1, fontSize: '0.875rem', lineHeight: '1.6' }}>
-              <h6 className="fw-semibold text-success mb-2">Data Collection</h6>
               <p className="text-muted mb-3">
-                We collect information you provide when creating an account, including your email address and flavor preferences. We also store your matcha ratings, photos, and location data.
+                <strong>Last Updated: September 2024</strong>
               </p>
 
-              <h6 className="fw-semibold text-success mb-2">Data Usage</h6>
+              <h6 className="fw-semibold text-success mb-2">1. Introduction</h6>
               <p className="text-muted mb-3">
-                Your data is used to personalize your experience, generate community leaderboards, and improve our app. We do not sell your personal information to third parties.
+                Sip & Score ("we", "our", or "us") operates the Sip & Score application. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our application.
               </p>
 
-              <h6 className="fw-semibold text-success mb-2">Data Security</h6>
+              <h6 className="fw-semibold text-success mb-2">2. Information We Collect</h6>
+              <p className="text-muted mb-2">
+                <strong>Account Information:</strong> Email address, username, and password (encrypted).
+              </p>
+              <p className="text-muted mb-2">
+                <strong>Rating Data:</strong> Matcha ratings, taste scores (1-5), greenness ratings (1-100), photos, location data, and tasting notes.
+              </p>
               <p className="text-muted mb-3">
-                We implement industry-standard security measures to protect your data. However, no method of internet transmission is completely secure.
+                <strong>Preferences:</strong> Flavor preferences and matcha profile selections.
               </p>
 
-              <h6 className="fw-semibold text-success mb-2">Your Rights</h6>
+              <h6 className="fw-semibold text-success mb-2">3. How We Use Your Information</h6>
+              <p className="text-muted mb-2">
+                • Personalize your experience and provide ratings history
+              </p>
+              <p className="text-muted mb-2">
+                • Generate community leaderboards and rankings
+              </p>
+              <p className="text-muted mb-2">
+                • Improve app functionality and user experience
+              </p>
               <p className="text-muted mb-3">
-                You can request access to, update, or delete your personal data at any time. Contact us at support@sipandscore.com for data-related requests.
+                • Communicate updates and service announcements
               </p>
 
-              <h6 className="fw-semibold text-success mb-2">Changes to This Policy</h6>
+              <h6 className="fw-semibold text-success mb-2">4. Data Security</h6>
+              <p className="text-muted mb-3">
+                We use industry-standard security measures including encryption and secure authentication to protect your data. However, no transmission over the internet is completely secure.
+              </p>
+
+              <h6 className="fw-semibold text-success mb-2">5. Third Parties</h6>
+              <p className="text-muted mb-3">
+                We do not sell, trade, or rent your personal information to third parties. Your data is shared only with necessary service providers.
+              </p>
+
+              <h6 className="fw-semibold text-success mb-2">6. Your Rights</h6>
+              <p className="text-muted mb-2">
+                • Access your personal data
+              </p>
+              <p className="text-muted mb-2">
+                • Correct or update your information
+              </p>
+              <p className="text-muted mb-3">
+                • Request deletion of your account and data
+              </p>
+
+              <h6 className="fw-semibold text-success mb-2">7. Contact Us</h6>
               <p className="text-muted">
-                We may update this privacy policy periodically. We will notify you of significant changes via email or through the app.
+                For privacy concerns or requests, contact: support@sipandscore.com
               </p>
             </div>
           </div>
@@ -3314,17 +3349,18 @@ function App() {
       )}
 
       <nav className="navbar navbar-expand-lg navbar-light sticky-top soft-nav minimal-nav" aria-label="Main navigation">
-        <div className="container d-flex justify-content-between align-items-center">
-          <div className="navbar-brand" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+        <div className="container d-flex align-items-center">
+          <div className="navbar-brand" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1f5f34' }}>SIP</span>
+            <span style={{ fontSize: '1rem', fontWeight: '700', color: '#6c757d' }}>&</span>
             <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#20c997' }}>SCORE</span>
           </div>
           <button
             type="button"
-            className="btn btn-link text-dark p-1 d-flex align-items-center gap-2"
+            className="btn btn-link text-dark p-1 d-flex align-items-center gap-2 ms-auto"
             onClick={() => setIsProfileDrawerOpen(true)}
             title="My Profile"
-            style={{ textDecoration: 'none', marginRight: '-0.5rem' }}
+            style={{ textDecoration: 'none' }}
           >
             <span style={{ fontSize: '0.875rem', color: '#495057' }}>{currentUserName}</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
