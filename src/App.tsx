@@ -2997,11 +2997,12 @@ function App() {
                     style={{
                       textTransform: 'capitalize',
                       fontSize: '0.8rem',
-                      background: userFlavors.includes(flavor)
-                        ? 'linear-gradient(135deg, rgba(25, 135, 84, 0.8) 0%, rgba(200, 245, 220, 0.6) 100%)'
-                        : 'linear-gradient(135deg, rgba(25, 135, 84, 0.2) 0%, rgba(255, 255, 255, 0.4) 100%)',
-                      border: '1px solid rgba(25, 135, 84, 0.3)',
-                      color: userFlavors.includes(flavor) ? 'white' : '#198754'
+                      background: 'rgba(102, 225, 215, 0.3)',
+                      backdropFilter: 'blur(8px)',
+                      border: '1px solid rgba(102, 225, 215, 0.4)',
+                      color: '#0d7f7f',
+                      fontWeight: userFlavors.includes(flavor) ? '600' : '500',
+                      opacity: userFlavors.includes(flavor) ? 1 : 0.7
                     }}
                   >
                     {flavor}
@@ -3029,10 +3030,11 @@ function App() {
                   }
                 }}
                 style={{
-                  background: 'linear-gradient(135deg, rgba(25, 135, 84, 0.8) 0%, rgba(200, 245, 220, 0.6) 100%)',
-                  color: 'white',
-                  border: '1px solid rgba(25, 135, 84, 0.3)',
-                  fontWeight: '500'
+                  background: 'rgba(102, 225, 215, 0.5)',
+                  backdropFilter: 'blur(10px)',
+                  color: '#0d7f7f',
+                  border: '1px solid rgba(102, 225, 215, 0.4)',
+                  fontWeight: '600'
                 }}
               >
                 Save
@@ -3886,18 +3888,12 @@ function App() {
                                           </h6>
                                           <span className="badge" style={{
                                             fontSize: '0.75rem',
-                                            background: `linear-gradient(90deg,
-                                              hsl(0, 100%, 50%) 0%,
-                                              hsl(30, 100%, 50%) 16.67%,
-                                              hsl(60, 100%, 50%) 33.33%,
-                                              hsl(120, 100%, 40%) 50%,
-                                              hsl(240, 100%, 50%) 66.67%,
-                                              hsl(270, 100%, 50%) 83.33%,
-                                              hsl(300, 100%, 50%) 100%)`,
+                                            background: 'linear-gradient(90deg, #FF6B35 0%, #FFA500 25%, #FFD700 50%, #90EE90 75%, #20B2AA 100%)',
                                             color: 'white',
                                             fontWeight: 'bold',
                                             padding: '0.35rem 0.65rem',
-                                            borderRadius: '0.375rem'
+                                            borderRadius: '0.375rem',
+                                            boxShadow: '0 2px 8px rgba(255, 107, 53, 0.2)'
                                           }}>
                                             {(user.matchScore * 100).toFixed(0)}% match
                                           </span>
@@ -3945,18 +3941,12 @@ function App() {
                                           </h6>
                                           <span className="badge" style={{
                                             fontSize: '0.75rem',
-                                            background: `linear-gradient(90deg,
-                                              hsl(0, 100%, 50%) 0%,
-                                              hsl(30, 100%, 50%) 16.67%,
-                                              hsl(60, 100%, 50%) 33.33%,
-                                              hsl(120, 100%, 40%) 50%,
-                                              hsl(240, 100%, 50%) 66.67%,
-                                              hsl(270, 100%, 50%) 83.33%,
-                                              hsl(300, 100%, 50%) 100%)`,
+                                            background: 'linear-gradient(90deg, #FF6B35 0%, #FFA500 25%, #FFD700 50%, #90EE90 75%, #20B2AA 100%)',
                                             color: 'white',
                                             fontWeight: 'bold',
                                             padding: '0.35rem 0.65rem',
-                                            borderRadius: '0.375rem'
+                                            borderRadius: '0.375rem',
+                                            boxShadow: '0 2px 8px rgba(255, 107, 53, 0.2)'
                                           }}>
                                             {(place.matchScore * 100).toFixed(0)}% match
                                           </span>
