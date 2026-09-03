@@ -202,6 +202,7 @@ async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResul
   const model = await loadDrinkAreaModel()
 
   if (!model) {
+    console.log('ML: Model not found')
     return {
       region: fallbackRegion,
       statusMessage: 'ML model not found. Using heuristic drink area.',
@@ -210,6 +211,7 @@ async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResul
     }
   }
 
+  console.log('ML: Model loaded, running inference...')
   const inputTensor = tf.tidy(() => {
     const pixels = tf.browser.fromPixels(img)
     const resized = tf.image.resizeBilinear(pixels, [drinkAreaModelConfig.inputSize, drinkAreaModelConfig.inputSize])
@@ -225,7 +227,8 @@ async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResul
     } else {
       rawPrediction.dispose()
     }
-  } catch {
+  } catch (e) {
+    console.log('ML: Inference error', e)
     inputTensor.dispose()
     return {
       region: fallbackRegion,
@@ -238,6 +241,7 @@ async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResul
   inputTensor.dispose()
 
   if (!maskTensor) {
+    console.log('ML: maskTensor is null after normalization')
     return {
       region: fallbackRegion,
       statusMessage: 'ML output was incompatible. Using heuristic drink area.',
@@ -257,13 +261,18 @@ async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResul
 
   let activePixels = 0
   let activeConfidenceSum = 0
+  let minVal = Infinity, maxVal = -Infinity
   for (let index = 0; index < maskValues.length; index++) {
     const value = maskValues[index]
+    minVal = Math.min(minVal, value)
+    maxVal = Math.max(maxVal, value)
     if (value >= drinkAreaModelConfig.maskThreshold) {
       activePixels++
       activeConfidenceSum += value
     }
   }
+
+  console.log(`ML: maskValues range [${minVal.toFixed(4)}, ${maxVal.toFixed(4)}], activePixels=${activePixels}/${maskValues.length}`)
 
   if (!activePixels) {
     return {
