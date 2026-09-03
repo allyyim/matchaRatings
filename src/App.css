@@ -109,7 +109,8 @@ body {
   background: rgba(255, 255, 255, 0.7);
   border-bottom: 1px solid rgba(214, 233, 200, 0.4);
   box-shadow: var(--shadow-sm);
-  padding: 1rem 0 !important;
+  padding: 1.25rem 0 !important;
+  min-height: 80px;
 }
 
 /* Navigation Styles */
@@ -1919,13 +1920,13 @@ main.login-page {
   right: 0;
   display: flex;
   justify-content: space-around;
-  align-items: center;
+  align-items: flex-end;
   background: white;
-  border-top: 1px solid rgba(207, 227, 191, 0.5);
-  box-shadow: 0 -4px 12px rgba(31, 95, 52, 0.1);
+  border-top: 1px solid #e0e0e0;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
   z-index: 1000;
-  padding: 0.5rem 0;
-  gap: 0.5rem;
+  padding: 0.5rem 0 1rem 0;
+  gap: 0;
 }
 
 .bottom-nav-btn {
@@ -1934,15 +1935,15 @@ main.login-page {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.25rem;
-  padding: 0.75rem 0.5rem;
+  gap: 0.3rem;
+  padding: 0.5rem 0;
   border: none;
   background: transparent;
   cursor: pointer;
-  color: var(--text-secondary);
-  font-size: 0.8rem;
-  transition: all 0.2s ease;
-  font-weight: 500;
+  color: #999;
+  font-size: 0.75rem;
+  transition: color 0.2s ease;
+  font-weight: 400;
 }
 
 .bottom-nav-btn span:first-child {
@@ -1956,10 +1957,9 @@ main.login-page {
 
 .bottom-nav-btn.active span:first-child {
   font-size: 1.75rem;
-  transform: scale(1.1);
 }
 
 /* Add padding to main content to account for bottom nav */
 main#main-content {
-  padding-bottom: 5rem !important;
+  padding-bottom: 5.5rem !important;
 }
