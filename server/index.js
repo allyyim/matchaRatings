@@ -924,6 +924,7 @@ app.post('/api/upload-image', async (req, res) => {
       return res.status(400).json({ error: 'Valid base64 image data is required' })
     }
 
+    console.log('Uploading image to Cloudinary...')
     const result = await cloudinary.uploader.upload(image, {
       folder: 'matcha-ratings',
       resource_type: 'auto',
@@ -931,10 +932,11 @@ app.post('/api/upload-image', async (req, res) => {
       fetch_format: 'auto'
     })
 
+    console.log('Image uploaded successfully:', result.secure_url)
     return res.json({ url: result.secure_url })
   } catch (error) {
     console.error('Image upload failed:', error)
-    return res.status(500).json({ error: 'Image upload failed' })
+    return res.status(500).json({ error: 'Image upload failed', details: String(error) })
   }
 })
 

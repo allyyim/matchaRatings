@@ -1612,11 +1612,18 @@ function App() {
 
       let photoUrl = resolvedPhoto
       if (resolvedPhoto.startsWith('data:image/')) {
-        const uploadRes = await apiFetch<{ url: string }>('/upload-image', {
-          method: 'POST',
-          body: JSON.stringify({ image: resolvedPhoto })
-        })
-        photoUrl = uploadRes.url
+        try {
+          const uploadRes = await apiFetch<{ url: string }>('/upload-image', {
+            method: 'POST',
+            body: JSON.stringify({ image: resolvedPhoto })
+          })
+          console.log('Image upload successful:', uploadRes.url)
+          photoUrl = uploadRes.url
+        } catch (error) {
+          console.error('Image upload failed:', error)
+          alert('Image upload failed. Using placeholder instead.')
+          photoUrl = noPhotoPlaceholderUrl
+        }
       }
 
       await apiFetch<{ rating: RatingEntry }>('/ratings', {
