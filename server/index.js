@@ -8,6 +8,8 @@ import rateLimit from 'express-rate-limit'
 import { Resend } from 'resend'
 import { OAuth2Client } from 'google-auth-library'
 import { v2 as cloudinary } from 'cloudinary'
+import { fileURLToPath } from 'url'
+import { dirname } from 'path'
 import { initDb, pool } from './db.js'
 import { findBestMatch } from 'string-similarity'
 
@@ -22,6 +24,8 @@ Sentry.init({
 })
 
 const app = express()
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 app.set('trust proxy', 1)
 const port = Number(process.env.PORT || 4000)
 const APP_SECRET = process.env.APP_SECRET || 'matcha-development-secret-change-me'
@@ -1710,6 +1714,14 @@ app.get('/api/users/similar-preferences', async (req, res) => {
 app.use((err, _req, res, _next) => {
   console.error(err)
   res.status(500).json({ error: 'Internal server error' })
+})
+
+// Serve static files from dist directory
+app.use(express.static('dist'))
+
+// SPA fallback - serve index.html for all non-API routes
+app.get('*', (_req, res) => {
+  res.sendFile('dist/index.html', { root: '.' })
 })
 
 async function start() {
