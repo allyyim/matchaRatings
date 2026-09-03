@@ -686,6 +686,7 @@ function App() {
   const [userFlavors, setUserFlavors] = useState<string[]>([])
   const [userMilkTypes, setUserMilkTypes] = useState<string[]>([])
   const [likedRatingsSet, setLikedRatingsSet] = useState<Set<number>>(new Set())
+  const [followingSet, setFollowingSet] = useState<Set<string>>(new Set())
 
   const showLoadingOverlay = isSavingEntry || isLoadingFriendRatings || isLoadingExplorePlaces
   const loadingOverlayText = isSavingEntry
@@ -2957,11 +2958,13 @@ function App() {
               {matchaGreenness !== null && (
                 <div className="mb-3 small detector-chip">
                   <div>{mlStatus}</div>
-                  <div className="detector-metrics">
-                    Coverage: {mlCoveragePercent.toFixed(1)}%
-                    {' | '}
-                    Confidence: {mlConfidencePercent.toFixed(1)}%
-                  </div>
+                  {mlCoveragePercent !== null && mlConfidencePercent !== null && (
+                    <div className="detector-metrics">
+                      Coverage: {mlCoveragePercent.toFixed(1)}%
+                      {' | '}
+                      Confidence: {mlConfidencePercent.toFixed(1)}%
+                    </div>
+                  )}
                 </div>
               )}
 
