@@ -3018,6 +3018,7 @@ function App() {
                 onClick={async () => {
                   try {
                     setIsPreferencesModalOpen(false)
+                    setIsProfileDrawerOpen(false)
                     const response = await apiFetch('/preferences', {
                       method: 'POST',
                       body: JSON.stringify({
