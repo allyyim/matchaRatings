@@ -1443,6 +1443,10 @@ app.get('/api/similar-places', async (req, res) => {
         WHERE r.location IS NOT NULL
           AND r.location != ''
           AND r.flavor_preferences IS NOT NULL
+          AND EXISTS (
+            SELECT 1 FROM jsonb_each(r.flavor_preferences) AS f(key, value)
+            WHERE (f.value::text)::numeric >= 75
+          )
         ORDER BY r.location, r.created_at DESC
         LIMIT 50
       `
