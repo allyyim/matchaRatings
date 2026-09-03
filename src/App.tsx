@@ -2377,7 +2377,7 @@ function App() {
               <h1 className="display-6 fw-bold mb-3 text-success">New Log</h1>
 
               <div className="mb-3">
-                <div className="form-label fw-semibold">Enter the cafe or shop name.</div>
+                <div className="form-label fw-semibold">Enter cafe or shop name</div>
                 <div className="location-autocomplete">
                   <input
                     id="location-input"
@@ -2401,7 +2401,7 @@ function App() {
                         setShowLocationSuggestions(false)
                       }, 120)
                     }}
-                    placeholder="Matcha place name (e.g. Cha Cha Matcha)"
+                    placeholder="Search for a matcha place name"
                     autoComplete="off"
                   />
 
