@@ -662,6 +662,7 @@ function App() {
   const [explorePlaces, setExplorePlaces] = useState<ExplorePlace[]>([])
   const [exploreUsers, setExploreUsers] = useState<ExploreUser[]>([])
   const [exploreActiveTab, setExploreActiveTab] = useState<'places' | 'users'>('places')
+  const [communityActiveTab, setCommunityActiveTab] = useState<'search' | 'following' | 'recommendations'>('search')
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [currentOnboardingSlide, setCurrentOnboardingSlide] = useState(0)
   const [selectedExplorePlaceName, setSelectedExplorePlaceName] = useState('')
@@ -1843,7 +1844,7 @@ function App() {
                 <h1 className="h4 fw-bold text-success mb-1">Welcome back</h1>
               </div>
               <p className="text-muted mb-4 text-center small">
-                Choose how you'd like to sign in
+                Sign in with Google to access your ratings
               </p>
               <button
                 type="button"
@@ -1855,15 +1856,7 @@ function App() {
                 <svg width="20" height="20" viewBox="0 0 24 24">
                   <text x="2" y="16" fontSize="14" fill="#1f5f34">G</text>
                 </svg>
-                {isSubmittingName ? 'Signing in…' : 'Google'}
-              </button>
-              <div className="text-muted text-center mb-3" style={{ fontSize: '0.9rem' }}>or</div>
-              <button
-                type="button"
-                className="btn btn-outline-success w-100 mb-3"
-                onClick={() => setAuthMode('magic-link')}
-              >
-                Email (magic link)
+                {isSubmittingName ? 'Signing in…' : 'Sign in with Google'}
               </button>
               <button
                 type="button"
@@ -1886,7 +1879,7 @@ function App() {
                 <h1 className="h4 fw-bold text-success mb-1">Let's begin</h1>
               </div>
               <p className="text-muted mb-4 text-center small">
-                Choose how you'd like to sign up
+                Sign up with Google to start rating matcha
               </p>
               <button
                 type="button"
@@ -1898,15 +1891,7 @@ function App() {
                 <svg width="20" height="20" viewBox="0 0 24 24">
                   <text x="2" y="16" fontSize="14" fill="#1f5f34">G</text>
                 </svg>
-                {isSubmittingName ? 'Signing up…' : 'Google'}
-              </button>
-              <div className="text-muted text-center mb-3" style={{ fontSize: '0.9rem' }}>or</div>
-              <button
-                type="button"
-                className="btn btn-outline-success w-100 mb-3"
-                onClick={() => setAuthMode('magic-link')}
-              >
-                Email (magic link)
+                {isSubmittingName ? 'Signing up…' : 'Sign up with Google'}
               </button>
               <button
                 type="button"
@@ -3405,28 +3390,29 @@ function App() {
               <div className="nav nav-tabs border-bottom mb-4" role="tablist">
                 <button
                   type="button"
-                  className={`nav-link ${friendQuery || friendSuggestions.length > 0 ? '' : 'active'}`}
-                  onClick={() => {
-                    setFriendQuery('')
-                    setFriendSuggestions([])
-                  }}
+                  className={`nav-link ${communityActiveTab === 'search' ? 'active' : ''}`}
+                  onClick={() => setCommunityActiveTab('search')}
                 >
                   Search Users
                 </button>
                 <button
                   type="button"
-                  className={`nav-link ${followingSet.size > 0 ? 'active' : ''}`}
-                  onClick={() => {
-                    setFriendQuery('')
-                    setFriendSuggestions([])
-                  }}
+                  className={`nav-link ${communityActiveTab === 'following' ? 'active' : ''}`}
+                  onClick={() => setCommunityActiveTab('following')}
                 >
                   Following ({followingSet.size})
+                </button>
+                <button
+                  type="button"
+                  className={`nav-link ${communityActiveTab === 'recommendations' ? 'active' : ''}`}
+                  onClick={() => setCommunityActiveTab('recommendations')}
+                >
+                  Find Similar
                 </button>
               </div>
 
               {/* Search Users Tab */}
-              {(friendQuery === '' && friendSuggestions.length === 0) && (
+              {communityActiveTab === 'search' && (
                 <div className="mb-4">
                   <p className="text-muted small mb-3">Discover and connect with other matcha enthusiasts</p>
                   <div className="row g-2 align-items-end">
@@ -3502,7 +3488,7 @@ function App() {
               )}
 
               {/* Following Tab */}
-              {followingSet.size > 0 && (
+              {communityActiveTab === 'following' && followingSet.size > 0 && (
                 <div>
                   <p className="text-muted small mb-3">Users you're following</p>
                   <div className="row g-3">
@@ -3543,7 +3529,49 @@ function App() {
                 </div>
               )}
 
-              {followingSet.size === 0 && friendSuggestions.length === 0 && friendQuery === '' && (
+              {/* Recommendations Tab */}
+              {communityActiveTab === 'recommendations' && (
+                <div>
+                  <p className="text-muted small mb-3">Find matcha places and users with similar flavor preferences</p>
+                  {userFlavors.length === 0 ? (
+                    <div className="alert alert-info border">
+                      <p className="mb-0">Set your flavor preferences in your profile to discover similar users and places.</p>
+                      <button
+                        type="button"
+                        className="btn btn-link btn-sm text-success p-0 mt-2"
+                        onClick={() => setIsProfileDrawerOpen(true)}
+                      >
+                        Go to Profile →
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="mb-4">
+                        <h5 className="fw-semibold text-success mb-3">Your Flavor Preferences</h5>
+                        <div className="d-flex flex-wrap gap-2 mb-4">
+                          {userFlavors.map((flavor) => (
+                            <span
+                              key={flavor}
+                              className="badge bg-success"
+                              style={{ fontSize: '0.85rem', textTransform: 'capitalize' }}
+                            >
+                              {flavor}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="alert alert-light border">
+                        <p className="mb-0 text-muted small">
+                          Users and places with matching flavor profiles will appear here. This feature is being enhanced!
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {communityActiveTab === 'following' && followingSet.size === 0 && (
                 <div className="text-center py-5">
                   <p className="text-muted">No one following yet. Search for users to get started!</p>
                 </div>
