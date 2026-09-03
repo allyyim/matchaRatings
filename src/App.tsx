@@ -531,7 +531,8 @@ function getGreennessRefreshKey(userName: string) {
 
 function getSessionToken() {
   if (typeof window === 'undefined') return ''
-  return window.localStorage.getItem('matchaAuthToken') || window.sessionStorage.getItem('matchaAuthToken') || ''
+  // Only check localStorage (persistent storage)
+  return window.localStorage.getItem('matchaAuthToken') || ''
 }
 
 function setSessionToken(token: string) {
@@ -541,8 +542,8 @@ function setSessionToken(token: string) {
     return
   }
 
+  // Clear on logout
   window.localStorage.removeItem('matchaAuthToken')
-  window.sessionStorage.removeItem('matchaAuthToken')
 }
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -992,9 +993,9 @@ function App() {
         if (mounted) {
           setRequiresManualName(false)
         }
-      } catch {
+      } catch (error) {
+        console.error('Session init error:', error)
         if (!mounted) return
-        setAuthError('An error occurred. Please try signing in again.')
         setRequiresManualName(true)
       }
     }
