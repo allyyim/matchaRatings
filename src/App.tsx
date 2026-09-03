@@ -1452,6 +1452,23 @@ function App() {
     loadPreferences()
   }, [isPreferencesModalOpen])
 
+  useEffect(() => {
+    if (!isUserReady || !currentUserName) return
+
+    async function loadUserPreferences() {
+      try {
+        const data = await apiFetch<{ flavors?: string[] }>('/preferences')
+        if (data?.flavors && Array.isArray(data.flavors)) {
+          setUserFlavors(data.flavors)
+        }
+      } catch (error) {
+        console.error('Failed to load user preferences on mount:', error)
+      }
+    }
+
+    loadUserPreferences()
+  }, [isUserReady, currentUserName])
+
   function updateRatingFromClick(starIndex: number, event: MouseEvent<HTMLButtonElement>) {
     const bounds = event.currentTarget.getBoundingClientRect()
     const clickX = event.clientX - bounds.left
