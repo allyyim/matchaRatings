@@ -105,9 +105,9 @@ body {
 }
 
 .soft-nav {
-  backdrop-filter: blur(12px);
-  background: linear-gradient(135deg, #f1fbe6 0%, #eaf8df 100%);
-  border-bottom: none;
+  backdrop-filter: none;
+  background: linear-gradient(135deg, #fbfef8 0%, #f1fbe6 46%, #eaf8df 100%);
+  border-bottom: 1px solid rgba(170, 204, 153, 0.7);
   box-shadow: none;
   padding: 0.5rem 0 !important;
   min-height: auto;
