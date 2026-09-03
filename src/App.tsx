@@ -663,6 +663,8 @@ function App() {
   const [exploreUsers, setExploreUsers] = useState<ExploreUser[]>([])
   const [exploreActiveTab, setExploreActiveTab] = useState<'places' | 'users'>('places')
   const [communityActiveTab, setCommunityActiveTab] = useState<'search' | 'following' | 'recommendations'>('search')
+  const [similarUsers, setSimilarUsers] = useState<Array<{ userName: string; flavors: string[]; matchScore: number }>>([])
+  const [isLoadingSimilarUsers, setIsLoadingSimilarUsers] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [currentOnboardingSlide, setCurrentOnboardingSlide] = useState(0)
   const [selectedExplorePlaceName, setSelectedExplorePlaceName] = useState('')
@@ -1334,6 +1336,26 @@ function App() {
       window.clearInterval(intervalId)
     }
   }, [activePage])
+
+  useEffect(() => {
+    if (communityActiveTab !== 'recommendations' || !currentUserName || userFlavors.length === 0) {
+      return
+    }
+
+    setIsLoadingSimilarUsers(true)
+
+    void apiFetch<{ similarUsers: Array<{ userName: string; flavors: string[]; matchScore: number }> }>(`/similar-users?userName=${encodeURIComponent(currentUserName)}`)
+      .then((data) => {
+        setSimilarUsers(data.similarUsers)
+      })
+      .catch((error) => {
+        console.error('Failed to load similar users:', error)
+        setSimilarUsers([])
+      })
+      .finally(() => {
+        setIsLoadingSimilarUsers(false)
+      })
+  }, [communityActiveTab, currentUserName, userFlavors])
 
   useEffect(() => {
     let mounted = true
@@ -3632,10 +3654,46 @@ function App() {
                         </div>
                       </div>
 
-                      <div className="alert alert-light border">
-                        <p className="mb-0 text-muted small">
-                          Users and places with matching flavor profiles will appear here. This feature is being enhanced!
-                        </p>
+                      <div>
+                        {isLoadingSimilarUsers ? (
+                          <div className="alert alert-light border">
+                            <p className="mb-0 text-muted small">Loading similar users...</p>
+                          </div>
+                        ) : similarUsers.length === 0 ? (
+                          <div className="alert alert-light border">
+                            <p className="mb-0 text-muted small">No users found with similar preferences yet.</p>
+                          </div>
+                        ) : (
+                          <div>
+                            <h5 className="fw-semibold text-success mb-3">Users with Similar Taste</h5>
+                            <div className="d-flex flex-column gap-3">
+                              {similarUsers.map((user) => (
+                                <div key={user.userName} className="card border-0 shadow-sm p-3">
+                                  <div className="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 className="fw-semibold mb-0" style={{ cursor: 'pointer', color: '#20c997' }} onClick={() => void openFriendRatings(user.userName)}>
+                                      {user.userName}
+                                    </h6>
+                                    <span className="badge bg-success" style={{ fontSize: '0.75rem' }}>
+                                      {(user.matchScore * 100).toFixed(0)}% match
+                                    </span>
+                                  </div>
+                                  {user.flavors.length > 0 && (
+                                    <div className="small">
+                                      <p className="text-muted mb-2">Shared flavors:</p>
+                                      <div className="d-flex flex-wrap gap-1">
+                                        {user.flavors.map((flavor) => (
+                                          <span key={flavor} className="badge bg-light text-dark" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>
+                                            {flavor}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

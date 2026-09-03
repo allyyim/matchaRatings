@@ -1328,6 +1328,72 @@ app.get('/api/follows/list', async (req, res) => {
   return res.json({ following: result.rows.map(r => r.user_name) })
 })
 
+// Find users with similar flavor preferences
+app.get('/api/similar-users', async (req, res) => {
+  const userName = sanitizeUserName(String(req.query.userName || '').trim())
+  if (!userName) {
+    return res.status(400).json({ error: 'userName is required' })
+  }
+
+  try {
+    // Get current user's flavor preferences
+    const userPrefsResult = await pool.query(
+      `SELECT flavors FROM user_preferences WHERE email = (SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1))`,
+      [userName]
+    )
+
+    if (userPrefsResult.rowCount === 0) {
+      return res.json({ similarUsers: [] })
+    }
+
+    const userFlavors = userPrefsResult.rows[0].flavors || {}
+    const userFlavorsList = Object.keys(userFlavors).filter(f => userFlavors[f])
+
+    if (userFlavorsList.length === 0) {
+      return res.json({ similarUsers: [] })
+    }
+
+    // Find other users with matching flavors
+    const result = await pool.query(
+      `
+        SELECT DISTINCT a.user_name, up.flavors, up.milk_type,
+          (SELECT COUNT(*) FROM ratings WHERE user_name = a.user_name) as rating_count
+        FROM accounts a
+        LEFT JOIN user_preferences up ON a.email = up.email
+        WHERE LOWER(a.user_name) != LOWER($1)
+          AND up.flavors IS NOT NULL
+        ORDER BY rating_count DESC
+        LIMIT 20
+      `,
+      [userName]
+    )
+
+    // Score users based on flavor preference overlap
+    const similarUsers = result.rows
+      .map((row) => {
+        const otherFlavors = row.flavors || {}
+        const otherFlavorsList = Object.keys(otherFlavors).filter(f => otherFlavors[f])
+        const matchCount = userFlavorsList.filter(f => otherFlavorsList.includes(f)).length
+        const matchScore = matchCount > 0 ? (matchCount / Math.max(userFlavorsList.length, otherFlavorsList.length)) : 0
+
+        return {
+          userName: row.user_name,
+          flavors: otherFlavorsList,
+          milkTypes: row.milk_type || [],
+          ratingCount: row.rating_count || 0,
+          matchScore: matchScore
+        }
+      })
+      .filter(u => u.matchScore > 0)
+      .sort((a, b) => b.matchScore - a.matchScore)
+
+    return res.json({ similarUsers })
+  } catch (error) {
+    console.error('Similar users lookup failed:', error)
+    return res.status(500).json({ error: 'Failed to find similar users' })
+  }
+})
+
 // Like/unlike rating endpoints
 app.post('/api/ratings/:ratingId/like', async (req, res) => {
   const ratingId = Number(req.params.ratingId)
