@@ -3222,42 +3222,19 @@ function App() {
             </small>
           </div>
 
-          <div className="d-flex align-items-center gap-2 nav-actions w-100 d-none d-lg-flex">
-            <button
-              type="button"
-              className={`btn btn-sm ${activePage === 'home' ? 'btn-success' : 'btn-outline-success'}`}
-              onClick={() => setActivePage('home')}
-            >
-              My Log
-            </button>
-            <button
-              type="button"
-              className={`btn btn-sm ${activePage === 'friends' ? 'btn-success' : 'btn-outline-success'}`}
-              onClick={() => setActivePage('friends')}
-            >
-              Explore
-            </button>
-            <button
-              type="button"
-              className={`btn btn-sm ${activePage === 'explore' ? 'btn-success' : 'btn-outline-success'}`}
-              onClick={() => setActivePage('explore')}
-            >
-              Leaderboard
-            </button>
-            <button
-              type="button"
-              className="btn btn-link btn-sm text-dark p-0 ms-auto d-none d-lg-flex align-items-center gap-2"
-              onClick={() => setIsProfileDrawerOpen(true)}
-              title="My Profile"
-              style={{ textDecoration: 'none' }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              <span className="small">My Profile</span>
-            </button>
-          </div>
+          <button
+            type="button"
+            className="btn btn-link btn-sm text-dark p-0 d-none d-lg-flex align-items-center gap-2"
+            onClick={() => setIsProfileDrawerOpen(true)}
+            title="My Profile"
+            style={{ textDecoration: 'none' }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span className="small">My Profile</span>
+          </button>
         </div>
       </nav>
 
