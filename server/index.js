@@ -755,6 +755,24 @@ app.post('/api/admin/delete-user', async (req, res) => {
   }
 })
 
+app.post('/api/admin/fix-ali', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `UPDATE accounts SET email = $1 WHERE LOWER(user_name) = LOWER($2) RETURNING user_name, email`,
+      ['alisonyim3@gmail.com', 'Ali']
+    )
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Ali account not found' })
+    }
+
+    return res.json({ ok: true, message: `Ali linked to alisonyim3@gmail.com`, user: result.rows[0] })
+  } catch (error) {
+    console.error('Fix Ali failed:', error)
+    return res.status(400).json({ error: 'Failed to fix Ali account' })
+  }
+})
+
 app.post('/api/users/session', async (req, res) => {
   const browserId = String(req.body?.browserId || '').trim()
   const incomingUserName = sanitizeUserName(String(req.body?.userName || '').trim())
