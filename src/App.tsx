@@ -961,8 +961,8 @@ function App() {
       // Listen for update messages from service worker
       navigator.serviceWorker.onmessage = (event) => {
         if (event.data.type === 'APP_UPDATED') {
-          // Auto-reload the app with the new version
-          window.location.reload()
+          // Don't auto-reload - user can manually refresh when ready
+          console.log('App updated - refresh to see latest version')
         }
       }
 
