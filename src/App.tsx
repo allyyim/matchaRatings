@@ -2400,7 +2400,30 @@ function App() {
                           <div className="entry-metrics">
                             <div className="rating-badge mb-2">Rating: <span className="rating-value">{entry.rating.toFixed(1)}</span> / 5.0</div>
                             <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
-                            <div>Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                            <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                            {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
+                              <div className="d-flex flex-wrap gap-1">
+                                {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
+                                  intensity > 0 ? (
+                                    <span
+                                      key={flavor}
+                                      className="badge"
+                                      style={{
+                                        fontSize: '0.7rem',
+                                        background: 'linear-gradient(135deg, rgba(32, 201, 151, 0.3) 0%, rgba(0, 0, 0, 0.3) 100%)',
+                                        backdropFilter: 'blur(10px)',
+                                        border: '1px solid rgba(32, 201, 151, 0.5)',
+                                        color: '#20c997',
+                                        textTransform: 'capitalize',
+                                        padding: '0.25rem 0.5rem'
+                                      }}
+                                    >
+                                      {flavor}
+                                    </span>
+                                  ) : null
+                                )}
+                              </div>
+                            )}
                           </div>
                           {entry.thoughts && <p className="mt-1 mb-0">{entry.thoughts}</p>}
                         </div>
@@ -3030,10 +3053,10 @@ function App() {
                           color: isActive ? 'white' : '#666',
                           border: 'none',
                           borderRadius: '20px',
-                          padding: '0.5rem 1rem',
+                          padding: '0.3rem 0.7rem',
                           transition: 'all 0.2s ease',
                           textTransform: 'capitalize',
-                          fontSize: '0.9rem',
+                          fontSize: '0.75rem',
                           cursor: 'pointer'
                         }}
                         onClick={() => {
@@ -3220,7 +3243,30 @@ function App() {
                         <div className="entry-metrics">
                           <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
                           <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
-                          <div>Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                          <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                          {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
+                            <div className="d-flex flex-wrap gap-1">
+                              {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
+                                intensity > 0 ? (
+                                  <span
+                                    key={flavor}
+                                    className="badge"
+                                    style={{
+                                      fontSize: '0.7rem',
+                                      background: 'linear-gradient(135deg, rgba(32, 201, 151, 0.3) 0%, rgba(0, 0, 0, 0.3) 100%)',
+                                      backdropFilter: 'blur(10px)',
+                                      border: '1px solid rgba(32, 201, 151, 0.5)',
+                                      color: '#20c997',
+                                      textTransform: 'capitalize',
+                                      padding: '0.25rem 0.5rem'
+                                    }}
+                                  >
+                                    {flavor}
+                                  </span>
+                                ) : null
+                              )}
+                            </div>
+                          )}
                         </div>
                         {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
                         {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
@@ -3657,7 +3703,30 @@ function App() {
                         <div className="entry-metrics">
                           <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
                           <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
-                          <div>Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                          <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                          {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
+                            <div className="d-flex flex-wrap gap-1">
+                              {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
+                                intensity > 0 ? (
+                                  <span
+                                    key={flavor}
+                                    className="badge"
+                                    style={{
+                                      fontSize: '0.7rem',
+                                      background: 'linear-gradient(135deg, rgba(32, 201, 151, 0.3) 0%, rgba(0, 0, 0, 0.3) 100%)',
+                                      backdropFilter: 'blur(10px)',
+                                      border: '1px solid rgba(32, 201, 151, 0.5)',
+                                      color: '#20c997',
+                                      textTransform: 'capitalize',
+                                      padding: '0.25rem 0.5rem'
+                                    }}
+                                  >
+                                    {flavor}
+                                  </span>
+                                ) : null
+                              )}
+                            </div>
+                          )}
                         </div>
                         {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
                         {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
