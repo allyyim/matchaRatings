@@ -858,30 +858,57 @@ app.post('/api/admin/migrate-photos-to-cloudinary', async (req, res) => {
     let skippedCount = 0
     const errors = []
 
-    for (const rating of allRatings.rows) {
+    for (let i = 0; i < allRatings.rows.length; i++) {
+      const rating = allRatings.rows[i]
       try {
+        console.log(`[${i + 1}/${allRatings.rows.length}] Processing rating ${rating.id}...`)
+
         // Skip if already a Cloudinary URL
         if (rating.photo.includes('cloudinary.com') || rating.photo.includes('res.cloudinary.com')) {
+          console.log(`Skipping - already Cloudinary URL`)
           skippedCount++
           continue
         }
 
         // Skip if not a data URL or valid image
         if (!rating.photo.startsWith('data:image/')) {
-          console.log(`Skipping invalid photo format for rating ${rating.id}: ${rating.photo.substring(0, 50)}`)
+          console.log(`Skipping - invalid photo format: ${rating.photo.substring(0, 50)}`)
           skippedCount++
           continue
         }
 
-        console.log(`Uploading photo for rating ${rating.id}...`)
+        console.log(`Uploading photo (${Math.round(rating.photo.length / 1024)}KB)...`)
 
-        // Upload to Cloudinary
-        const result = await cloudinary.uploader.upload(rating.photo, {
-          folder: 'matcha-ratings-migration',
-          resource_type: 'auto',
-          quality: 'auto',
-          fetch_format: 'auto'
-        })
+        // Upload to Cloudinary with timeout and retry
+        let result
+        let retries = 0
+        const maxRetries = 3
+
+        while (retries < maxRetries) {
+          try {
+            result = await Promise.race([
+              cloudinary.uploader.upload(rating.photo, {
+                folder: 'matcha-ratings-migration',
+                resource_type: 'auto',
+                quality: 'auto',
+                fetch_format: 'auto',
+                timeout: 60000
+              }),
+              new Promise((_, reject) =>
+                setTimeout(() => reject(new Error('Upload timeout after 60s')), 65000)
+              )
+            ])
+            break // Success
+          } catch (uploadError) {
+            retries++
+            console.error(`Upload attempt ${retries}/${maxRetries} failed:`, uploadError.message)
+            if (retries < maxRetries) {
+              await new Promise(resolve => setTimeout(resolve, 1000 * retries)) // Backoff
+            } else {
+              throw uploadError
+            }
+          }
+        }
 
         // Update database with new URL
         await pool.query(
@@ -890,9 +917,14 @@ app.post('/api/admin/migrate-photos-to-cloudinary', async (req, res) => {
         )
 
         uploadedCount++
-        console.log(`Successfully migrated photo for rating ${rating.id}: ${result.secure_url}`)
+        console.log(`✓ Migrated rating ${rating.id}`)
+
+        // Small delay to avoid rate limiting
+        if (i < allRatings.rows.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 100))
+        }
       } catch (error) {
-        console.error(`Failed to migrate photo for rating ${rating.id}:`, error.message)
+        console.error(`✗ Failed rating ${rating.id}:`, error.message)
         errors.push({ ratingId: rating.id, error: error.message })
       }
     }
@@ -905,7 +937,7 @@ app.post('/api/admin/migrate-photos-to-cloudinary', async (req, res) => {
       uploadedCount,
       skippedCount,
       errorCount: errors.length,
-      errors: errors.slice(0, 10) // Return first 10 errors
+      errors: errors.slice(0, 10)
     })
   } catch (error) {
     console.error('Photo migration failed:', error)

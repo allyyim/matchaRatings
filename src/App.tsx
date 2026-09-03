@@ -2896,22 +2896,17 @@ function App() {
               </button>
             </div>
 
-            <div style={{ padding: '0.75rem', flex: 1, minHeight: 0 }}>
-              <div>
-                <button
-                  type="button"
-                  className="btn btn-success btn-sm w-100"
-                  onClick={() => setIsPreferencesModalOpen(true)}
-                >
-                  My Matcha Preferences
-                </button>
-              </div>
-            </div>
-
-            <div style={{ padding: '0.75rem', borderTop: '1px solid #e9ecef', flexShrink: 0 }}>
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
               <button
                 type="button"
-                className="btn btn-outline-danger w-100 btn-sm"
+                className="btn btn-success btn-sm w-100"
+                onClick={() => setIsPreferencesModalOpen(true)}
+              >
+                My Matcha Preferences
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-danger w-100 btn-sm mt-2"
                 onClick={() => {
                   signOut()
                   setIsProfileDrawerOpen(false)
@@ -2920,6 +2915,9 @@ function App() {
                 Log Out
               </button>
             </div>
+
+            <div style={{ flex: 1, minHeight: 0 }} />
+
           </div>
         </>,
         document.body
