@@ -3617,38 +3617,40 @@ function App() {
                   {friendSuggestions.length > 0 && (
                     <div className="mt-4">
                       <h5 className="fw-semibold text-success mb-3">Search Results</h5>
-                      <div className="d-flex flex-wrap gap-2">
+                      <div className="row g-3">
                         {friendSuggestions.map((friend) => (
-                          <div key={friend.userName} className="card border-0 shadow-sm p-3" style={{ minWidth: '220px' }}>
-                            <div className="d-flex justify-content-between align-items-start mb-2">
-                              <div style={{ cursor: 'pointer', flex: 1 }} onClick={() => void openFriendRatings(friend.userName)}>
-                                <h6 className="fw-semibold mb-1 text-success">{friend.userName}</h6>
-                                <p className="text-muted small mb-0">{friend.placeCount} places</p>
-                              </div>
-                              <button
-                                type="button"
-                                className="btn btn-link btn-sm text-success p-0"
-                                style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}
-                                onClick={async () => {
-                                  const isFollowing = followingSet.has(friend.userName)
-                                  try {
-                                    if (isFollowing) {
-                                      await apiFetch(`/follows/${friend.userName}`, { method: 'DELETE' })
-                                      followingSet.delete(friend.userName)
-                                    } else {
-                                      await apiFetch(`/follows/${friend.userName}`, { method: 'POST' })
-                                      followingSet.add(friend.userName)
+                          <div key={friend.userName} className="col-12 col-sm-6 col-md-4">
+                            <div className="card border-0 shadow-sm h-100">
+                              <div className="card-body">
+                                <h6 className="card-title fw-semibold text-success mb-2" style={{ cursor: 'pointer' }} onClick={() => void openFriendRatings(friend.userName)}>
+                                  {friend.userName}
+                                </h6>
+                                <p className="text-muted small mb-3">{friend.placeCount} places</p>
+                                <button
+                                  type="button"
+                                  className="btn btn-link btn-sm text-success p-0"
+                                  style={{ textDecoration: 'none' }}
+                                  onClick={async () => {
+                                    const isFollowing = followingSet.has(friend.userName)
+                                    try {
+                                      if (isFollowing) {
+                                        await apiFetch(`/follows/${friend.userName}`, { method: 'DELETE' })
+                                        followingSet.delete(friend.userName)
+                                      } else {
+                                        await apiFetch(`/follows/${friend.userName}`, { method: 'POST' })
+                                        followingSet.add(friend.userName)
+                                      }
+                                      setFollowingSet(new Set(followingSet))
+                                    } catch (error) {
+                                      console.error('Failed to update follow status:', error)
+                                      alert(error instanceof Error ? error.message : 'Failed to update follow status')
                                     }
-                                    setFollowingSet(new Set(followingSet))
-                                  } catch (error) {
-                                    console.error('Failed to update follow status:', error)
-                                    alert(error instanceof Error ? error.message : 'Failed to update follow status')
-                                  }
-                                }}
-                                title={followingSet.has(friend.userName) ? 'Unfollow' : 'Follow'}
-                              >
-                                {followingSet.has(friend.userName) ? '✓ Following' : '+ Follow'}
-                              </button>
+                                  }}
+                                  title={followingSet.has(friend.userName) ? 'Unfollow' : 'Follow'}
+                                >
+                                  {followingSet.has(friend.userName) ? '✓ Following' : '+ Follow'}
+                                </button>
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -3744,29 +3746,33 @@ function App() {
                         ) : (
                           <div>
                             <h5 className="fw-semibold text-success mb-3">Users with Similar Taste</h5>
-                            <div className="d-flex flex-column gap-3">
+                            <div className="row g-3">
                               {similarUsers.map((user) => (
-                                <div key={user.userName} className="card border-0 shadow-sm p-3">
-                                  <div className="d-flex justify-content-between align-items-start mb-2">
-                                    <h6 className="fw-semibold mb-0" style={{ cursor: 'pointer', color: '#20c997' }} onClick={() => void openFriendRatings(user.userName)}>
-                                      {user.userName}
-                                    </h6>
-                                    <span className="badge bg-success" style={{ fontSize: '0.75rem' }}>
-                                      {(user.matchScore * 100).toFixed(0)}% match
-                                    </span>
-                                  </div>
-                                  {user.flavors.length > 0 && (
-                                    <div className="small">
-                                      <p className="text-muted mb-2">Shared flavors:</p>
-                                      <div className="d-flex flex-wrap gap-1">
-                                        {user.flavors.map((flavor) => (
-                                          <span key={flavor} className="badge bg-light text-dark" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>
-                                            {flavor}
-                                          </span>
-                                        ))}
+                                <div key={user.userName} className="col-12 col-sm-6 col-md-4">
+                                  <div className="card border-0 shadow-sm h-100">
+                                    <div className="card-body">
+                                      <div className="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 className="card-title fw-semibold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => void openFriendRatings(user.userName)}>
+                                          {user.userName}
+                                        </h6>
+                                        <span className="badge bg-success" style={{ fontSize: '0.75rem' }}>
+                                          {(user.matchScore * 100).toFixed(0)}% match
+                                        </span>
                                       </div>
+                                      {user.flavors.length > 0 && (
+                                        <div className="small mt-2">
+                                          <p className="text-muted mb-2">Shared flavors:</p>
+                                          <div className="d-flex flex-wrap gap-1">
+                                            {user.flavors.map((flavor) => (
+                                              <span key={flavor} className="badge bg-light text-dark" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>
+                                                {flavor}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
+                                  </div>
                                 </div>
                               ))}
                             </div>
@@ -3786,29 +3792,33 @@ function App() {
                         ) : (
                           <div>
                             <h5 className="fw-semibold text-success mb-3">Places with Your Flavor Profile</h5>
-                            <div className="d-flex flex-column gap-3">
+                            <div className="row g-3">
                               {similarPlaces.map((place) => (
-                                <div key={place.location} className="card border-0 shadow-sm p-3">
-                                  <div className="d-flex justify-content-between align-items-start mb-2">
-                                    <h6 className="fw-semibold mb-0" style={{ cursor: 'pointer', color: '#20c997' }} onClick={() => setSelectedExplorePlaceName(place.location)}>
-                                      {place.location}
-                                    </h6>
-                                    <span className="badge bg-success" style={{ fontSize: '0.75rem' }}>
-                                      {(place.matchScore * 100).toFixed(0)}% match
-                                    </span>
-                                  </div>
-                                  {place.flavors.length > 0 && (
-                                    <div className="small">
-                                      <p className="text-muted mb-2">Featured flavors:</p>
-                                      <div className="d-flex flex-wrap gap-1">
-                                        {place.flavors.map((flavor) => (
-                                          <span key={flavor} className="badge bg-light text-dark" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>
-                                            {flavor}
-                                          </span>
-                                        ))}
+                                <div key={place.location} className="col-12 col-sm-6 col-md-4">
+                                  <div className="card border-0 shadow-sm h-100">
+                                    <div className="card-body">
+                                      <div className="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 className="card-title fw-semibold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => setSelectedExplorePlaceName(place.location)}>
+                                          {place.location}
+                                        </h6>
+                                        <span className="badge bg-success" style={{ fontSize: '0.75rem' }}>
+                                          {(place.matchScore * 100).toFixed(0)}% match
+                                        </span>
                                       </div>
+                                      {place.flavors.length > 0 && (
+                                        <div className="small mt-2">
+                                          <p className="text-muted mb-2">Featured flavors:</p>
+                                          <div className="d-flex flex-wrap gap-1">
+                                            {place.flavors.map((flavor) => (
+                                              <span key={flavor} className="badge bg-light text-dark" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>
+                                                {flavor}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
                                     </div>
-                                  )}
+                                  </div>
                                 </div>
                               ))}
                             </div>
