@@ -683,6 +683,8 @@ function App() {
   const [isMagicLinkSent, setIsMagicLinkSent] = useState(false)
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false)
   const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false)
+  const [isChangeEmailOpen, setIsChangeEmailOpen] = useState(false)
+  const [newEmail, setNewEmail] = useState('')
   const [userFlavors, setUserFlavors] = useState<string[]>([])
   const [userMilkTypes, setUserMilkTypes] = useState<string[]>([])
   const [likedRatingsSet, setLikedRatingsSet] = useState<Set<number>>(new Set())
@@ -2623,7 +2625,48 @@ function App() {
               <h6 className="fw-bold text-success mb-0">{currentUserName}</h6>
             </div>
 
-            <div style={{ padding: '0.75rem', overflowY: 'auto', flex: 1 }}>
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef' }}>
+              <button
+                type="button"
+                className="btn btn-link btn-sm text-start p-0 w-100 mb-2"
+                onClick={() => setIsChangeEmailOpen(!isChangeEmailOpen)}
+                style={{ textDecoration: 'none', color: '#198754' }}
+              >
+                Change Email
+              </button>
+              {isChangeEmailOpen && (
+                <div className="mt-2">
+                  <input
+                    type="email"
+                    className="form-control form-control-sm mb-2"
+                    placeholder="New email"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn-sm btn-success w-100"
+                    onClick={async () => {
+                      try {
+                        await apiFetch('/account/email', {
+                          method: 'POST',
+                          body: JSON.stringify({ newEmail })
+                        })
+                        setNewEmail('')
+                        setIsChangeEmailOpen(false)
+                        alert('Email change sent to your current email for confirmation')
+                      } catch (error) {
+                        alert(error instanceof Error ? error.message : 'Failed to change email')
+                      }
+                    }}
+                  >
+                    Send Link
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div style={{ padding: '0.75rem', flex: 0, overflowY: 'auto' }}>
             </div>
 
             <div style={{ padding: '0.75rem', borderTop: '1px solid #e9ecef' }}>
@@ -2729,11 +2772,16 @@ function App() {
               <span className="navbar-brand fw-semibold text-success mb-0">Sip &amp; Score</span>
               <button
                 type="button"
-                className="btn btn-link btn-sm text-muted p-0 d-lg-none"
+                className="btn btn-link btn-sm text-dark p-0 d-lg-none d-flex align-items-center gap-2"
                 onClick={() => setIsProfileDrawerOpen(true)}
-                title="Profile"
+                title="My Profile"
+                style={{ textDecoration: 'none' }}
               >
-                👤
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                <span className="small">My Profile</span>
               </button>
             </div>
             <small className="text-muted nav-user d-none d-lg-flex">
@@ -2765,12 +2813,16 @@ function App() {
             </button>
             <button
               type="button"
-              className="btn btn-link btn-sm text-muted p-0 ms-auto d-none d-lg-block"
+              className="btn btn-link btn-sm text-dark p-0 ms-auto d-none d-lg-flex align-items-center gap-2"
               onClick={() => setIsProfileDrawerOpen(true)}
-              title="Profile"
+              title="My Profile"
               style={{ textDecoration: 'none' }}
             >
-              👤
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+              <span className="small">My Profile</span>
             </button>
           </div>
         </div>
