@@ -2501,16 +2501,16 @@ function App() {
           <div className="explore-place-modal card border-0 shadow-lg">
             <div className="card-body p-3 p-md-4">
               <div className="d-flex align-items-start gap-3 mb-3">
-                <div>
-                  <h3 className="h5 fw-bold text-success mb-1">{selectedExplorePlaceName}</h3>
+                <div style={{ minWidth: 0 }}>
+                  <h3 className="h5 fw-bold text-success mb-1" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedExplorePlaceName}</h3>
                   <div className="small text-muted">All ratings</div>
                 </div>
                 <button
                   type="button"
-                  className="btn btn-link text-muted p-0"
+                  className="close-btn"
                   onClick={closeExplorePlaceRatings}
                   aria-label="Close place ratings popup"
-                  style={{ marginLeft: 'auto', flexShrink: 0, fontSize: '1.5rem', lineHeight: '1' }}
+                  style={{ marginLeft: 'auto', flexShrink: 0 }}
                 >
                   ✕
                 </button>
@@ -2537,9 +2537,9 @@ function App() {
                           </div>
                           <div className="small text-muted mb-1">{entry.location || selectedExplorePlaceName}</div>
                           <div className="entry-metrics">
-                            <div className="rating-badge mb-2">Rating: <span className="rating-value">{entry.rating.toFixed(1)}</span> / 5.0</div>
-                            <div className="greenness-badge">Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
-                            <div className="total-score-badge mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                            <div className="fw-bold mb-2">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
+                            <div className="mb-2">Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                            <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
                             {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
                                 {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
@@ -2606,7 +2606,7 @@ function App() {
                 <p className="text-secondary small fw-normal">Sort list by</p>
                 <button
                   type="button"
-                  className="filter-menu-close"
+                  className="close-btn"
                   onClick={() => setIsMyRatingsFilterOpen(false)}
                   aria-label="Close filter menu"
                 >
@@ -2660,7 +2660,7 @@ function App() {
                 <p className="text-secondary small fw-normal">Sort list by</p>
                 <button
                   type="button"
-                  className="filter-menu-close"
+                  className="close-btn"
                   onClick={() => setIsFriendFilterOpen(false)}
                   aria-label="Close filter menu"
                 >
@@ -2713,7 +2713,7 @@ function App() {
               <h3 className="h5 fw-bold text-success mb-0">Take Photo</h3>
               <button
                 type="button"
-                className="btn btn-outline-secondary btn-sm"
+                className="close-btn"
                 onClick={() => {
                   setIsCameraModalOpen(false)
                   stopCameraAccess()
@@ -2793,10 +2793,9 @@ function App() {
               <h3 className="h5 fw-bold text-success mb-0" style={{ flexShrink: 0 }}>Your thoughts...</h3>
               <button
                 type="button"
-                className="btn btn-link text-muted p-0"
+                className="close-btn"
                 onClick={() => setIsNotesModalOpen(false)}
                 aria-label="Close notes"
-                style={{ marginLeft: 'auto', flexShrink: 0 }}
               >
                 ✕
               </button>
@@ -2852,9 +2851,9 @@ function App() {
             <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef' }}>
               <button
                 type="button"
-                className="btn btn-link text-muted p-0"
+                className="close-btn"
                 onClick={() => setIsChangeEmailDrawerOpen(false)}
-                style={{ textDecoration: 'none', float: 'right' }}
+                style={{ float: 'right' }}
               >
                 ✕
               </button>
@@ -2928,9 +2927,9 @@ function App() {
             <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
               <button
                 type="button"
-                className="btn btn-link text-muted p-0"
+                className="close-btn"
                 onClick={() => setIsProfileDrawerOpen(false)}
-                style={{ textDecoration: 'none', float: 'right' }}
+                style={{ float: 'right' }}
               >
                 ✕
               </button>
@@ -2956,6 +2955,32 @@ function App() {
                 style={{ textDecoration: 'none', color: '#198754' }}
               >
                 My Matcha Preferences
+              </button>
+              <button
+                type="button"
+                className="btn btn-link btn-sm text-start p-0 w-100 mt-2"
+                onClick={async () => {
+                  const shareData = {
+                    title: 'Matcha Ratings',
+                    text: 'Check out Matcha Ratings - an app for rating matcha and exploring matcha places!',
+                    url: window.location.origin
+                  }
+                  if (navigator.share) {
+                    try {
+                      await navigator.share(shareData)
+                    } catch (err) {
+                      if (err instanceof Error && err.name !== 'AbortError') {
+                        console.error('Share failed:', err)
+                      }
+                    }
+                  } else {
+                    await navigator.clipboard.writeText(shareData.url)
+                    alert('App link copied to clipboard!')
+                  }
+                }}
+                style={{ textDecoration: 'none', color: '#198754' }}
+              >
+                Share App
               </button>
               <button
                 type="button"
@@ -3003,9 +3028,9 @@ function App() {
             <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef' }}>
               <button
                 type="button"
-                className="btn btn-link text-muted p-0"
+                className="close-btn"
                 onClick={() => setIsPreferencesModalOpen(false)}
-                style={{ textDecoration: 'none', float: 'right' }}
+                style={{ float: 'right' }}
               >
                 ✕
               </button>
@@ -3088,12 +3113,11 @@ function App() {
               <h3 className="h5 fw-bold text-success mb-0" style={{ flexShrink: 0 }}>Edit Rating</h3>
               <button
                 type="button"
-                className="btn btn-link text-muted p-0"
+                className="close-btn"
                 onClick={() => {
                   setIsEditingEntry(false)
                   setEditEntryPhoto('')
                 }}
-                style={{ marginLeft: 'auto', flexShrink: 0 }}
               >
                 ✕
               </button>
@@ -3215,20 +3239,6 @@ function App() {
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
               <circle cx="12" cy="7" r="4"></circle>
             </svg>
-          </button>
-        </div>
-      </nav>
-            type="button"
-            className="btn btn-link btn-sm text-dark p-0 d-none d-lg-flex align-items-center gap-2"
-            onClick={() => setIsProfileDrawerOpen(true)}
-            title="My Profile"
-            style={{ textDecoration: 'none' }}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-            <span className="small">My Profile</span>
           </button>
         </div>
       </nav>
@@ -4295,12 +4305,12 @@ function App() {
           title="Leaderboard"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <!-- Trophy cup -->
+            {/* Trophy cup */}
             <path d="M6 3h12v3h0a3 3 0 0 1 3 3v2h0a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2a3 3 0 0 1 3-3h0V3z"></path>
             <path d="M9 11v3a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-3"></path>
             <path d="M9 15h6"></path>
             <path d="M8 18h8a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1v-1a1 1 0 0 1 1-1z"></path>
-            <!-- Star inside trophy -->
+            {/* Star inside trophy */}
             <path d="M12 6l0.5 2h2l-1.5 1 0.5 2-2-1.5-2 1.5 0.5-2-1.5-1h2Z" fill="currentColor"></path>
           </svg>
           <span className="label">Leaderboard</span>

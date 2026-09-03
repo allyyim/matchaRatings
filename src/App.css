@@ -2003,3 +2003,26 @@ main.login-page {
 main#main-content {
   padding-bottom: 5.5rem !important;
 }
+
+.close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background-color: rgba(108, 117, 125, 0.1);
+  border: 1px solid rgba(108, 117, 125, 0.2);
+  border-radius: 50%;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1.2rem;
+  color: #6c757d;
+  line-height: 1;
+}
+
+.close-btn:hover {
+  background-color: rgba(108, 117, 125, 0.15);
+  border-color: rgba(108, 117, 125, 0.3);
+  color: #495057;
+}
