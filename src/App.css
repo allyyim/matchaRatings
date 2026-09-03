@@ -30,6 +30,15 @@
   100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
 }
 
+@keyframes floatBounce {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.matcha-logo {
+  animation: floatBounce 3s ease-in-out infinite;
+}
+
 .welcome-toast {
   position: fixed;
   top: 2rem;
@@ -37,11 +46,14 @@
   transform: translateX(-50%);
   z-index: 2000;
   animation: fadeInOut 1.5s ease-in-out forwards;
-  background: linear-gradient(135deg, #1f5f34 0%, #1a9b8e 100%);
+  background: rgba(26, 155, 142, 0.25);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: white;
   padding: 1rem 1.5rem;
-  border-radius: 1rem;
-  box-shadow: 0 8px 24px rgba(31, 95, 52, 0.24);
+  border-radius: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(26, 155, 142, 0.15);
   text-align: center;
   font-weight: 500;
   font-size: 1.1rem;

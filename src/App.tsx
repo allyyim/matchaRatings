@@ -1720,24 +1720,26 @@ function App() {
           <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
             <div className="card-body p-3 p-md-4">
               <div className="text-center mb-4">
-                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🍵</div>
+                <div className="matcha-logo" style={{ fontSize: '4rem', marginBottom: '1rem', display: 'inline-block' }}>🍵</div>
                 <h1 className="h3 fw-bold text-success mb-2">Sip &amp; Score</h1>
                 <p className="text-muted small">Track your matcha journey, one sip at a time</p>
               </div>
-              <p className="text-muted mb-4 text-center">
+              <p className="text-muted mb-4 text-center small">
                 Whether you're a matcha enthusiast or just starting, let's rate every tea experience together.
               </p>
               <button
                 type="button"
                 className="btn btn-success w-100 mb-2 fw-semibold"
                 onClick={() => setAuthMode('lookup-account')}
+                style={{ padding: '0.875rem 1rem', fontSize: '1.05rem' }}
               >
-                I have an account
+                Back for more
               </button>
               <button
                 type="button"
                 className="btn btn-outline-success w-100 fw-semibold"
                 onClick={() => setAuthMode('newuser')}
+                style={{ padding: '0.875rem 1rem', fontSize: '1.05rem' }}
               >
                 I'm new here
               </button>
