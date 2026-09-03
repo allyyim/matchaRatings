@@ -1394,6 +1394,65 @@ app.get('/api/similar-users', async (req, res) => {
   }
 })
 
+// Find places with similar flavor profiles
+app.get('/api/similar-places', async (req, res) => {
+  const flavorsParam = String(req.query.flavors || '').trim()
+  if (!flavorsParam) {
+    return res.status(400).json({ error: 'flavors parameter is required' })
+  }
+
+  try {
+    const userFlavors = flavorsParam.split(',').map(f => f.trim()).filter(f => f)
+
+    if (userFlavors.length === 0) {
+      return res.json({ similarPlaces: [] })
+    }
+
+    // Find ratings with matching flavor profiles
+    const result = await pool.query(
+      `
+        SELECT DISTINCT
+          r.location,
+          r.flavor_preferences,
+          COUNT(*) as rating_count
+        FROM ratings r
+        WHERE r.location IS NOT NULL
+          AND r.location != ''
+          AND r.flavor_preferences IS NOT NULL
+        GROUP BY r.location, r.flavor_preferences
+        ORDER BY rating_count DESC
+        LIMIT 50
+      `
+    )
+
+    // Score places based on flavor preference overlap
+    const similarPlaces = result.rows
+      .map((row) => {
+        const placeFlavorPrefs = row.flavor_preferences || {}
+        const placeFlavorsList = Object.keys(placeFlavorPrefs)
+          .filter(f => placeFlavorPrefs[f] > 0)
+
+        const matchCount = userFlavors.filter(f => placeFlavorsList.includes(f)).length
+        const matchScore = matchCount > 0 ? (matchCount / Math.max(userFlavors.length, placeFlavorsList.length)) : 0
+
+        return {
+          location: row.location,
+          flavors: placeFlavorsList.slice(0, 5), // Show top 5 flavors
+          matchScore: matchScore,
+          ratingCount: row.rating_count || 0
+        }
+      })
+      .filter(p => p.matchScore > 0)
+      .sort((a, b) => b.matchScore - a.matchScore)
+      .slice(0, 20)
+
+    return res.json({ similarPlaces })
+  } catch (error) {
+    console.error('Similar places lookup failed:', error)
+    return res.status(500).json({ error: 'Failed to find similar places' })
+  }
+})
+
 // Like/unlike rating endpoints
 app.post('/api/ratings/:ratingId/like', async (req, res) => {
   const ratingId = Number(req.params.ratingId)

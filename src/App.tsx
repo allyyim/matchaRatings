@@ -665,6 +665,8 @@ function App() {
   const [communityActiveTab, setCommunityActiveTab] = useState<'search' | 'following' | 'recommendations'>('search')
   const [similarUsers, setSimilarUsers] = useState<Array<{ userName: string; flavors: string[]; matchScore: number }>>([])
   const [isLoadingSimilarUsers, setIsLoadingSimilarUsers] = useState(false)
+  const [similarPlaces, setSimilarPlaces] = useState<Array<{ location: string; flavors: string[]; matchScore: number }>>([])
+  const [isLoadingSimilarPlaces, setIsLoadingSimilarPlaces] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [currentOnboardingSlide, setCurrentOnboardingSlide] = useState(0)
   const [selectedExplorePlaceName, setSelectedExplorePlaceName] = useState('')
@@ -1343,17 +1345,24 @@ function App() {
     }
 
     setIsLoadingSimilarUsers(true)
+    setIsLoadingSimilarPlaces(true)
 
-    void apiFetch<{ similarUsers: Array<{ userName: string; flavors: string[]; matchScore: number }> }>(`/similar-users?userName=${encodeURIComponent(currentUserName)}`)
-      .then((data) => {
-        setSimilarUsers(data.similarUsers)
+    Promise.all([
+      apiFetch<{ similarUsers: Array<{ userName: string; flavors: string[]; matchScore: number }> }>(`/similar-users?userName=${encodeURIComponent(currentUserName)}`),
+      apiFetch<{ similarPlaces: Array<{ location: string; flavors: string[]; matchScore: number }> }>(`/similar-places?flavors=${encodeURIComponent(userFlavors.join(','))}`)
+    ])
+      .then(([usersData, placesData]) => {
+        setSimilarUsers(usersData.similarUsers)
+        setSimilarPlaces(placesData.similarPlaces)
       })
       .catch((error) => {
-        console.error('Failed to load similar users:', error)
+        console.error('Failed to load similar users/places:', error)
         setSimilarUsers([])
+        setSimilarPlaces([])
       })
       .finally(() => {
         setIsLoadingSimilarUsers(false)
+        setIsLoadingSimilarPlaces(false)
       })
   }, [communityActiveTab, currentUserName, userFlavors])
 
@@ -3500,7 +3509,7 @@ function App() {
                   className={`nav-link ${communityActiveTab === 'recommendations' ? 'active' : ''}`}
                   onClick={() => setCommunityActiveTab('recommendations')}
                 >
-                  Find Similar
+                  Recs
                 </button>
               </div>
 
@@ -3654,7 +3663,7 @@ function App() {
                         </div>
                       </div>
 
-                      <div>
+                      <div className="mb-5">
                         {isLoadingSimilarUsers ? (
                           <div className="alert alert-light border">
                             <p className="mb-0 text-muted small">Loading similar users...</p>
@@ -3682,6 +3691,48 @@ function App() {
                                       <p className="text-muted mb-2">Shared flavors:</p>
                                       <div className="d-flex flex-wrap gap-1">
                                         {user.flavors.map((flavor) => (
+                                          <span key={flavor} className="badge bg-light text-dark" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>
+                                            {flavor}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        {isLoadingSimilarPlaces ? (
+                          <div className="alert alert-light border">
+                            <p className="mb-0 text-muted small">Loading similar places...</p>
+                          </div>
+                        ) : similarPlaces.length === 0 ? (
+                          <div className="alert alert-light border">
+                            <p className="mb-0 text-muted small">No places found with similar profiles yet.</p>
+                          </div>
+                        ) : (
+                          <div>
+                            <h5 className="fw-semibold text-success mb-3">Places with Your Flavor Profile</h5>
+                            <div className="d-flex flex-column gap-3">
+                              {similarPlaces.map((place) => (
+                                <div key={place.location} className="card border-0 shadow-sm p-3">
+                                  <div className="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 className="fw-semibold mb-0" style={{ cursor: 'pointer', color: '#20c997' }} onClick={() => setSelectedExplorePlaceName(place.location)}>
+                                      {place.location}
+                                    </h6>
+                                    <span className="badge bg-success" style={{ fontSize: '0.75rem' }}>
+                                      {(place.matchScore * 100).toFixed(0)}% match
+                                    </span>
+                                  </div>
+                                  {place.flavors.length > 0 && (
+                                    <div className="small">
+                                      <p className="text-muted mb-2">Featured flavors:</p>
+                                      <div className="d-flex flex-wrap gap-1">
+                                        {place.flavors.map((flavor) => (
                                           <span key={flavor} className="badge bg-light text-dark" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>
                                             {flavor}
                                           </span>
