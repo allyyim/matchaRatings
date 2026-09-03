@@ -2624,69 +2624,9 @@ function App() {
             </div>
 
             <div style={{ padding: '0.75rem', overflowY: 'auto', flex: 1 }}>
-              <div className="mb-4">
-                <h6 className="fw-semibold text-success mb-3">My Preferences</h6>
-
-                <div className="mb-3">
-                  <label className="form-label fw-semibold small mb-2">Flavor Preferences</label>
-                  <div className="d-flex flex-wrap gap-2">
-                    {['bold', 'nutty', 'umami', 'vegetal', 'sweet', 'astringent'].map((flavor) => (
-                      <button
-                        key={flavor}
-                        type="button"
-                        className={`btn btn-sm ${userFlavors.includes(flavor) ? 'btn-success' : 'btn-outline-success'}`}
-                        onClick={() => setUserFlavors(userFlavors.includes(flavor)
-                          ? userFlavors.filter(f => f !== flavor)
-                          : [...userFlavors, flavor]
-                        )}
-                      >
-                        {flavor}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="form-label fw-semibold small mb-2">Milk Types</label>
-                  <div className="d-flex flex-wrap gap-2">
-                    {['oat', 'whole', 'almond', 'soy'].map((milk) => (
-                      <button
-                        key={milk}
-                        type="button"
-                        className={`btn btn-sm ${userMilkTypes.includes(milk) ? 'btn-success' : 'btn-outline-success'}`}
-                        onClick={() => setUserMilkTypes(userMilkTypes.includes(milk)
-                          ? userMilkTypes.filter(m => m !== milk)
-                          : [...userMilkTypes, milk]
-                        )}
-                      >
-                        {milk}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
             </div>
 
             <div style={{ padding: '0.75rem', borderTop: '1px solid #e9ecef' }}>
-              <button
-                type="button"
-                className="btn btn-success w-100 mb-2 btn-sm"
-                onClick={async () => {
-                  try {
-                    await apiFetch('/preferences', {
-                      method: 'POST',
-                      body: JSON.stringify({
-                        flavors: userFlavors,
-                        milk_type: userMilkTypes
-                      })
-                    })
-                  } catch (error) {
-                    alert(error instanceof Error ? error.message : 'Failed to save preferences')
-                  }
-                }}
-              >
-                Save Preferences
-              </button>
               <button
                 type="button"
                 className="btn btn-outline-danger w-100 btn-sm"
