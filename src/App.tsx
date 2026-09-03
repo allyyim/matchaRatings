@@ -588,7 +588,12 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
     if (!response.ok) {
       const text = await response.text()
-      throw new Error(text || `Request failed with status ${response.status}`)
+      try {
+        const errorJson = JSON.parse(text)
+        throw new Error(errorJson.error || `Request failed with status ${response.status}`)
+      } catch (parseErr) {
+        throw new Error(text || `Request failed with status ${response.status}`)
+      }
     }
 
     return response.json() as Promise<T>
