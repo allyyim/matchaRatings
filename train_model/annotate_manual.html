@@ -215,14 +215,18 @@
                 canvas.height = img.height;
                 ctx.drawImage(img, 0, 0);
 
-                // Load existing annotation if available
+                // Load existing annotation if available (PNG with green overlay already drawn)
                 if (annotations[images[index].name]) {
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    imageData.data.set(annotations[images[index].name]);
-                    ctx.putImageData(imageData, 0, 0);
+                    const annotatedImg = new Image();
+                    annotatedImg.onload = () => {
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(annotatedImg, 0, 0);
+                        canvasStates = [canvas.toDataURL()];
+                    };
+                    annotatedImg.src = annotations[images[index].name];
+                } else {
+                    canvasStates = [canvas.toDataURL()];
                 }
-
-                canvasStates = [canvas.toDataURL()];
                 updateStatus();
             };
             img.src = images[index].data;
@@ -296,10 +300,8 @@
         }
 
         function saveAndNext() {
-            // Save current annotation
-            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            annotations[images[currentImageIndex].name] = new Uint8ClampedArray(imageData.data);
-
+            // Save full canvas as PNG (includes original image + green overlay)
+            annotations[images[currentImageIndex].name] = canvas.toDataURL('image/png');
             updateStatus();
 
             if (currentImageIndex < images.length - 1) {
@@ -325,16 +327,9 @@
                 annotations: {}
             };
 
-            // Convert image data to base64
-            for (const [filename, pixelData] of Object.entries(annotations)) {
-                const canvas = document.createElement('canvas');
-                const ctx = canvas.getContext('2d');
-                const imageData = ctx.createImageData(
-                    document.getElementById('annotationCanvas').width,
-                    document.getElementById('annotationCanvas').height
-                );
-                imageData.data.set(pixelData);
-                annotationData.annotations[filename] = canvas.toDataURL('image/png');
+            // Use saved PNG annotations directly
+            for (const [filename, pngData] of Object.entries(annotations)) {
+                annotationData.annotations[filename] = pngData;
             }
 
             const dataStr = JSON.stringify(annotationData);
