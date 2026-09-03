@@ -2541,7 +2541,7 @@ function App() {
                             <div className="fw-bold mb-2">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
                             <div className="mb-2">Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                             <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
-                            <div style={{ color: '#198754', marginBottom: '0.5rem' }}>Matcha greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                            <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                             {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
                                 {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
@@ -3349,15 +3349,15 @@ function App() {
       )}
 
       <nav className="navbar navbar-expand-lg navbar-light sticky-top soft-nav minimal-nav" aria-label="Main navigation">
-        <div className="container d-flex align-items-center">
-          <div className="navbar-brand" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingLeft: '1rem', paddingRight: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1f5f34' }}>SIP</span>
             <span style={{ fontSize: '1rem', fontWeight: '700', color: '#6c757d' }}>&</span>
             <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#20c997' }}>SCORE</span>
           </div>
           <button
             type="button"
-            className="btn btn-link text-dark p-1 d-flex align-items-center gap-2 ms-auto"
+            className="btn btn-link text-dark p-1 d-flex align-items-center gap-2"
             onClick={() => setIsProfileDrawerOpen(true)}
             title="My Profile"
             style={{ textDecoration: 'none' }}
@@ -3690,7 +3690,7 @@ function App() {
                         </div>
                         <div className="entry-metrics">
                           <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
-                          <div style={{ color: '#198754', marginBottom: '0.5rem' }}>Matcha greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
                               {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
@@ -4202,7 +4202,7 @@ function App() {
                         </div>
                         <div className="entry-metrics">
                           <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
-                          <div style={{ color: '#198754', marginBottom: '0.5rem' }}>Matcha greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
                               {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
