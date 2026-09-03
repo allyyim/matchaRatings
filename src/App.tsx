@@ -3564,31 +3564,32 @@ function App() {
                   {selectedEntryId === entry.id && !isEditingEntry && (
                     <div className="entry-overlay" onClick={(event) => event.stopPropagation()}>
                       <div className="entry-overlay-actions d-flex flex-column gap-2 align-items-center">
-                        <div className="text-white small fw-semibold mb-2">Tap to edit</div>
-                        <button type="button" className="btn btn-light btn-sm" onClick={() => startEntryEdit(entry)} aria-label="Edit rating">
-                          <span className="action-icon-wrap">
-                            <img src={pencilIconUrl} alt="" className="action-icon" />
-                          </span>
-                          Edit
-                        </button>
+                        <div className="d-flex gap-2 w-100">
+                          <button type="button" className="btn btn-light btn-sm flex-grow-1" onClick={() => startEntryEdit(entry)} aria-label="Edit rating">
+                            <span className="action-icon-wrap">
+                              <img src={pencilIconUrl} alt="" className="action-icon" />
+                            </span>
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-sm flex-grow-1"
+                            onClick={() => {
+                              if (window.confirm('Delete this rating entry?')) {
+                                void deleteEntry(entry.id)
+                              }
+                            }}
+                            aria-label="Delete rating"
+                          >
+                            <span className="action-icon-wrap">
+                              <img src={trashIconUrl} alt="" className="action-icon" />
+                            </span>
+                            Delete
+                          </button>
+                        </div>
                         <button
                           type="button"
-                          className="btn btn-danger btn-sm"
-                          onClick={() => {
-                            if (window.confirm('Delete this rating entry?')) {
-                              void deleteEntry(entry.id)
-                            }
-                          }}
-                          aria-label="Delete rating"
-                        >
-                          <span className="action-icon-wrap">
-                            <img src={trashIconUrl} alt="" className="action-icon" />
-                          </span>
-                          Delete
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-outline-light btn-sm"
+                          className="btn btn-outline-light btn-sm w-100"
                           onClick={() => {
                             setSelectedEntryId(null)
                             setIsEditingEntry(false)
