@@ -109,24 +109,21 @@ body {
   background: linear-gradient(135deg, #f1fbe6 0%, #eaf8df 100%);
   border-bottom: none;
   box-shadow: none;
-  padding: 1.5rem 0 !important;
-  min-height: 100px;
+  padding: 0.5rem 0 !important;
+  min-height: auto;
+}
+
+.soft-nav.minimal-nav {
+  padding: 0.75rem 0 !important;
 }
 
 /* Navigation Styles */
 .navbar-brand {
-  font-size: 1.8rem;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  background: linear-gradient(135deg, var(--primary-green) 0%, var(--accent-teal) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  color: var(--primary-green) !important;
-  text-shadow: 0 2px 4px rgba(26, 155, 142, 0.1);
-  padding: 1rem 0.75rem;
-  border-radius: 0.5rem;
-  transition: all 0.3s ease;
+  display: none;
+}
+
+.nav-user {
+  display: none;
 }
 
 .navbar-brand:hover {

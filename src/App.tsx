@@ -3202,31 +3202,22 @@ function App() {
         document.body
       )}
 
-      <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top soft-nav" aria-label="Main navigation">
-        <div className="container d-flex flex-column flex-lg-row justify-content-between align-items-center gap-2">
-          <div className="d-flex flex-column w-100">
-            <div className="d-flex justify-content-between align-items-center w-100">
-              <span className="navbar-brand fw-semibold text-success mb-0">Sip &amp; Score</span>
-              <button
-                type="button"
-                className="btn btn-link btn-sm text-dark p-0 d-lg-none d-flex align-items-center gap-2"
-                onClick={() => setIsProfileDrawerOpen(true)}
-                title="My Profile"
-                style={{ textDecoration: 'none' }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-                <span className="small">My Profile</span>
-              </button>
-            </div>
-            <small className="text-muted nav-user d-none d-lg-flex">
-              {currentUserName}
-            </small>
-          </div>
-
+      <nav className="navbar navbar-expand-lg navbar-light sticky-top soft-nav minimal-nav" aria-label="Main navigation">
+        <div className="container d-flex justify-content-end align-items-center">
           <button
+            type="button"
+            className="btn btn-link text-dark p-1"
+            onClick={() => setIsProfileDrawerOpen(true)}
+            title="My Profile"
+            style={{ textDecoration: 'none' }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </button>
+        </div>
+      </nav>
             type="button"
             className="btn btn-link btn-sm text-dark p-0 d-none d-lg-flex align-items-center gap-2"
             onClick={() => setIsProfileDrawerOpen(true)}
