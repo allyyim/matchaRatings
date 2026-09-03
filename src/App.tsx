@@ -607,8 +607,11 @@ function App() {
   const [isSubmittingName, setIsSubmittingName] = useState(false)
   const [isUserReady, setIsUserReady] = useState(false)
   const [authError, setAuthError] = useState('')
-  const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser'>('choice')
+  const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser' | 'lookup-account'>('choice')
   const [welcomeMessage, setWelcomeMessage] = useState('')
+  const [potentialAccounts, setPotentialAccounts] = useState<string[]>([])
+  const [selectedPotentialAccount, setSelectedPotentialAccount] = useState<string | null>(null)
+  const [verifiedAccountName, setVerifiedAccountName] = useState<string | null>(null)
 
   const [currentRating, setCurrentRating] = useState(0)
   const [location, setLocation] = useState('')
@@ -858,11 +861,13 @@ function App() {
           return
         }
 
-        const requestBody = { token: codeResponse.access_token, browserId }
+        const requestBody = verifiedAccountName
+          ? { token: codeResponse.access_token, browserId, confirmedUserName: verifiedAccountName }
+          : { token: codeResponse.access_token, browserId }
         console.log('Sending to backend:', JSON.stringify(requestBody))
 
         try {
-          const response = await apiFetch<{ userName: string; email: string; token: string; isNewUser?: boolean }>('/auth/google/verify', {
+          const response = await apiFetch<{ userName: string; email: string; token: string; isNewUser?: boolean; potentialAccounts?: string[] }>('/auth/google/verify', {
             method: 'POST',
             body: JSON.stringify(requestBody)
           })
@@ -872,12 +877,20 @@ function App() {
           setRequiresManualName(false)
           setIsUserReady(true)
           setWelcomeMessage(response.userName)
+          setVerifiedAccountName(null)
           setTimeout(() => setWelcomeMessage(''), 1500)
           void loadDrinkAreaModel().catch(() => undefined)
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error)
           try {
             const errorData = JSON.parse(errorMsg)
+            if (errorData.potentialAccounts && errorData.potentialAccounts.length > 0) {
+              // Show account linking confirmation
+              sessionStorage.setItem('googleAccessToken', codeResponse.access_token)
+              setPotentialAccounts(errorData.potentialAccounts)
+              setAuthMode('confirm-account')
+              return
+            }
             if (errorData.isNewUser) {
               sessionStorage.setItem('googleAccessToken', codeResponse.access_token)
               setRequiresManualName(true)
@@ -953,6 +966,7 @@ function App() {
     setAuthError('')
     setRequiresManualName(true)
     setIsUserReady(false)
+    setAuthMode('choice')
   }
 
   async function handleNewUserNameSubmit() {
@@ -1716,7 +1730,7 @@ function App() {
               <button
                 type="button"
                 className="btn btn-success w-100 mb-2 fw-semibold"
-                onClick={() => setAuthMode('signin')}
+                onClick={() => setAuthMode('lookup-account')}
               >
                 I have an account
               </button>
@@ -1729,15 +1743,159 @@ function App() {
               </button>
             </div>
           </section>
+        ) : authMode === 'lookup-account' ? (
+          <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
+            <div className="card-body p-3 p-md-4">
+              <div className="text-center mb-4">
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🍵</div>
+                <h1 className="h4 fw-bold text-success mb-1">Find your account</h1>
+              </div>
+              <p className="text-muted mb-4 text-center small">
+                What's your matcha name?
+              </p>
+              <form onSubmit={async (e) => {
+                e.preventDefault()
+                const name = pendingUserName.trim()
+                if (!name) {
+                  setAuthError('Please enter your name')
+                  return
+                }
+                try {
+                  setIsSubmittingName(true)
+                  setAuthError('')
+                  const response = await apiFetch<{ exists: boolean; userName: string }>('/auth/verify-account', {
+                    method: 'POST',
+                    body: JSON.stringify({ userName: name })
+                  })
+                  if (response.exists) {
+                    setVerifiedAccountName(response.userName)
+                    setAuthMode('signin')
+                  } else {
+                    setAuthError('Account not found. Check the spelling and try again.')
+                  }
+                } catch (error) {
+                  setAuthError(error instanceof Error ? error.message : 'Failed to find account')
+                } finally {
+                  setIsSubmittingName(false)
+                }
+              }}>
+                <input
+                  type="text"
+                  className="form-control mb-3"
+                  placeholder="Enter your name"
+                  value={pendingUserName}
+                  onChange={(e) => setPendingUserName(e.target.value)}
+                  disabled={isSubmittingName}
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="btn btn-success w-100 mb-2"
+                  disabled={isSubmittingName}
+                >
+                  {isSubmittingName ? 'Looking up…' : 'Continue'}
+                </button>
+              </form>
+              <button
+                type="button"
+                className="btn btn-link text-muted w-100 p-0 small"
+                onClick={() => {
+                  setAuthMode('choice')
+                  setPendingUserName('')
+                  setAuthError('')
+                }}
+              >
+                ← Back to options
+              </button>
+              {authError && <div className="alert alert-danger border mt-3 mb-0 small">{authError}</div>}
+            </div>
+          </section>
+        ) : authMode === 'confirm-account' ? (
+          <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
+            <div className="card-body p-3 p-md-4">
+              <div className="text-center mb-4">
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🍵</div>
+                <h1 className="h4 fw-bold text-success mb-1">Is this you?</h1>
+              </div>
+              <p className="text-muted mb-4 text-center small">
+                We found an account with your ratings. Is this your account?
+              </p>
+              <div className="d-flex flex-column gap-2">
+                {potentialAccounts.map((account) => (
+                  <button
+                    key={account}
+                    type="button"
+                    className={`btn w-100 ${selectedPotentialAccount === account ? 'btn-success' : 'btn-outline-success'}`}
+                    onClick={() => setSelectedPotentialAccount(account)}
+                  >
+                    {account}
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="btn btn-success w-100 mt-3"
+                onClick={async () => {
+                  if (!selectedPotentialAccount) {
+                    setAuthError('Please select an account')
+                    return
+                  }
+                  try {
+                    setIsSubmittingName(true)
+                    setAuthError('')
+                    const googleAccessToken = sessionStorage.getItem('googleAccessToken') || ''
+                    const response = await apiFetch<{ userName: string; email: string; token: string }>('/auth/google/confirm-account', {
+                      method: 'POST',
+                      body: JSON.stringify({ token: googleAccessToken, browserId, confirmedUserName: selectedPotentialAccount })
+                    })
+                    setSessionToken(response.token || '')
+                    localStorage.setItem('matchaUserName', response.userName)
+                    setCurrentUserName(response.userName)
+                    setRequiresManualName(false)
+                    setIsUserReady(true)
+                    setWelcomeMessage(response.userName)
+                    setTimeout(() => setWelcomeMessage(''), 1500)
+                    void loadDrinkAreaModel().catch(() => undefined)
+                  } catch (error) {
+                    setAuthError(error instanceof Error ? error.message : 'Account linking failed')
+                  } finally {
+                    setIsSubmittingName(false)
+                  }
+                }}
+                disabled={!selectedPotentialAccount || isSubmittingName}
+              >
+                {isSubmittingName ? 'Linking…' : 'Link this account'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-link text-muted w-100 p-0 small mt-2"
+                onClick={() => {
+                  setAuthMode('newuser')
+                  setSelectedPotentialAccount(null)
+                  setPotentialAccounts([])
+                  setAuthError('')
+                }}
+              >
+                This isn't me, create new
+              </button>
+              {authError && <div className="alert alert-danger border mt-3 mb-0 small">{authError}</div>}
+            </div>
+          </section>
         ) : (
           <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
             <div className="card-body p-3 p-md-4">
               <div className="text-center mb-4">
                 <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🍵</div>
-                <h1 className="h4 fw-bold text-success mb-1">Welcome back</h1>
+                <h1 className="h4 fw-bold text-success mb-1">{verifiedAccountName ? 'Welcome back' : authMode === 'signin' ? 'Welcome back' : 'Let\'s start'}</h1>
               </div>
               <p className="text-muted mb-4 text-center small">
-                {authMode === 'signin' ? 'Sign in to continue your matcha story' : 'Let\'s start your matcha adventure'}
+                {verifiedAccountName ? (
+                  `Link your Google account to access your ${verifiedAccountName} ratings`
+                ) : authMode === 'signin' ? (
+                  'Sign in to continue your matcha story'
+                ) : (
+                  'Let\'s start your matcha adventure'
+                )}
               </p>
               <button
                 type="button"

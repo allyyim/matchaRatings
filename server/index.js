@@ -438,6 +438,7 @@ app.post('/api/auth/verify', authRateLimiter, async (req, res) => {
 app.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
   const googleToken = String(req.body?.token || '').trim()
   const providedUserName = String(req.body?.userName || '').trim()
+  const confirmedUserName = String(req.body?.confirmedUserName || '').trim()
   const browserId = String(req.body?.browserId || '').trim()
 
   if (!googleToken) {
@@ -463,6 +464,17 @@ app.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
     const googleId = userInfo.id
     const email = userInfo.email
     const name = userInfo.name
+
+    // If user was pre-verified by name, link directly
+    if (confirmedUserName) {
+      await pool.query(
+        'UPDATE accounts SET google_id = $1, email = $2 WHERE LOWER(user_name) = LOWER($3)',
+        [googleId, email, confirmedUserName]
+      )
+      console.log(`Linked Google ID to verified account: ${confirmedUserName}`)
+      const token = generateToken(confirmedUserName, browserId)
+      return res.json({ userName: confirmedUserName, email, token })
+    }
 
     // Find existing account by Google ID first
     let account = await pool.query(
@@ -491,6 +503,20 @@ app.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
         userName = existingUserName
         console.log(`Linked ${email} to Google ID, username: ${userName}`)
       } else {
+        // Check if there are existing accounts without email (from old system)
+        const accountsWithoutEmail = await pool.query(
+          "SELECT user_name FROM accounts WHERE email IS NULL OR email = ''"
+        )
+
+        if (accountsWithoutEmail.rowCount > 0) {
+          // Prompt to link with existing accounts
+          const accountNames = accountsWithoutEmail.rows.map(row => row.user_name)
+          return res.status(400).json({
+            error: 'Account linking needed',
+            potentialAccounts: accountNames
+          })
+        }
+
         // New user - require name
         if (!providedUserName) {
           return res.status(400).json({ error: 'New user requires name', isNewUser: true })
@@ -519,6 +545,77 @@ app.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
   } catch (error) {
     console.error('Google OAuth verification failed:', error)
     return res.status(400).json({ error: 'Invalid Google token' })
+  }
+})
+
+app.post('/api/auth/verify-account', async (req, res) => {
+  try {
+    const { userName } = req.body
+
+    if (!userName) {
+      return res.status(400).json({ error: 'User name is required' })
+    }
+
+    const account = await pool.query(
+      'SELECT user_name FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+      [userName]
+    )
+
+    if (account.rowCount > 0) {
+      return res.json({ exists: true, userName: account.rows[0].user_name })
+    } else {
+      return res.status(404).json({ exists: false })
+    }
+  } catch (error) {
+    console.error('Account verification failed:', error)
+    return res.status(400).json({ error: 'Account verification failed' })
+  }
+})
+
+app.post('/api/auth/google/confirm-account', async (req, res) => {
+  try {
+    const { token: googleAccessToken, browserId, confirmedUserName } = req.body
+
+    if (!googleAccessToken || !confirmedUserName) {
+      return res.status(400).json({ error: 'Missing required fields' })
+    }
+
+    // Get user info from Google
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${googleAccessToken}` }
+    })
+
+    if (!userInfoResponse.ok) {
+      return res.status(400).json({ error: 'Invalid Google token' })
+    }
+
+    const userInfo = await userInfoResponse.json()
+    const googleId = userInfo.id
+    const email = userInfo.email
+
+    // Verify the confirmed user exists
+    const userExists = await pool.query(
+      'SELECT user_name FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+      [confirmedUserName]
+    )
+
+    if (userExists.rowCount === 0) {
+      return res.status(400).json({ error: 'User not found' })
+    }
+
+    // Update the account to link Google ID and email
+    await pool.query(
+      'UPDATE accounts SET google_id = $1, email = $2 WHERE LOWER(user_name) = LOWER($3)',
+      [googleId, email, confirmedUserName]
+    )
+
+    console.log(`Linked Google ID to existing account: ${confirmedUserName}`)
+
+    const token = generateToken(confirmedUserName, browserId)
+    return res.json({ userName: confirmedUserName, email, token })
+  } catch (error) {
+    console.error('Account confirmation failed:', error)
+    return res.status(400).json({ error: 'Account linking failed' })
   }
 })
 
