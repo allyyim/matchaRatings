@@ -2956,9 +2956,12 @@ function App() {
               >
                 My Matcha Preferences
               </button>
+            </div>
+
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
               <button
                 type="button"
-                className="btn btn-link btn-sm text-start p-0 w-100 mt-2"
+                className="btn btn-link btn-sm text-start p-0 w-100"
                 onClick={async () => {
                   const shareData = {
                     title: 'Matcha Ratings',
@@ -2982,9 +2985,25 @@ function App() {
               >
                 Share App
               </button>
+            </div>
+
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
               <button
                 type="button"
-                className="btn btn-link btn-sm text-start p-0 w-100 mt-2"
+                className="btn btn-link btn-sm text-start p-0 w-100"
+                onClick={() => {
+                  window.open('https://example.com/privacy-policy', '_blank')
+                }}
+                style={{ textDecoration: 'none', color: '#198754' }}
+              >
+                Privacy Policy
+              </button>
+            </div>
+
+            <div style={{ padding: '0.75rem', flexShrink: 0 }}>
+              <button
+                type="button"
+                className="btn btn-link btn-sm text-start p-0 w-100"
                 onClick={() => {
                   signOut()
                   setIsProfileDrawerOpen(false)
