@@ -1449,6 +1449,24 @@ function App() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!isPreferencesModalOpen) return
+
+    async function loadPreferences() {
+      try {
+        const res = await apiFetch('/api/preferences')
+        const data = await res.json()
+        if (data?.flavors) {
+          setUserFlavors(data.flavors)
+        }
+      } catch (error) {
+        console.error('Failed to load preferences:', error)
+      }
+    }
+
+    loadPreferences()
+  }, [isPreferencesModalOpen])
+
   function updateRatingFromClick(starIndex: number, event: MouseEvent<HTMLButtonElement>) {
     const bounds = event.currentTarget.getBoundingClientRect()
     const clickX = event.clientX - bounds.left
