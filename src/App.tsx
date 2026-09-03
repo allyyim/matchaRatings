@@ -2994,11 +2994,11 @@ function App() {
                       fontSize: '0.8rem',
                       padding: '0.375rem 0.75rem',
                       borderRadius: '0.5rem',
-                      border: '1px solid ' + (userFlavors.includes(flavor) ? 'rgba(38, 133, 120, 0.4)' : 'rgba(176, 222, 214, 0.3)'),
+                      border: '1px solid ' + (userFlavors.includes(flavor) ? 'rgba(0, 150, 136, 0.5)' : 'rgba(176, 222, 214, 0.3)'),
                       background: userFlavors.includes(flavor)
-                        ? 'linear-gradient(135deg, #268578 0%, #2d9d8f 100%)'
+                        ? '#0d4f4a'
                         : 'linear-gradient(135deg, #d4ede9 0%, #e0f3f0 100%)',
-                      color: userFlavors.includes(flavor) ? '#ffffff' : '#6b9e95',
+                      color: userFlavors.includes(flavor) ? '#4dd0c1' : '#6b9e95',
                       fontWeight: userFlavors.includes(flavor) ? '600' : '500',
                       cursor: 'pointer'
                     }}
@@ -3034,9 +3034,9 @@ function App() {
                   }
                 }}
                 style={{
-                  background: 'linear-gradient(135deg, #268578 0%, #2d9d8f 100%)',
-                  color: '#ffffff',
-                  border: '1px solid rgba(38, 133, 120, 0.4)',
+                  background: '#0d4f4a',
+                  color: '#4dd0c1',
+                  border: '1px solid rgba(0, 150, 136, 0.5)',
                   fontWeight: '600'
                 }}
               >
