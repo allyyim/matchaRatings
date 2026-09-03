@@ -1857,6 +1857,14 @@ function App() {
                 </svg>
                 {isSubmittingName ? 'Signing in…' : 'Sign in with Google'}
               </button>
+              <div className="text-muted text-center mb-3" style={{ fontSize: '0.9rem' }}>or</div>
+              <button
+                type="button"
+                className="btn btn-outline-success w-100 mb-3"
+                onClick={() => setAuthMode('magic-link')}
+              >
+                Sign in with email
+              </button>
               <button
                 type="button"
                 className="btn btn-link text-muted w-100 p-0 small"
