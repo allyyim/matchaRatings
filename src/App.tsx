@@ -2814,14 +2814,14 @@ function App() {
               className={`btn btn-sm ${activePage === 'friends' ? 'btn-success' : 'btn-outline-success'}`}
               onClick={() => setActivePage('friends')}
             >
-              Friends
+              Community
             </button>
             <button
               type="button"
               className={`btn btn-sm ${activePage === 'explore' ? 'btn-success' : 'btn-outline-success'}`}
               onClick={() => setActivePage('explore')}
             >
-              Explore
+              Leaderboard
             </button>
             <button
               type="button"
@@ -2950,29 +2950,45 @@ function App() {
 
               <div className="mb-3">
                 <label className="form-label fw-semibold d-block">Flavor Profile</label>
-                <div className="small text-muted mb-3">Rate the intensity of each flavor (0 = not present, 100 = very strong)</div>
-                <div className="d-grid gap-2">
-                  {(['bold', 'nutty', 'umami', 'vegetal', 'sweet', 'astringent'] as const).map((flavor) => (
-                    <div key={flavor} className="d-flex align-items-center gap-2">
-                      <label className="form-label small mb-0" style={{ minWidth: '80px', textTransform: 'capitalize' }}>
-                        {flavor}:
-                      </label>
-                      <input
-                        type="range"
-                        className="form-range"
-                        min="0"
-                        max="100"
-                        value={ratingFlavorPrefs[flavor]}
-                        onChange={(e) => setRatingFlavorPrefs({
-                          ...ratingFlavorPrefs,
-                          [flavor]: Number(e.target.value)
-                        })}
-                      />
-                      <span className="small text-muted" style={{ minWidth: '35px' }}>
-                        {ratingFlavorPrefs[flavor]}
-                      </span>
-                    </div>
-                  ))}
+                <div className="small text-muted mb-3">Click bubbles to add flavors (click again to increase intensity)</div>
+                <div className="d-flex flex-wrap gap-2">
+                  {(['bold', 'nutty', 'umami', 'vegetal', 'sweet', 'astringent'] as const).map((flavor) => {
+                    const intensity = ratingFlavorPrefs[flavor]
+                    const isActive = intensity > 0
+                    const opacity = Math.min(1, intensity / 100 + 0.3)
+                    const scale = 1 + (intensity / 100) * 0.2
+
+                    return (
+                      <button
+                        key={flavor}
+                        type="button"
+                        className="btn"
+                        style={{
+                          backgroundColor: isActive ? '#20c997' : '#e9ecef',
+                          color: isActive ? 'white' : '#666',
+                          border: 'none',
+                          borderRadius: '20px',
+                          padding: '0.5rem 1rem',
+                          opacity: opacity,
+                          transform: `scale(${scale})`,
+                          transformOrigin: 'center',
+                          transition: 'all 0.2s ease',
+                          textTransform: 'capitalize',
+                          fontSize: '0.9rem',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => {
+                          const newIntensity = intensity >= 100 ? 0 : Math.min(100, intensity + 33)
+                          setRatingFlavorPrefs({
+                            ...ratingFlavorPrefs,
+                            [flavor]: newIntensity
+                          })
+                        }}
+                      >
+                        {flavor}
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
 
