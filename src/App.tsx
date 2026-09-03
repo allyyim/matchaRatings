@@ -608,7 +608,7 @@ function App() {
   const [isSubmittingName, setIsSubmittingName] = useState(false)
   const [isUserReady, setIsUserReady] = useState(false)
   const [authError, setAuthError] = useState('')
-  const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser' | 'confirm-account'>('choice')
+  const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser' | 'confirm-account' | 'magic-link'>('choice')
   const [welcomeMessage, setWelcomeMessage] = useState('')
   const [potentialAccounts, setPotentialAccounts] = useState<string[]>([])
   const [selectedPotentialAccount, setSelectedPotentialAccount] = useState<string | null>(null)
@@ -677,6 +677,17 @@ function App() {
   const [isFriendSearchOpen, setIsFriendSearchOpen] = useState(false)
   const [isRatingDragActive, setIsRatingDragActive] = useState(false)
   const [isEditRatingDragActive, setIsEditRatingDragActive] = useState(false)
+
+  // Phase 2 & 3 features
+  const [pendingMagicEmail, setPendingMagicEmail] = useState('')
+  const [isMagicLinkSent, setIsMagicLinkSent] = useState(false)
+  const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false)
+  const [userFlavors, setUserFlavors] = useState<string[]>([])
+  const [userMilkTypes, setUserMilkTypes] = useState<string[]>([])
+  const [userCountries, setUserCountries] = useState<string[]>([])
+  const [followingSet, setFollowingSet] = useState<Set<string>>(new Set())
+  const [likedRatingsSet, setLikedRatingsSet] = useState<Set<number>>(new Set())
+  const [ratingLikeCounts, setRatingLikeCounts] = useState<Map<number, number>>(new Map())
 
   const showLoadingOverlay = isSavingEntry || isLoadingFriendRatings || isLoadingExplorePlaces
   const loadingOverlayText = isSavingEntry
@@ -968,6 +979,37 @@ function App() {
       setShowOnboarding(true)
     }
   }, [isUserReady, myEntries.length])
+
+  useEffect(() => {
+    // Handle magic link verification from URL
+    const params = new URLSearchParams(window.location.search)
+    const authToken = params.get('authToken')
+    const purpose = params.get('purpose')
+
+    if (authToken && purpose === 'login') {
+      const verifyMagicLink = async () => {
+        try {
+          setIsSubmittingName(true)
+          const response = await apiFetch<{ userName: string; email: string; token: string }>('/auth/verify', {
+            method: 'POST',
+            body: JSON.stringify({ token: authToken, browserId })
+          })
+          setSessionToken(response.token || '')
+          localStorage.setItem('matchaUserName', response.userName)
+          setCurrentUserName(response.userName)
+          setIsUserReady(true)
+          window.history.replaceState({}, document.title, window.location.pathname)
+          void loadDrinkAreaModel().catch(() => undefined)
+        } catch (error) {
+          setAuthError(error instanceof Error ? error.message : 'Magic link verification failed')
+          window.history.replaceState({}, document.title, window.location.pathname)
+        } finally {
+          setIsSubmittingName(false)
+        }
+      }
+      void verifyMagicLink()
+    }
+  }, [browserId])
 
   function signOut() {
     setSessionToken('')
@@ -1818,6 +1860,14 @@ function App() {
                 </svg>
                 {isSubmittingName ? 'Signing up…' : 'Sign up with Google'}
               </button>
+              <div className="text-muted text-center mb-3" style={{ fontSize: '0.9rem' }}>or</div>
+              <button
+                type="button"
+                className="btn btn-outline-success w-100 mb-3"
+                onClick={() => setAuthMode('magic-link')}
+              >
+                Sign up with email
+              </button>
               <button
                 type="button"
                 className="btn btn-link text-muted w-100 p-0 small"
@@ -1898,6 +1948,88 @@ function App() {
                 }}
               >
                 This isn't me, create new account
+              </button>
+              {authError && <div className="alert alert-danger border mt-3 mb-0 small">{authError}</div>}
+            </div>
+          </section>
+        ) : authMode === 'magic-link' ? (
+          <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
+            <div className="card-body p-3 p-md-4">
+              <div className="text-center mb-4">
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>✉️</div>
+                <h1 className="h4 fw-bold text-success mb-1">{isMagicLinkSent ? 'Check your email' : 'Sign up with email'}</h1>
+              </div>
+              {!isMagicLinkSent ? (
+                <>
+                  <p className="text-muted mb-4 text-center small">
+                    Enter your email to get a sign-up link
+                  </p>
+                  <form onSubmit={async (e) => {
+                    e.preventDefault()
+                    if (!pendingMagicEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pendingMagicEmail)) {
+                      setAuthError('Please enter a valid email')
+                      return
+                    }
+                    try {
+                      setIsSubmittingName(true)
+                      setAuthError('')
+                      await apiFetch<{ ok: boolean }>('/auth/request-link', {
+                        method: 'POST',
+                        body: JSON.stringify({ email: pendingMagicEmail })
+                      })
+                      setIsMagicLinkSent(true)
+                    } catch (error) {
+                      setAuthError(error instanceof Error ? error.message : 'Failed to send magic link')
+                    } finally {
+                      setIsSubmittingName(false)
+                    }
+                  }}>
+                    <input
+                      type="email"
+                      className="form-control mb-3"
+                      value={pendingMagicEmail}
+                      onChange={(e) => setPendingMagicEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      autoFocus
+                    />
+                    <button
+                      type="submit"
+                      className="btn btn-success w-100"
+                      disabled={!pendingMagicEmail || isSubmittingName}
+                    >
+                      {isSubmittingName ? 'Sending…' : 'Send link'}
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <>
+                  <p className="text-muted mb-4 text-center small">
+                    We've sent a link to <strong>{pendingMagicEmail}</strong>. Click it to sign up.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn btn-outline-success w-100"
+                    onClick={() => {
+                      setIsMagicLinkSent(false)
+                      setPendingMagicEmail('')
+                      setAuthError('')
+                    }}
+                  >
+                    Didn't receive it? Try again
+                  </button>
+                </>
+              )}
+              <button
+                type="button"
+                className="btn btn-link text-muted w-100 p-0 small mt-3"
+                onClick={() => {
+                  setAuthMode('choice')
+                  setIsMagicLinkSent(false)
+                  setPendingMagicEmail('')
+                  setAuthError('')
+                }}
+              >
+                ← Back
               </button>
               {authError && <div className="alert alert-danger border mt-3 mb-0 small">{authError}</div>}
             </div>
@@ -2426,6 +2558,86 @@ function App() {
         document.body
       )}
 
+      {isPreferencesModalOpen && createPortal(
+        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => setIsPreferencesModalOpen(false)}>
+          <div className="modal-card card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="card-header bg-white border-bottom d-flex align-items-center p-4">
+              <h3 className="h5 fw-bold text-success mb-0" style={{ flexShrink: 0 }}>Preferences</h3>
+              <button
+                type="button"
+                className="btn btn-link text-muted p-0"
+                onClick={() => setIsPreferencesModalOpen(false)}
+                style={{ marginLeft: 'auto', flexShrink: 0 }}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="card-body p-4">
+              <div className="mb-4">
+                <label className="form-label fw-semibold text-success mb-2">Flavor Preferences</label>
+                <div className="d-flex flex-wrap gap-2">
+                  {['bold', 'nutty', 'umami', 'vegetal', 'sweet', 'astringent'].map((flavor) => (
+                    <button
+                      key={flavor}
+                      type="button"
+                      className={`btn btn-sm ${userFlavors.includes(flavor) ? 'btn-success' : 'btn-outline-success'}`}
+                      onClick={() => setUserFlavors(userFlavors.includes(flavor)
+                        ? userFlavors.filter(f => f !== flavor)
+                        : [...userFlavors, flavor]
+                      )}
+                    >
+                      {flavor}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="mb-4">
+                <label className="form-label fw-semibold text-success mb-2">Milk Types</label>
+                <div className="d-flex flex-wrap gap-2">
+                  {['oat', 'whole', 'almond', 'soy'].map((milk) => (
+                    <button
+                      key={milk}
+                      type="button"
+                      className={`btn btn-sm ${userMilkTypes.includes(milk) ? 'btn-success' : 'btn-outline-success'}`}
+                      onClick={() => setUserMilkTypes(userMilkTypes.includes(milk)
+                        ? userMilkTypes.filter(m => m !== milk)
+                        : [...userMilkTypes, milk]
+                      )}
+                    >
+                      {milk}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="card-footer bg-white border-top p-4">
+              <button
+                type="button"
+                className="btn btn-success w-100"
+                onClick={async () => {
+                  try {
+                    await apiFetch('/preferences', {
+                      method: 'POST',
+                      body: JSON.stringify({
+                        flavors: userFlavors,
+                        milk_type: userMilkTypes,
+                        visited_countries: userCountries
+                      })
+                    })
+                    setIsPreferencesModalOpen(false)
+                  } catch (error) {
+                    alert(error instanceof Error ? error.message : 'Failed to save preferences')
+                  }
+                }}
+              >
+                Save Preferences
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top soft-nav" aria-label="Main navigation">
         <div className="container d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-2">
           <div className="d-flex flex-column w-100">
@@ -2466,6 +2678,14 @@ function App() {
               onClick={() => setActivePage('explore')}
             >
               Explore
+            </button>
+            <button
+              type="button"
+              className="btn btn-link btn-sm text-muted p-0"
+              onClick={() => setIsPreferencesModalOpen(true)}
+              title="Preferences"
+            >
+              ⚙️
             </button>
             <button
               type="button"

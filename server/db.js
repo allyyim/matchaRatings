@@ -138,4 +138,65 @@ export async function initDb() {
     CREATE INDEX IF NOT EXISTS idx_browser_users_user_name
     ON browser_users (user_name);
   `)
+
+  // User preferences for personalized filtering and recommendations
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_preferences (
+      id BIGSERIAL PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE REFERENCES accounts(email) ON DELETE CASCADE,
+      flavors JSONB DEFAULT '[]',
+      milk_type JSONB DEFAULT '[]',
+      visited_countries JSONB DEFAULT '[]',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_user_preferences_email
+    ON user_preferences (email);
+  `)
+
+  // Follow relationships for social features
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS follows (
+      id BIGSERIAL PRIMARY KEY,
+      follower_email TEXT NOT NULL REFERENCES accounts(email) ON DELETE CASCADE,
+      following_email TEXT NOT NULL REFERENCES accounts(email) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(follower_email, following_email),
+      CHECK (follower_email != following_email)
+    );
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_follows_follower
+    ON follows (follower_email);
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_follows_following
+    ON follows (following_email);
+  `)
+
+  // Likes on ratings for social engagement
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS rating_likes (
+      id BIGSERIAL PRIMARY KEY,
+      rating_id BIGINT NOT NULL REFERENCES ratings(id) ON DELETE CASCADE,
+      email TEXT NOT NULL REFERENCES accounts(email) ON DELETE CASCADE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(rating_id, email)
+    );
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_rating_likes_rating
+    ON rating_likes (rating_id);
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_rating_likes_email
+    ON rating_likes (email);
+  `)
 }

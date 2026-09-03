@@ -1133,6 +1133,122 @@ app.get('/api/explore/users', async (req, res) => {
   }
 })
 
+// User preferences endpoints
+app.get('/api/preferences', async (req, res) => {
+  const email = req.body?.email || (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
+  if (!email) return res.status(404).json({ error: 'User not found' })
+
+  const result = await pool.query('SELECT * FROM user_preferences WHERE email = $1', [email])
+  const prefs = result.rows[0] || { flavors: [], milk_type: [], visited_countries: [] }
+  return res.json(prefs)
+})
+
+app.post('/api/preferences', async (req, res) => {
+  const email = req.body?.email || (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
+  if (!email) return res.status(404).json({ error: 'User not found' })
+
+  const flavors = Array.isArray(req.body?.flavors) ? req.body.flavors : []
+  const milkType = Array.isArray(req.body?.milk_type) ? req.body.milk_type : []
+  const visitedCountries = Array.isArray(req.body?.visited_countries) ? req.body.visited_countries : []
+
+  const result = await pool.query(
+    `INSERT INTO user_preferences (email, flavors, milk_type, visited_countries, updated_at)
+     VALUES ($1, $2, $3, $4, NOW())
+     ON CONFLICT (email) DO UPDATE SET flavors = $2, milk_type = $3, visited_countries = $4, updated_at = NOW()
+     RETURNING *`,
+    [email, JSON.stringify(flavors), JSON.stringify(milkType), JSON.stringify(visitedCountries)]
+  )
+  return res.json(result.rows[0])
+})
+
+// Follow/unfollow endpoints
+app.post('/api/follows/:targetUserName', async (req, res) => {
+  const followerEmail = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
+  if (!followerEmail) return res.status(404).json({ error: 'Your account not found' })
+
+  const followingEmail = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.params.targetUserName])).rows[0]?.email
+  if (!followingEmail) return res.status(404).json({ error: 'Target user not found' })
+  if (followerEmail === followingEmail) return res.status(400).json({ error: 'Cannot follow yourself' })
+
+  try {
+    await pool.query(
+      `INSERT INTO follows (follower_email, following_email) VALUES ($1, $2)`,
+      [followerEmail, followingEmail]
+    )
+    return res.json({ ok: true })
+  } catch (error) {
+    if ((error).code === '23505') return res.status(409).json({ error: 'Already following' })
+    throw error
+  }
+})
+
+app.delete('/api/follows/:targetUserName', async (req, res) => {
+  const followerEmail = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
+  if (!followerEmail) return res.status(404).json({ error: 'Your account not found' })
+
+  const followingEmail = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.params.targetUserName])).rows[0]?.email
+  if (!followingEmail) return res.status(404).json({ error: 'Target user not found' })
+
+  await pool.query(
+    `DELETE FROM follows WHERE follower_email = $1 AND following_email = $2`,
+    [followerEmail, followingEmail]
+  )
+  return res.json({ ok: true })
+})
+
+app.get('/api/follows/check/:targetUserName', async (req, res) => {
+  const followerEmail = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
+  if (!followerEmail) return res.status(404).json({ error: 'Your account not found' })
+
+  const followingEmail = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.params.targetUserName])).rows[0]?.email
+  if (!followingEmail) return res.status(404).json({ error: 'Target user not found' })
+
+  const result = await pool.query(
+    `SELECT 1 FROM follows WHERE follower_email = $1 AND following_email = $2`,
+    [followerEmail, followingEmail]
+  )
+  return res.json({ isFollowing: result.rowCount > 0 })
+})
+
+// Like/unlike rating endpoints
+app.post('/api/ratings/:ratingId/like', async (req, res) => {
+  const ratingId = Number(req.params.ratingId)
+  const email = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
+  if (!email) return res.status(404).json({ error: 'Your account not found' })
+
+  try {
+    await pool.query(
+      `INSERT INTO rating_likes (rating_id, email) VALUES ($1, $2)`,
+      [ratingId, email]
+    )
+    return res.json({ ok: true })
+  } catch (error) {
+    if ((error).code === '23505') return res.status(409).json({ error: 'Already liked' })
+    throw error
+  }
+})
+
+app.delete('/api/ratings/:ratingId/like', async (req, res) => {
+  const ratingId = Number(req.params.ratingId)
+  const email = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
+  if (!email) return res.status(404).json({ error: 'Your account not found' })
+
+  await pool.query(
+    `DELETE FROM rating_likes WHERE rating_id = $1 AND email = $2`,
+    [ratingId, email]
+  )
+  return res.json({ ok: true })
+})
+
+app.get('/api/ratings/:ratingId/likes', async (req, res) => {
+  const ratingId = Number(req.params.ratingId)
+  const result = await pool.query(
+    `SELECT COUNT(*) as count FROM rating_likes WHERE rating_id = $1`,
+    [ratingId]
+  )
+  return res.json({ likeCount: Number(result.rows[0].count) })
+})
+
 app.use((err, _req, res, _next) => {
   console.error(err)
   res.status(500).json({ error: 'Internal server error' })
