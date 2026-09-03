@@ -3554,38 +3554,41 @@ function App() {
               <h2 className="h3 fw-bold text-success mb-4">Explore</h2>
 
               {/* Navigation Tabs */}
-              <div className="nav nav-tabs border-bottom mb-4" role="tablist">
+              <div className="d-flex gap-3 mb-4" style={{ borderBottom: '1px solid #e9ecef' }}>
                 <button
                   type="button"
-                  className={`nav-link ${communityActiveTab === 'search' ? 'active' : ''}`}
+                  className={`btn btn-link p-0 fw-semibold ${communityActiveTab === 'search' ? 'text-success' : 'text-muted'}`}
                   onClick={() => {
                     setCommunityActiveTab('search')
                     setSelectedFriend('')
                   }}
+                  style={{ textDecoration: 'none', borderBottom: communityActiveTab === 'search' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
                 >
                   Search Users
                 </button>
                 <button
                   type="button"
-                  className={`nav-link ${communityActiveTab === 'following' ? 'active' : ''}`}
+                  className={`btn btn-link p-0 fw-semibold ${communityActiveTab === 'following' ? 'text-success' : 'text-muted'}`}
                   onClick={() => {
                     setCommunityActiveTab('following')
                     setSelectedFriend('')
                     setFriendSuggestions([])
                     setFriendQuery('')
                   }}
+                  style={{ textDecoration: 'none', borderBottom: communityActiveTab === 'following' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
                 >
                   Following ({followingSet.size})
                 </button>
                 <button
                   type="button"
-                  className={`nav-link ${communityActiveTab === 'recommendations' ? 'active' : ''}`}
+                  className={`btn btn-link p-0 fw-semibold ${communityActiveTab === 'recommendations' ? 'text-success' : 'text-muted'}`}
                   onClick={() => {
                     setCommunityActiveTab('recommendations')
                     setSelectedFriend('')
                     setFriendSuggestions([])
                     setFriendQuery('')
                   }}
+                  style={{ textDecoration: 'none', borderBottom: communityActiveTab === 'recommendations' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
                 >
                   Recs
                 </button>

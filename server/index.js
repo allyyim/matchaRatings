@@ -1067,6 +1067,7 @@ app.get('/api/friends/search', async (req, res) => {
       [`%${q}%`]
     )
 
+    console.log('Search query:', q, 'Results found:', result.rows.length)
     return res.json({ friends: result.rows.map((r) => ({ userName: r.user_name, placeCount: Number(r.place_count) })) })
   } catch (error) {
     console.error('Search failed:', error)
