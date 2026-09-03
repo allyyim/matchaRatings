@@ -1996,9 +1996,6 @@ main.login-page {
 
 .bottom-nav-btn.active {
   color: var(--primary-green);
-  border: 1.5px solid var(--accent-teal);
-  border-radius: 8px;
-  padding: 0.4rem 0.5rem;
 }
 
 .bottom-nav-btn.active span:first-child {

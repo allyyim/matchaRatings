@@ -1,0 +1,23 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <circle cx="100" cy="100" r="98" fill="#f1fbe6" stroke="#1a9b8e" stroke-width="2"/>
+
+  <!-- Tea cup -->
+  <path d="M 70 60 L 75 130 Q 75 140 85 140 L 115 140 Q 125 140 125 130 L 130 60 Z"
+        fill="none" stroke="#1a9b8e" stroke-width="3" stroke-linejoin="round"/>
+
+  <!-- Matcha tea inside -->
+  <ellipse cx="100" cy="130" rx="28" ry="6" fill="#6b9e95" opacity="0.7"/>
+  <path d="M 72 95 Q 72 115 100 120 Q 128 115 128 95"
+        fill="#8fb5a8" opacity="0.6"/>
+
+  <!-- Cup handle -->
+  <path d="M 130 75 Q 145 75 145 95 Q 145 115 130 115"
+        fill="none" stroke="#1a9b8e" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Star on cup -->
+  <g transform="translate(100, 75)">
+    <path d="M 0 -10 L 2.5 -3 L 10 -3 L 3.5 2 L 6 9 L 0 4 L -6 9 L -3.5 2 L -10 -3 L -2.5 -3 Z"
+          fill="#20c997" stroke="#1a9b8e" stroke-width="0.5"/>
+  </g>
+</svg>

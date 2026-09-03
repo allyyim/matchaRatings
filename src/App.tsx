@@ -4304,9 +4304,10 @@ function App() {
           title="Leaderboard"
         >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M6 9l6-7 6 7"></path>
-            <path d="M9 9v8a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V9"></path>
-            <path d="M6 17h12"></path>
+            <path d="M6 9h1v8H6z"></path>
+            <path d="M9 5h6v12H9z"></path>
+            <path d="M17 7h1v10h-1z"></path>
+            <path d="M3 18h18"></path>
           </svg>
           <span className="label">Leaderboard</span>
         </button>
