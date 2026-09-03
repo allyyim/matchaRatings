@@ -1454,8 +1454,7 @@ function App() {
 
     async function loadPreferences() {
       try {
-        const res = await apiFetch('/api/preferences')
-        const data = await res.json()
+        const data = await apiFetch<{ flavors?: string[] }>('/api/preferences')
         if (data?.flavors) {
           setUserFlavors(data.flavors)
         }
