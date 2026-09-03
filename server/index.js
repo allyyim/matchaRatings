@@ -757,16 +757,24 @@ app.post('/api/admin/delete-user', async (req, res) => {
 
 app.post('/api/admin/fix-ali', async (req, res) => {
   try {
-    const result = await pool.query(
+    // Update accounts table
+    const accountResult = await pool.query(
       `UPDATE accounts SET email = $1 WHERE LOWER(user_name) = LOWER($2) RETURNING user_name, email`,
       ['alisonyim3@gmail.com', 'Ali']
     )
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Ali account not found' })
-    }
+    // Update ratings table - replace @Jarel with Ali
+    const ratingsResult = await pool.query(
+      `UPDATE ratings SET user_name = $1 WHERE user_name = $2 RETURNING id`,
+      ['Ali', '@Jarel']
+    )
 
-    return res.json({ ok: true, message: `Ali linked to alisonyim3@gmail.com`, user: result.rows[0] })
+    return res.json({
+      ok: true,
+      message: `Ali account fixed and ${ratingsResult.rowCount} ratings updated`,
+      accountsUpdated: accountResult.rowCount,
+      ratingsUpdated: ratingsResult.rowCount
+    })
   } catch (error) {
     console.error('Fix Ali failed:', error)
     return res.status(400).json({ error: 'Failed to fix Ali account' })
