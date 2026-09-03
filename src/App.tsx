@@ -684,7 +684,7 @@ function App() {
   const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false)
   const [userFlavors, setUserFlavors] = useState<string[]>([])
   const [userMilkTypes, setUserMilkTypes] = useState<string[]>([])
-  const [followingSet, setFollowingSet] = useState<Set<string>>(new Set())
+  const [userCountries, setUserCountries] = useState('')
   const [likedRatingsSet, setLikedRatingsSet] = useState<Set<number>>(new Set())
 
   const showLoadingOverlay = isSavingEntry || isLoadingFriendRatings || isLoadingExplorePlaces
@@ -2641,6 +2641,18 @@ function App() {
                     ))}
                   </div>
                 </div>
+
+                <div className="mt-3">
+                  <label className="form-label fw-semibold small mb-2">Countries/States Visited</label>
+                  <input
+                    type="text"
+                    className="form-control form-control-sm"
+                    placeholder="e.g., Japan, California, Kyoto"
+                    value={userCountries}
+                    onChange={(e) => setUserCountries(e.target.value)}
+                  />
+                  <small className="text-muted d-block mt-1">Comma-separated list of places you've hunted for matcha</small>
+                </div>
               </div>
             </div>
 
@@ -2655,7 +2667,7 @@ function App() {
                       body: JSON.stringify({
                         flavors: userFlavors,
                         milk_type: userMilkTypes,
-                        visited_countries: []
+                        visited_countries: userCountries.split(',').map(c => c.trim()).filter(c => c)
                       })
                     })
                   } catch (error) {
@@ -2744,7 +2756,7 @@ function App() {
                       body: JSON.stringify({
                         flavors: userFlavors,
                         milk_type: userMilkTypes,
-                        visited_countries: []
+                        visited_countries: userCountries.split(',').map(c => c.trim()).filter(c => c)
                       })
                     })
                     setIsPreferencesModalOpen(false)
