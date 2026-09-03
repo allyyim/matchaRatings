@@ -2866,7 +2866,7 @@ function App() {
               flexDirection: 'column'
             }}
           >
-            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef' }}>
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
               <button
                 type="button"
                 className="btn btn-link text-muted p-0"
@@ -2878,7 +2878,7 @@ function App() {
               <h6 className="fw-bold text-success mb-0">{currentUserName}</h6>
             </div>
 
-            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef' }}>
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
               <button
                 type="button"
                 className="btn btn-link btn-sm text-start p-0 w-100"
@@ -2889,7 +2889,7 @@ function App() {
               </button>
             </div>
 
-            <div style={{ padding: '0.75rem', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ padding: '0.75rem', flex: 1, minHeight: 0 }}>
               <div>
                 <button
                   type="button"

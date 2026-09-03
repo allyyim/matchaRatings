@@ -720,15 +720,16 @@ app.post('/api/admin/delete-user', async (req, res) => {
     }
 
     // Delete all related data
-    const userResult = await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [userName])
+    const userResult = await pool.query('SELECT email, user_name FROM accounts WHERE LOWER(user_name) = LOWER($1)', [userName])
     if (userResult.rowCount === 0) {
       return res.status(404).json({ error: 'User not found' })
     }
 
     const email = userResult.rows[0].email
+    const actualUserName = userResult.rows[0].user_name
 
     // Delete ratings
-    await pool.query('DELETE FROM ratings WHERE user_name = $1', [userName])
+    await pool.query('DELETE FROM ratings WHERE LOWER(user_name) = LOWER($1)', [actualUserName])
 
     // Delete follows
     await pool.query('DELETE FROM follows WHERE follower_email = $1 OR following_email = $1', [email])
@@ -740,7 +741,7 @@ app.post('/api/admin/delete-user', async (req, res) => {
     await pool.query('DELETE FROM user_preferences WHERE email = $1', [email])
 
     // Delete browser users
-    await pool.query('DELETE FROM browser_users WHERE user_name = $1', [userName])
+    await pool.query('DELETE FROM browser_users WHERE LOWER(user_name) = LOWER($1)', [actualUserName])
 
     // Delete login tokens
     await pool.query('DELETE FROM login_tokens WHERE email = $1', [email])
@@ -1088,7 +1089,7 @@ app.get('/api/friends/:friendName/ratings', async (req, res) => {
     `
       SELECT *
       FROM ratings
-      WHERE user_name = $1
+      WHERE LOWER(user_name) = LOWER($1)
       ORDER BY ((rating * 20) + (greenness * CASE WHEN rating >= 4 THEN ${FULL_GREENNESS_WEIGHT} ELSE ${LOW_RATING_GREENNESS_WEIGHT} END)) DESC, created_at DESC
     `,
     [friendName]
