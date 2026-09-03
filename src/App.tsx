@@ -3199,7 +3199,7 @@ function App() {
       )}
 
       <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top soft-nav" aria-label="Main navigation">
-        <div className="container d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-2">
+        <div className="container d-flex flex-column flex-lg-row justify-content-between align-items-center gap-2">
           <div className="d-flex flex-column w-100">
             <div className="d-flex justify-content-between align-items-center w-100">
               <span className="navbar-brand fw-semibold text-success mb-0">Sip &amp; Score</span>
@@ -3262,7 +3262,7 @@ function App() {
       </nav>
 
       {activePage === 'home' && (
-        <main id="main-content" className="container py-4 py-md-5 px-3 px-md-4" tabIndex={-1}>
+        <main id="main-content" className="container py-5 py-md-5 px-3 px-md-4" tabIndex={-1}>
           <div className="card shadow-sm border-0 matcha-shell">
             <div className="card-body p-3 p-md-4">
               <h1 className="display-6 fw-bold mb-3 text-success">New Log</h1>
