@@ -500,8 +500,8 @@ app.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
           'UPDATE accounts SET google_id = $1 WHERE email = $2',
           [googleId, email]
         )
-        userName = existingUserName
-        console.log(`Linked ${email} to Google ID, username: ${userName}`)
+        userName = `@${existingUserName}`
+        console.log(`Linked ${email} to Google ID, username: ${existingUserName}`)
       } else {
         // Check if there are existing accounts without email (from old system)
         const accountsWithoutEmail = await pool.query(
@@ -611,8 +611,9 @@ app.post('/api/auth/google/confirm-account', async (req, res) => {
 
     console.log(`Linked Google ID to existing account: ${confirmedUserName}`)
 
-    const token = generateToken(confirmedUserName, browserId)
-    return res.json({ userName: confirmedUserName, email, token })
+    const prefixedName = `@${confirmedUserName}`
+    const token = generateToken(prefixedName, browserId)
+    return res.json({ userName: prefixedName, email, token })
   } catch (error) {
     console.error('Account confirmation failed:', error)
     return res.status(400).json({ error: 'Account linking failed' })

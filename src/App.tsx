@@ -607,7 +607,7 @@ function App() {
   const [isSubmittingName, setIsSubmittingName] = useState(false)
   const [isUserReady, setIsUserReady] = useState(false)
   const [authError, setAuthError] = useState('')
-  const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser' | 'lookup-account' | 'confirm-account'>('choice')
+  const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser' | 'confirm-account'>('choice')
   const [welcomeMessage, setWelcomeMessage] = useState('')
   const [potentialAccounts, setPotentialAccounts] = useState<string[]>([])
   const [selectedPotentialAccount, setSelectedPotentialAccount] = useState<string | null>(null)
@@ -1725,15 +1725,15 @@ function App() {
                 <p className="text-muted small">Track your matcha journey, one sip at a time</p>
               </div>
               <p className="text-muted mb-4 text-center small">
-                Whether you're a matcha enthusiast or just starting, let's rate every tea experience together.
+                Rate your matcha, track your favorites, and explore what others love.
               </p>
               <button
                 type="button"
                 className="btn btn-success w-100 mb-2 fw-semibold"
-                onClick={() => setAuthMode('lookup-account')}
+                onClick={() => setAuthMode('signin')}
                 style={{ padding: '0.875rem 1rem', fontSize: '1.05rem' }}
               >
-                Back for more
+                I already have an account
               </button>
               <button
                 type="button"
@@ -1745,69 +1745,72 @@ function App() {
               </button>
             </div>
           </section>
-        ) : authMode === 'lookup-account' ? (
+        ) : authMode === 'signin' ? (
           <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
             <div className="card-body p-3 p-md-4">
               <div className="text-center mb-4">
                 <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🍵</div>
-                <h1 className="h4 fw-bold text-success mb-1">Find your account</h1>
+                <h1 className="h4 fw-bold text-success mb-1">Welcome back</h1>
               </div>
               <p className="text-muted mb-4 text-center small">
-                What's your matcha name?
+                Sign in with Google to access your ratings
               </p>
-              <form onSubmit={async (e) => {
-                e.preventDefault()
-                const name = pendingUserName.trim()
-                if (!name) {
-                  setAuthError('Please enter your name')
-                  return
-                }
-                try {
-                  setIsSubmittingName(true)
-                  setAuthError('')
-                  const response = await apiFetch<{ exists: boolean; userName: string }>('/auth/verify-account', {
-                    method: 'POST',
-                    body: JSON.stringify({ userName: name })
-                  })
-                  if (response.exists) {
-                    setVerifiedAccountName(response.userName)
-                    setAuthMode('signin')
-                  } else {
-                    setAuthError('Account not found. Check the spelling and try again.')
-                  }
-                } catch (error) {
-                  setAuthError(error instanceof Error ? error.message : 'Failed to find account')
-                } finally {
-                  setIsSubmittingName(false)
-                }
-              }}>
-                <input
-                  type="text"
-                  className="form-control mb-3"
-                  placeholder="Enter your name"
-                  value={pendingUserName}
-                  onChange={(e) => setPendingUserName(e.target.value)}
-                  disabled={isSubmittingName}
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  className="btn btn-success w-100 mb-2"
-                  disabled={isSubmittingName}
-                >
-                  {isSubmittingName ? 'Looking up…' : 'Continue'}
-                </button>
-              </form>
+              <button
+                type="button"
+                className="btn btn-light w-100 d-flex align-items-center justify-content-center gap-2 mb-3"
+                onClick={() => googleLogin()}
+                disabled={isSubmittingName}
+                style={{ border: '1px solid #e0e0e0', padding: '0.875rem' }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24">
+                  <text x="2" y="16" fontSize="14" fill="#1f5f34">G</text>
+                </svg>
+                {isSubmittingName ? 'Signing in…' : 'Sign in with Google'}
+              </button>
               <button
                 type="button"
                 className="btn btn-link text-muted w-100 p-0 small"
                 onClick={() => {
                   setAuthMode('choice')
-                  setPendingUserName('')
                   setAuthError('')
                 }}
               >
-                ← Back to options
+                ← Back
+              </button>
+              {authError && <div className="alert alert-danger border mt-3 mb-0 small">{authError}</div>}
+            </div>
+          </section>
+        ) : authMode === 'newuser' ? (
+          <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
+            <div className="card-body p-3 p-md-4">
+              <div className="text-center mb-4">
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🍵</div>
+                <h1 className="h4 fw-bold text-success mb-1">Let's begin</h1>
+              </div>
+              <p className="text-muted mb-4 text-center small">
+                Sign up with Google to start rating matcha
+              </p>
+              <button
+                type="button"
+                className="btn btn-light w-100 d-flex align-items-center justify-content-center gap-2 mb-3"
+                onClick={() => googleLogin()}
+                disabled={isSubmittingName}
+                style={{ border: '1px solid #e0e0e0', padding: '0.875rem' }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24">
+                  <text x="2" y="16" fontSize="14" fill="#1f5f34">G</text>
+                </svg>
+                {isSubmittingName ? 'Signing up…' : 'Sign up with Google'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-link text-muted w-100 p-0 small"
+                onClick={() => {
+                  setAuthMode('choice')
+                  setAuthError('')
+                }}
+              >
+                ← Back
               </button>
               {authError && <div className="alert alert-danger border mt-3 mb-0 small">{authError}</div>}
             </div>
@@ -1820,7 +1823,7 @@ function App() {
                 <h1 className="h4 fw-bold text-success mb-1">Is this you?</h1>
               </div>
               <p className="text-muted mb-4 text-center small">
-                We found an account with your ratings. Is this your account?
+                We found existing account(s). Which one is yours?
               </p>
               <div className="d-flex flex-column gap-2">
                 {potentialAccounts.map((account) => (
@@ -1830,7 +1833,7 @@ function App() {
                     className={`btn w-100 ${selectedPotentialAccount === account ? 'btn-success' : 'btn-outline-success'}`}
                     onClick={() => setSelectedPotentialAccount(account)}
                   >
-                    {account}
+                    @{account}
                   </button>
                 ))}
               </div>
@@ -1851,8 +1854,8 @@ function App() {
                       body: JSON.stringify({ token: googleAccessToken, browserId, confirmedUserName: selectedPotentialAccount })
                     })
                     setSessionToken(response.token || '')
-                    localStorage.setItem('matchaUserName', response.userName)
-                    setCurrentUserName(response.userName)
+                    localStorage.setItem('matchaUserName', `@${response.userName}`)
+                    setCurrentUserName(`@${response.userName}`)
                     setRequiresManualName(false)
                     setIsUserReady(true)
                     setWelcomeMessage(response.userName)
@@ -1878,7 +1881,7 @@ function App() {
                   setAuthError('')
                 }}
               >
-                This isn't me, create new
+                This isn't me, create new account
               </button>
               {authError && <div className="alert alert-danger border mt-3 mb-0 small">{authError}</div>}
             </div>
@@ -1888,38 +1891,69 @@ function App() {
             <div className="card-body p-3 p-md-4">
               <div className="text-center mb-4">
                 <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🍵</div>
-                <h1 className="h4 fw-bold text-success mb-1">{verifiedAccountName ? 'Welcome back' : authMode === 'signin' ? 'Welcome back' : 'Let\'s start'}</h1>
+                <h1 className="h4 fw-bold text-success mb-1">Choose your name</h1>
               </div>
               <p className="text-muted mb-4 text-center small">
-                {verifiedAccountName ? (
-                  `Link your Google account to access your ${verifiedAccountName} ratings`
-                ) : authMode === 'signin' ? (
-                  'Sign in to continue your matcha story'
-                ) : (
-                  'Let\'s start your matcha adventure'
-                )}
+                What would you like to be called?
               </p>
-              <button
-                type="button"
-                className="btn btn-light w-100 d-flex align-items-center justify-content-center gap-2 mb-3"
-                onClick={() => googleLogin()}
-                disabled={isSubmittingName}
-                style={{ border: '1px solid #e0e0e0', padding: '0.75rem' }}
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24">
-                  <text x="2" y="16" fontSize="14" fill="#1f5f34">G</text>
-                </svg>
-                {isSubmittingName ? (authMode === 'signin' ? 'Signing in…' : 'Signing up…') : (authMode === 'signin' ? 'Sign In with Google' : 'Sign Up with Google')}
-              </button>
+              <form onSubmit={async (e) => {
+                e.preventDefault()
+                const name = pendingUserName.trim()
+                if (!name) {
+                  setAuthError('Please enter a name')
+                  return
+                }
+                try {
+                  setIsSubmittingName(true)
+                  setAuthError('')
+                  const googleAccessToken = sessionStorage.getItem('googleAccessToken') || ''
+                  const response = await apiFetch<{ userName: string; email: string; token: string }>('/auth/google/verify', {
+                    method: 'POST',
+                    body: JSON.stringify({ token: googleAccessToken, browserId, userName: name })
+                  })
+                  setSessionToken(response.token || '')
+                  localStorage.setItem('matchaUserName', response.userName)
+                  setCurrentUserName(response.userName)
+                  setRequiresManualName(false)
+                  setIsUserReady(true)
+                  setWelcomeMessage(response.userName)
+                  setPendingUserName('')
+                  setTimeout(() => setWelcomeMessage(''), 1500)
+                  void loadDrinkAreaModel().catch(() => undefined)
+                } catch (error) {
+                  setAuthError(error instanceof Error ? error.message : 'Failed to create account')
+                } finally {
+                  setIsSubmittingName(false)
+                }
+              }}>
+                <input
+                  type="text"
+                  className="form-control mb-3"
+                  placeholder="Enter your name"
+                  value={pendingUserName}
+                  onChange={(e) => setPendingUserName(e.target.value)}
+                  disabled={isSubmittingName}
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="btn btn-success w-100 mb-2"
+                  disabled={isSubmittingName || !pendingUserName.trim()}
+                  style={{ padding: '0.875rem' }}
+                >
+                  {isSubmittingName ? 'Creating account…' : 'Continue'}
+                </button>
+              </form>
               <button
                 type="button"
                 className="btn btn-link text-muted w-100 p-0 small"
                 onClick={() => {
                   setAuthMode('choice')
+                  setPendingUserName('')
                   setAuthError('')
                 }}
               >
-                ← Back to options
+                ← Back
               </button>
               {authError && <div className="alert alert-danger border mt-3 mb-0 small">{authError}</div>}
             </div>
