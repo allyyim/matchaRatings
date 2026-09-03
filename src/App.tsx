@@ -964,7 +964,7 @@ function App() {
     setCurrentUserName('')
     setPendingUserName('')
     setAuthError('')
-    setRequiresManualName(true)
+    setRequiresManualName(false)
     setIsUserReady(false)
     setAuthMode('choice')
   }
