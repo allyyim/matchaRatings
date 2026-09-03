@@ -2946,41 +2946,59 @@ function App() {
       )}
 
       {isPreferencesModalOpen && createPortal(
-        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => setIsPreferencesModalOpen(false)}>
-          <div className="modal-card card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="card-header bg-white border-bottom d-flex align-items-center p-4">
-              <h3 className="h5 fw-bold text-success mb-0" style={{ flexShrink: 0 }}>My Matcha Preferences</h3>
+        <>
+          <div
+            className="modal-overlay"
+            onClick={() => setIsPreferencesModalOpen(false)}
+            style={{ zIndex: 1040 }}
+          />
+          <div
+            className="profile-drawer"
+            style={{
+              position: 'fixed',
+              right: 0,
+              top: 0,
+              height: '100vh',
+              width: '280px',
+              maxWidth: '100vw',
+              backgroundColor: 'white',
+              boxShadow: '-2px 0 8px rgba(0,0,0,0.1)',
+              zIndex: 1050,
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef' }}>
               <button
                 type="button"
                 className="btn btn-link text-muted p-0"
                 onClick={() => setIsPreferencesModalOpen(false)}
-                style={{ marginLeft: 'auto', flexShrink: 0 }}
+                style={{ textDecoration: 'none', float: 'right' }}
               >
                 ✕
               </button>
+              <h6 className="fw-bold text-success mb-0">My Matcha Preferences</h6>
             </div>
-            <div className="card-body p-4">
-              <div className="mb-4">
-                <label className="form-label fw-semibold text-success mb-2">Matcha Flavor Preferences</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-                  {['bold', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy'].map((flavor) => (
-                    <button
-                      key={flavor}
-                      type="button"
-                      className={`btn btn-sm ${userFlavors.includes(flavor) ? 'btn-success' : 'btn-outline-success'}`}
-                      onClick={() => setUserFlavors(userFlavors.includes(flavor)
-                        ? userFlavors.filter(f => f !== flavor)
-                        : [...userFlavors, flavor]
-                      )}
-                      style={{ textTransform: 'capitalize', fontSize: '0.75rem' }}
-                    >
-                      {flavor}
-                    </button>
-                  ))}
-                </div>
+
+            <div style={{ padding: '1rem', overflowY: 'auto', flex: 1 }}>
+              <label className="form-label fw-semibold mb-2">Flavor Preferences</label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
+                {['bold', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy'].map((flavor) => (
+                  <button
+                    key={flavor}
+                    type="button"
+                    className={`btn btn-sm ${userFlavors.includes(flavor) ? 'btn-success' : 'btn-outline-success'}`}
+                    onClick={() => setUserFlavors(userFlavors.includes(flavor)
+                      ? userFlavors.filter(f => f !== flavor)
+                      : [...userFlavors, flavor]
+                    )}
+                    style={{ textTransform: 'capitalize', fontSize: '0.8rem' }}
+                  >
+                    {flavor}
+                  </button>
+                ))}
               </div>
-            </div>
-            <div className="card-footer bg-white border-top p-4">
+
               <button
                 type="button"
                 className="btn btn-success w-100"
@@ -3001,11 +3019,11 @@ function App() {
                   }
                 }}
               >
-                Save Preferences
+                Save
               </button>
             </div>
           </div>
-        </div>,
+        </>,
         document.body
       )}
 
