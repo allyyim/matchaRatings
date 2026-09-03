@@ -1956,7 +1956,7 @@ function App() {
                 <p className="text-muted small">Track your matcha journey, one sip at a time</p>
               </div>
               <p className="text-muted mb-4 text-center small">
-                Rate your matcha, track your favorites, and explore what others love.
+                Whether you're a matcha enthusiant or just starting, let's rate every tea experience together.
               </p>
               <button
                 type="button"
