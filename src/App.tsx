@@ -3315,16 +3315,18 @@ function App() {
 
       <nav className="navbar navbar-expand-lg navbar-light sticky-top soft-nav minimal-nav" aria-label="Main navigation">
         <div className="container d-flex justify-content-between align-items-center">
-          <div className="navbar-brand" style={{ marginBottom: 0 }}>
-            <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f5f34' }}>Sip & Score</span>
+          <div className="navbar-brand" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1f5f34' }}>SIP</span>
+            <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#20c997' }}>SCORE</span>
           </div>
           <button
             type="button"
-            className="btn btn-link text-dark p-1"
+            className="btn btn-link text-dark p-1 d-flex align-items-center gap-2"
             onClick={() => setIsProfileDrawerOpen(true)}
             title="My Profile"
             style={{ textDecoration: 'none', marginRight: '-0.5rem' }}
           >
+            <span style={{ fontSize: '0.875rem', color: '#495057' }}>{currentUserName}</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
               <circle cx="12" cy="7" r="4"></circle>
