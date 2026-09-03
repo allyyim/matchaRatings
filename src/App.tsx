@@ -662,6 +662,7 @@ function App() {
   const [explorePlaces, setExplorePlaces] = useState<ExplorePlace[]>([])
   const [exploreUsers, setExploreUsers] = useState<ExploreUser[]>([])
   const [exploreActiveTab, setExploreActiveTab] = useState<'places' | 'users'>('places')
+  const [similarActiveTab, setSimilarActiveTab] = useState<'users' | 'places'>('users')
   const [communityActiveTab, setCommunityActiveTab] = useState<'search' | 'following' | 'recommendations'>('search')
   const [similarUsers, setSimilarUsers] = useState<Array<{ userName: string; flavors: string[]; matchScore: number }>>([])
   const [isLoadingSimilarUsers, setIsLoadingSimilarUsers] = useState(false)
@@ -1687,6 +1688,7 @@ function App() {
 
     try {
       const response = await apiFetch<{ friends: Array<{ userName: string; placeCount: number }> }>(`/friends/search?q=${encodeURIComponent(query.trim())}`)
+      console.log('Search response:', response)
       setFriendSuggestions(response.friends || [])
     } catch (error) {
       console.error('Search failed:', error)
@@ -3737,94 +3739,113 @@ function App() {
                       </div>
 
                       <div className="mb-5">
-                        {isLoadingSimilarUsers ? (
-                          <div className="alert alert-light border">
-                            <p className="mb-0 text-muted small">Loading similar users...</p>
-                          </div>
-                        ) : similarUsers.length === 0 ? (
-                          <div className="alert alert-light border">
-                            <p className="mb-0 text-muted small">No users found with similar preferences yet.</p>
-                          </div>
-                        ) : (
-                          <div>
-                            <h5 className="fw-semibold text-success mb-3">Users with Similar Taste</h5>
-                            <div className="row g-3">
-                              {similarUsers.map((user) => (
-                                <div key={user.userName} className="col-12 col-sm-6 col-md-4">
-                                  <div className="card border-0 shadow-sm h-100">
-                                    <div className="card-body">
-                                      <div className="d-flex justify-content-between align-items-start mb-2">
-                                        <h6 className="card-title fw-semibold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => void openFriendRatings(user.userName)}>
-                                          {user.userName}
-                                        </h6>
-                                        <span className="badge bg-success" style={{ fontSize: '0.75rem' }}>
-                                          {(user.matchScore * 100).toFixed(0)}% match
-                                        </span>
-                                      </div>
-                                      {user.flavors.length > 0 && (
-                                        <div className="small mt-2">
-                                          <p className="text-muted mb-2">Shared flavors:</p>
-                                          <div className="d-flex flex-wrap gap-1">
-                                            {user.flavors.map((flavor) => (
-                                              <span key={flavor} className="badge bg-light text-dark" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>
-                                                {flavor}
-                                              </span>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                        <div className="d-flex gap-2 mb-4" style={{ borderBottom: '1px solid #e9ecef' }}>
+                          <button
+                            type="button"
+                            className={`btn btn-link p-0 fw-semibold ${similarActiveTab === 'users' ? 'text-success' : 'text-muted'}`}
+                            onClick={() => setSimilarActiveTab('users')}
+                            style={{ textDecoration: 'none', borderBottom: similarActiveTab === 'users' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
+                          >
+                            Users with Similar Taste
+                          </button>
+                          <button
+                            type="button"
+                            className={`btn btn-link p-0 fw-semibold ${similarActiveTab === 'places' ? 'text-success' : 'text-muted'}`}
+                            onClick={() => setSimilarActiveTab('places')}
+                            style={{ textDecoration: 'none', borderBottom: similarActiveTab === 'places' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
+                          >
+                            Places with Your Profile
+                          </button>
+                        </div>
 
-                      <div>
-                        {isLoadingSimilarPlaces ? (
-                          <div className="alert alert-light border">
-                            <p className="mb-0 text-muted small">Loading similar places...</p>
-                          </div>
-                        ) : similarPlaces.length === 0 ? (
-                          <div className="alert alert-light border">
-                            <p className="mb-0 text-muted small">No places found with similar profiles yet.</p>
-                          </div>
-                        ) : (
-                          <div>
-                            <h5 className="fw-semibold text-success mb-3">Places with Your Flavor Profile</h5>
-                            <div className="row g-3">
-                              {similarPlaces.map((place) => (
-                                <div key={place.location} className="col-12 col-sm-6 col-md-4">
-                                  <div className="card border-0 shadow-sm h-100">
-                                    <div className="card-body">
-                                      <div className="d-flex justify-content-between align-items-start mb-2">
-                                        <h6 className="card-title fw-semibold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => setSelectedExplorePlaceName(place.location)}>
-                                          {place.location}
-                                        </h6>
-                                        <span className="badge bg-success" style={{ fontSize: '0.75rem' }}>
-                                          {(place.matchScore * 100).toFixed(0)}% match
-                                        </span>
-                                      </div>
-                                      {place.flavors.length > 0 && (
-                                        <div className="small mt-2">
-                                          <p className="text-muted mb-2">Featured flavors:</p>
-                                          <div className="d-flex flex-wrap gap-1">
-                                            {place.flavors.map((flavor) => (
-                                              <span key={flavor} className="badge bg-light text-dark" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>
-                                                {flavor}
-                                              </span>
-                                            ))}
-                                          </div>
+                        {similarActiveTab === 'users' && (
+                          <>
+                            {isLoadingSimilarUsers ? (
+                              <div className="alert alert-light border">
+                                <p className="mb-0 text-muted small">Loading similar users...</p>
+                              </div>
+                            ) : similarUsers.length === 0 ? (
+                              <div className="alert alert-light border">
+                                <p className="mb-0 text-muted small">No users found with similar preferences yet.</p>
+                              </div>
+                            ) : (
+                              <div className="row g-3">
+                                {similarUsers.map((user) => (
+                                  <div key={user.userName} className="col-12 col-sm-6 col-md-4">
+                                    <div className="card border-0 shadow-sm h-100">
+                                      <div className="card-body">
+                                        <div className="d-flex justify-content-between align-items-start mb-2">
+                                          <h6 className="card-title fw-semibold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => void openFriendRatings(user.userName)}>
+                                            {user.userName}
+                                          </h6>
+                                          <span className="badge bg-success" style={{ fontSize: '0.75rem' }}>
+                                            {(user.matchScore * 100).toFixed(0)}% match
+                                          </span>
                                         </div>
-                                      )}
+                                        {user.flavors.length > 0 && (
+                                          <div className="small mt-2">
+                                            <p className="text-muted mb-2">Shared flavors:</p>
+                                            <div className="d-flex flex-wrap gap-1">
+                                              {user.flavors.map((flavor) => (
+                                                <span key={flavor} className="badge bg-light text-dark" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>
+                                                  {flavor}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        )}
+
+                        {similarActiveTab === 'places' && (
+                          <>
+                            {isLoadingSimilarPlaces ? (
+                              <div className="alert alert-light border">
+                                <p className="mb-0 text-muted small">Loading similar places...</p>
+                              </div>
+                            ) : similarPlaces.length === 0 ? (
+                              <div className="alert alert-light border">
+                                <p className="mb-0 text-muted small">No places found with similar profiles yet.</p>
+                              </div>
+                            ) : (
+                              <div className="row g-3">
+                                {similarPlaces.map((place) => (
+                                  <div key={place.location} className="col-12 col-sm-6 col-md-4">
+                                    <div className="card border-0 shadow-sm h-100">
+                                      <div className="card-body">
+                                        <div className="d-flex justify-content-between align-items-start mb-2">
+                                          <h6 className="card-title fw-semibold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => setSelectedExplorePlaceName(place.location)}>
+                                            {place.location}
+                                          </h6>
+                                          <span className="badge bg-success" style={{ fontSize: '0.75rem' }}>
+                                            {(place.matchScore * 100).toFixed(0)}% match
+                                          </span>
+                                        </div>
+                                        {place.flavors.length > 0 && (
+                                          <div className="small mt-2">
+                                            <p className="text-muted mb-2">Featured flavors:</p>
+                                            <div className="d-flex flex-wrap gap-1">
+                                              {place.flavors.map((flavor) => (
+                                                <span key={flavor} className="badge bg-light text-dark" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>
+                                                  {flavor}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>
