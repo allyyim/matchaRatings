@@ -913,7 +913,13 @@ app.post('/api/admin/migrate-photos-to-cloudinary', async (req, res) => {
   }
 })
 
-app.use('/api', requireSession)
+// Middleware to skip auth for migration endpoint
+app.use((req, res, next) => {
+  if (req.path === '/api/admin/migrate-photos-to-cloudinary') {
+    return next()
+  }
+  return requireSession(req, res, next)
+})
 
 // Lets an already-logged-in (browser-only) user check if their account has a stable email on file.
 app.get('/api/auth/link-status', async (req, res) => {
