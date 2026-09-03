@@ -2954,6 +2954,7 @@ function App() {
               </div>
 
               <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
+              {matchaGreenness !== null && (
                 <div className="mb-3 small detector-chip">
                   <div>{mlStatus}</div>
                   <div className="detector-metrics">
