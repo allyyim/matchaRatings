@@ -1150,14 +1150,13 @@ app.post('/api/preferences', async (req, res) => {
 
   const flavors = Array.isArray(req.body?.flavors) ? req.body.flavors : []
   const milkType = Array.isArray(req.body?.milk_type) ? req.body.milk_type : []
-  const visitedCountries = Array.isArray(req.body?.visited_countries) ? req.body.visited_countries : []
 
   const result = await pool.query(
-    `INSERT INTO user_preferences (email, flavors, milk_type, visited_countries, updated_at)
-     VALUES ($1, $2, $3, $4, NOW())
-     ON CONFLICT (email) DO UPDATE SET flavors = $2, milk_type = $3, visited_countries = $4, updated_at = NOW()
+    `INSERT INTO user_preferences (email, flavors, milk_type, updated_at)
+     VALUES ($1, $2, $3, NOW())
+     ON CONFLICT (email) DO UPDATE SET flavors = $2, milk_type = $3, updated_at = NOW()
      RETURNING *`,
-    [email, JSON.stringify(flavors), JSON.stringify(milkType), JSON.stringify(visitedCountries)]
+    [email, JSON.stringify(flavors), JSON.stringify(milkType)]
   )
   return res.json(result.rows[0])
 })
@@ -1250,7 +1249,7 @@ app.get('/api/ratings/:ratingId/likes', async (req, res) => {
   return res.json({ likeCount: Number(result.rows[0].count) })
 })
 
-// Find users with similar preferences
+// Find users with similar flavor preferences
 app.get('/api/users/similar-preferences', async (req, res) => {
   const limit = Math.max(1, Math.min(50, Number(req.query.limit) || 20))
 
@@ -1259,21 +1258,14 @@ app.get('/api/users/similar-preferences', async (req, res) => {
     const userEmail = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
     if (!userEmail) return res.status(404).json({ error: 'User not found' })
 
-    const userPrefs = await pool.query(
-      'SELECT flavors, milk_type FROM user_preferences WHERE email = $1',
-      [userEmail]
-    )
-    const currentPrefs = userPrefs.rows[0] || { flavors: [], milk_type: [] }
-
-    // Find users with overlapping preferences
+    // Get all users and their flavor preferences, ordered by rating count
     const result = await pool.query(
       `
         SELECT DISTINCT a.user_name, COUNT(DISTINCT r.id) as ratings_count
         FROM accounts a
         LEFT JOIN ratings r ON LOWER(a.user_name) = LOWER(r.user_name)
-        LEFT JOIN user_preferences up ON a.email = up.email
         WHERE LOWER(a.user_name) != LOWER($1)
-        GROUP BY a.user_name, up.flavors, up.milk_type
+        GROUP BY a.user_name
         ORDER BY ratings_count DESC
         LIMIT $2
       `,

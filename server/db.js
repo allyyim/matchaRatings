@@ -162,7 +162,6 @@ export async function initDb() {
       email TEXT NOT NULL UNIQUE REFERENCES accounts(email) ON DELETE CASCADE,
       flavors JSONB DEFAULT '[]',
       milk_type JSONB DEFAULT '[]',
-      visited_countries JSONB DEFAULT '[]',
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );

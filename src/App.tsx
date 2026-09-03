@@ -31,6 +31,7 @@ type RatingEntry = {
   date: string
   createdAt: string
   comboScore: number
+  flavorPreferences?: Record<string, number>
 }
 
 type Page = 'home' | 'friends' | 'explore'
@@ -684,7 +685,6 @@ function App() {
   const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false)
   const [userFlavors, setUserFlavors] = useState<string[]>([])
   const [userMilkTypes, setUserMilkTypes] = useState<string[]>([])
-  const [userCountries, setUserCountries] = useState('')
   const [likedRatingsSet, setLikedRatingsSet] = useState<Set<number>>(new Set())
 
   const showLoadingOverlay = isSavingEntry || isLoadingFriendRatings || isLoadingExplorePlaces
@@ -2641,18 +2641,6 @@ function App() {
                     ))}
                   </div>
                 </div>
-
-                <div className="mt-3">
-                  <label className="form-label fw-semibold small mb-2">Countries/States Visited</label>
-                  <input
-                    type="text"
-                    className="form-control form-control-sm"
-                    placeholder="e.g., Japan, California, Kyoto"
-                    value={userCountries}
-                    onChange={(e) => setUserCountries(e.target.value)}
-                  />
-                  <small className="text-muted d-block mt-1">Comma-separated list of places you've hunted for matcha</small>
-                </div>
               </div>
             </div>
 
@@ -2666,8 +2654,7 @@ function App() {
                       method: 'POST',
                       body: JSON.stringify({
                         flavors: userFlavors,
-                        milk_type: userMilkTypes,
-                        visited_countries: userCountries.split(',').map(c => c.trim()).filter(c => c)
+                        milk_type: userMilkTypes
                       })
                     })
                   } catch (error) {
@@ -2755,8 +2742,7 @@ function App() {
                       method: 'POST',
                       body: JSON.stringify({
                         flavors: userFlavors,
-                        milk_type: userMilkTypes,
-                        visited_countries: userCountries.split(',').map(c => c.trim()).filter(c => c)
+                        milk_type: userMilkTypes
                       })
                     })
                     setIsPreferencesModalOpen(false)
@@ -3137,6 +3123,21 @@ function App() {
                           <div>Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
                         </div>
                         {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
+                        {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
+                          <div className="d-flex flex-wrap gap-1 mt-2">
+                            {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
+                              intensity > 0 ? (
+                                <span
+                                  key={flavor}
+                                  className="badge bg-success"
+                                  style={{ fontSize: '0.75rem', opacity: Math.min(1, intensity / 100 + 0.5), textTransform: 'capitalize' }}
+                                >
+                                  {flavor}
+                                </span>
+                              ) : null
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="entry-hint-icon" aria-hidden="true">✎</div>
@@ -3446,6 +3447,21 @@ function App() {
                           <div>Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
                         </div>
                         {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
+                        {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
+                          <div className="d-flex flex-wrap gap-1 mt-2">
+                            {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
+                              intensity > 0 ? (
+                                <span
+                                  key={flavor}
+                                  className="badge bg-success"
+                                  style={{ fontSize: '0.75rem', opacity: Math.min(1, intensity / 100 + 0.5), textTransform: 'capitalize' }}
+                                >
+                                  {flavor}
+                                </span>
+                              ) : null
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <button
