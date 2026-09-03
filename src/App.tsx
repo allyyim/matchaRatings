@@ -2816,17 +2816,19 @@ function App() {
               </div>
             </div>
 
-            <div style={{ padding: '0.75rem', flex: 1, overflowY: 'auto' }}>
-              <button
-                type="button"
-                className="btn btn-success btn-sm w-100 mb-3"
-                onClick={() => setIsPreferencesModalOpen(true)}
-              >
-                My Prefs
-              </button>
+            <div style={{ padding: '0.75rem', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <button
+                  type="button"
+                  className="btn btn-success btn-sm w-100"
+                  onClick={() => setIsPreferencesModalOpen(true)}
+                >
+                  My Prefs
+                </button>
+              </div>
             </div>
 
-            <div style={{ padding: '0.75rem', borderTop: '1px solid #e9ecef' }}>
+            <div style={{ padding: '0.75rem', borderTop: '1px solid #e9ecef', flexShrink: 0 }}>
               <button
                 type="button"
                 className="btn btn-outline-danger w-100 btn-sm"
