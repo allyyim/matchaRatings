@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Drink Area Annotation Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .image-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .canvas-wrapper {
+            position: relative;
+            display: inline-block;
+            margin: 10px 0;
+        }
+        canvas {
+            border: 2px solid #ddd;
+            cursor: crosshair;
+            max-width: 100%;
+            display: block;
+        }
+        #drawing-canvas {
+            display: none;
+        }
+        .controls {
+            margin: 15px 0;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary {
+            background: #4CAF50;
+            color: white;
+        }
+        .btn-primary:hover {
+            background: #45a049;
+        }
+        .btn-secondary {
+            background: #2196F3;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background: #0b7dda;
+        }
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+        .btn-danger:hover {
+            background: #da190b;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .progress {
+            margin: 20px 0;
+            padding: 10px;
+            background: #fff3cd;
+            border-radius: 4px;
+            text-align: center;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+        }
+        .upload-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            grid-column: 1 / -1;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <h1>Drink Area Annotation Tool</h1>
+
+    <div class="upload-section">
+        <h2>Upload Images</h2>
+        <p>Select up to 10 images to annotate</p>
+        <input type="file" id="imageUpload" multiple accept="image/*">
+        <button class="btn-primary" onclick="loadImages()">Load Images</button>
+    </div>
+
+    <div class="progress">
+        <strong id="progressText">Ready to annotate. Upload images to begin.</strong>
+    </div>
+
+    <div class="container" id="mainContainer" style="display: none;">
+        <div class="image-section">
+            <h3>Image <span id="currentImage">1</span> / <span id="totalImages">0</span></h3>
+            <div class="info">
+                <strong>Instructions:</strong><br>
+                1. Draw on the drink area with your mouse<br>
+                2. Click "Clear" to erase<br>
+                3. Click "Save & Next" to save and move to next<br>
+                4. Brush size: 20px (adjust if needed)
+            </div>
+            <div class="controls">
+                <button class="btn-secondary" onclick="undo()">Undo</button>
+                <button class="btn-danger" onclick="clearCanvas()">Clear</button>
+                <label>Brush Size: <input type="range" id="brushSize" min="5" max="50" value="20" style="width: 100px;"></label>
+            </div>
+            <div class="canvas-wrapper">
+                <canvas id="annotationCanvas"></canvas>
+            </div>
+            <div class="controls">
+                <button class="btn-primary" onclick="saveAndNext()">Save & Next</button>
+                <button class="btn-secondary" onclick="skipImage()">Skip Image</button>
+            </div>
+        </div>
+
+        <div class="image-section">
+            <h3>Status</h3>
+            <div id="status" style="white-space: pre-wrap; font-family: monospace; background: #f9f9f9; padding: 10px; border-radius: 4px; max-height: 500px; overflow-y: auto;">
+                Loading...
+            </div>
+            <button class="btn-primary" onclick="downloadAnnotations()" style="width: 100%; margin-top: 20px;">Download Annotations</button>
+        </div>
+    </div>
+
+    <script>
+        let images = [];
+        let currentImageIndex = 0;
+        let annotations = {};
+        let isDrawing = false;
+        let canvas, ctx, displayCanvas;
+        let canvasStates = [];
+
+        function loadImages() {
+            const input = document.getElementById('imageUpload');
+            const files = Array.from(input.files).slice(0, 10);
+
+            if (files.length === 0) {
+                alert('Please select images');
+                return;
+            }
+
+            images = [];
+            currentImageIndex = 0;
+            annotations = {};
+            canvasStates = [];
+
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    images.push({
+                        name: file.name,
+                        data: e.target.result
+                    });
+
+                    if (images.length === files.length) {
+                        startAnnotation();
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function startAnnotation() {
+            document.getElementById('mainContainer').style.display = 'grid';
+            canvas = document.getElementById('annotationCanvas');
+            ctx = canvas.getContext('2d');
+            displayCanvas = canvas;
+
+            canvas.addEventListener('mousedown', startDrawing);
+            canvas.addEventListener('mousemove', draw);
+            canvas.addEventListener('mouseup', stopDrawing);
+            canvas.addEventListener('mouseout', stopDrawing);
+
+            loadImage(0);
+        }
+
+        function loadImage(index) {
+            currentImageIndex = index;
+            document.getElementById('currentImage').textContent = index + 1;
+            document.getElementById('totalImages').textContent = images.length;
+
+            const img = new Image();
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+
+                // Load existing annotation if available
+                if (annotations[images[index].name]) {
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    imageData.data.set(annotations[images[index].name]);
+                    ctx.putImageData(imageData, 0, 0);
+                }
+
+                canvasStates = [canvas.toDataURL()];
+                updateStatus();
+            };
+            img.src = images[index].data;
+        }
+
+        function startDrawing(e) {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+
+        function draw(e) {
+            if (!isDrawing) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const brushSize = parseInt(document.getElementById('brushSize').value);
+
+            ctx.strokeStyle = '#00FF00';
+            ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+            ctx.lineWidth = brushSize;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.lineTo(x, y);
+            ctx.stroke();
+        }
+
+        function stopDrawing() {
+            isDrawing = false;
+            ctx.closePath();
+        }
+
+        function clearCanvas() {
+            const img = new Image();
+            img.onload = () => {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0);
+                canvasStates = [canvas.toDataURL()];
+            };
+            img.src = images[currentImageIndex].data;
+        }
+
+        function undo() {
+            if (canvasStates.length > 1) {
+                canvasStates.pop();
+                const img = new Image();
+                img.onload = () => {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0);
+                };
+                img.src = canvasStates[canvasStates.length - 1];
+            }
+        }
+
+        function saveAndNext() {
+            // Save current annotation
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            annotations[images[currentImageIndex].name] = new Uint8ClampedArray(imageData.data);
+
+            updateStatus();
+
+            if (currentImageIndex < images.length - 1) {
+                loadImage(currentImageIndex + 1);
+            } else {
+                alert('All images annotated! Click "Download Annotations" to save.');
+            }
+        }
+
+        function skipImage() {
+            if (currentImageIndex < images.length - 1) {
+                loadImage(currentImageIndex + 1);
+            } else {
+                alert('No more images.');
+            }
+        }
+
+        function downloadAnnotations() {
+            const annotationData = {
+                timestamp: new Date().toISOString(),
+                totalImages: images.length,
+                annotatedImages: Object.keys(annotations).length,
+                annotations: {}
+            };
+
+            // Convert image data to base64
+            for (const [filename, pixelData] of Object.entries(annotations)) {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const imageData = ctx.createImageData(
+                    document.getElementById('annotationCanvas').width,
+                    document.getElementById('annotationCanvas').height
+                );
+                imageData.data.set(pixelData);
+                annotationData.annotations[filename] = canvas.toDataURL('image/png');
+            }
+
+            const dataStr = JSON.stringify(annotationData);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `annotations_${Date.now()}.json`;
+            link.click();
+        }
+
+        function updateStatus() {
+            const statusDiv = document.getElementById('status');
+            let statusText = `Image: ${images[currentImageIndex].name}\n`;
+            statusText += `Annotated: ${Object.keys(annotations).length} / ${images.length}\n\n`;
+            statusText += 'Annotated images:\n';
+            images.forEach((img, idx) => {
+                const status = annotations[img.name] ? '✓' : '○';
+                statusText += `${status} ${idx + 1}. ${img.name}\n`;
+            });
+            statusDiv.textContent = statusText;
+        }
+    </script>
+</body>
+</html>
