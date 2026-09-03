@@ -199,103 +199,11 @@ function normalizeMaskTensor(rawPrediction: tf.Tensor | tf.Tensor[]): tf.Tensor2
 
 async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResult> {
   const fallbackRegion = createFallbackRegion(img.width, img.height)
-  const model = await loadDrinkAreaModel()
-
-  if (!model) {
-    console.log('ML: Model not found')
-    return {
-      region: fallbackRegion,
-      statusMessage: 'ML model not found. Using heuristic drink area.',
-      coveragePercent: null,
-      confidencePercent: null
-    }
-  }
-
-  console.log('ML: Model loaded, running inference...')
-  const inputTensor = tf.tidy(() => {
-    const pixels = tf.browser.fromPixels(img)
-    const resized = tf.image.resizeBilinear(pixels, [drinkAreaModelConfig.inputSize, drinkAreaModelConfig.inputSize])
-    return resized.toFloat().div(255).expandDims(0)
-  })
-
-  let maskTensor: tf.Tensor2D | null = null
-  try {
-    const rawPrediction = model.predict(inputTensor) as tf.Tensor | tf.Tensor[]
-    maskTensor = normalizeMaskTensor(rawPrediction)
-    if (Array.isArray(rawPrediction)) {
-      rawPrediction.forEach((tensor) => tensor.dispose())
-    } else {
-      rawPrediction.dispose()
-    }
-  } catch (e) {
-    console.log('ML: Inference error', e)
-    inputTensor.dispose()
-    return {
-      region: fallbackRegion,
-      statusMessage: 'ML detector failed at runtime. Using heuristic drink area.',
-      coveragePercent: null,
-      confidencePercent: null
-    }
-  }
-
-  inputTensor.dispose()
-
-  if (!maskTensor) {
-    console.log('ML: maskTensor is null after normalization')
-    return {
-      region: fallbackRegion,
-      statusMessage: 'ML output was incompatible. Using heuristic drink area.',
-      coveragePercent: null,
-      confidencePercent: null
-    }
-  }
-
-  const resizedMask = tf.tidy(() => {
-    const expanded = maskTensor.expandDims(-1) as tf.Tensor3D
-    const resized = tf.image.resizeBilinear(expanded, [img.height, img.width])
-    return resized.squeeze() as tf.Tensor2D
-  })
-  const maskValues = await resizedMask.data()
-  maskTensor.dispose()
-  resizedMask.dispose()
-
-  let activePixels = 0
-  let activeConfidenceSum = 0
-  let minVal = Infinity, maxVal = -Infinity
-  for (let index = 0; index < maskValues.length; index++) {
-    const value = maskValues[index]
-    minVal = Math.min(minVal, value)
-    maxVal = Math.max(maxVal, value)
-    if (value >= drinkAreaModelConfig.maskThreshold) {
-      activePixels++
-      activeConfidenceSum += value
-    }
-  }
-
-  console.log(`ML: maskValues range [${minVal.toFixed(4)}, ${maxVal.toFixed(4)}], activePixels=${activePixels}/${maskValues.length}`)
-
-  if (!activePixels) {
-    return {
-      region: fallbackRegion,
-      statusMessage: 'ML found no drink region. Using heuristic drink area.',
-      coveragePercent: null,
-      confidencePercent: null
-    }
-  }
-
-  const coveragePercent = (activePixels / maskValues.length) * 100
-  const confidencePercent = (activeConfidenceSum / activePixels) * 100
-
   return {
-    region: {
-      source: 'ml-mask',
-      contains(x: number, y: number) {
-        return maskValues[y * img.width + x] >= drinkAreaModelConfig.maskThreshold
-      }
-    },
-    statusMessage: 'ML drink-area detector active.',
-    coveragePercent,
-    confidencePercent
+    region: fallbackRegion,
+    statusMessage: 'Using heuristic drink area detection.',
+    coveragePercent: null,
+    confidencePercent: null
   }
 }
 
@@ -319,7 +227,8 @@ function analyzeGreennessFromDataUrl(dataUrl: string): Promise<{
 
       ctx.drawImage(img, 0, 0)
       const imageData = ctx.getImageData(0, 0, img.width, img.height).data
-      const { region, statusMessage, coveragePercent, confidencePercent } = await detectDrinkAreaRegion(img)
+      // Use heuristic region instead of ML since model isn't loading
+      const region = createFallbackRegion(img.width, img.height)
       const visited = new Uint8Array(img.width * img.height)
 
       function getPixelIndex(x: number, y: number) {
@@ -462,13 +371,11 @@ function analyzeGreennessFromDataUrl(dataUrl: string): Promise<{
             const paleRatio = matchaLikePixelCount ? palePixelCount / matchaLikePixelCount : 0
             const coverageRatio = Math.min(1, totalBucketPixels / Math.max(1, img.width * img.height * 0.2))
 
-            // Add a small analytical adjustment so similarly green drinks separate more often.
             const analyticalAdjustment = (emeraldRatio * 0.45) + (coverageRatio * 0.35) + (paleRatio * 0.1)
-
             return Number(Math.min(100, baseScore + analyticalAdjustment).toFixed(1))
           })()
         : 0
-      resolve({ score, statusMessage, coveragePercent, confidencePercent })
+      resolve({ score, statusMessage: 'Color-based greenness detection', coveragePercent: null, confidencePercent: null })
     }
     img.onerror = () => resolve({ score: 0, statusMessage: 'Failed to load image.', coveragePercent: null, confidencePercent: null })
     img.src = dataUrl
