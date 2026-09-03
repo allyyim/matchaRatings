@@ -3261,7 +3261,7 @@ function App() {
       </nav>
 
       {activePage === 'home' && (
-        <main id="main-content" className="container py-3 py-md-5 px-3 px-md-4" tabIndex={-1}>
+        <main id="main-content" className="container py-4 py-md-6 px-3 px-md-4" tabIndex={-1}>
           <div className="card shadow-sm border-0 matcha-shell">
             <div className="card-body p-3 p-md-4">
               <h1 className="display-6 fw-bold mb-3 text-success">New Log</h1>
