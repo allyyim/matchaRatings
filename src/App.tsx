@@ -3523,9 +3523,8 @@ function App() {
                       </button>
                     </div>
                   </div>
-                )
-              )}
-            </div>
+                )}
+              </div>
             <div className="d-flex flex-column gap-3">
               {selectedFriend && filteredFriendEntries.length === 0 && (
                 <div className="alert alert-light border">No ratings found for this friend.</div>
