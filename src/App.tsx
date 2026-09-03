@@ -1896,7 +1896,7 @@ function App() {
 
   if (!isUserReady) {
     return (
-      <main className="container py-5">
+      <main className="container py-5 login-page">
         {requiresManualName ? (
           <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
             <div className="card-body p-3 p-md-4">
