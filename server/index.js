@@ -1720,7 +1720,7 @@ app.use((err, _req, res, _next) => {
 app.use(express.static('dist'))
 
 // SPA fallback - serve index.html for all non-API routes
-app.get('/*', (_req, res) => {
+app.get(/.*/, (_req, res) => {
   res.sendFile('dist/index.html', { root: '.' })
 })
 
