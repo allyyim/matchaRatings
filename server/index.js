@@ -703,6 +703,50 @@ app.post('/api/admin/link-users', async (req, res) => {
   }
 })
 
+app.post('/api/admin/delete-user', async (req, res) => {
+  try {
+    const { userName } = req.body
+
+    if (!userName) {
+      return res.status(400).json({ error: 'userName is required' })
+    }
+
+    // Delete all related data
+    const userResult = await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [userName])
+    if (userResult.rowCount === 0) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+
+    const email = userResult.rows[0].email
+
+    // Delete ratings
+    await pool.query('DELETE FROM ratings WHERE user_name = $1', [userName])
+
+    // Delete follows
+    await pool.query('DELETE FROM follows WHERE follower_email = $1 OR following_email = $1', [email])
+
+    // Delete likes
+    await pool.query('DELETE FROM rating_likes WHERE email = $1', [email])
+
+    // Delete user preferences
+    await pool.query('DELETE FROM user_preferences WHERE email = $1', [email])
+
+    // Delete browser users
+    await pool.query('DELETE FROM browser_users WHERE user_name = $1', [userName])
+
+    // Delete login tokens
+    await pool.query('DELETE FROM login_tokens WHERE email = $1', [email])
+
+    // Delete account
+    await pool.query('DELETE FROM accounts WHERE email = $1', [email])
+
+    return res.json({ ok: true, message: `User ${userName} deleted successfully` })
+  } catch (error) {
+    console.error('Delete user failed:', error)
+    return res.status(400).json({ error: 'Failed to delete user' })
+  }
+})
+
 app.post('/api/users/session', async (req, res) => {
   const browserId = String(req.body?.browserId || '').trim()
   const incomingUserName = sanitizeUserName(String(req.body?.userName || '').trim())
@@ -948,22 +992,27 @@ app.get('/api/friends/search', async (req, res) => {
     return res.json({ friends: [] })
   }
 
-  if (q.length < 2) {
+  if (q.length < 1) {
     return res.json({ friends: [] })
   }
 
-  const result = await pool.query(
-    `
-      SELECT DISTINCT user_name
-      FROM ratings
-      WHERE user_name ILIKE $1
-      ORDER BY user_name ASC
-      LIMIT 20
-    `,
-    [`%${q}%`]
-  )
+  try {
+    const result = await pool.query(
+      `
+        SELECT DISTINCT user_name
+        FROM accounts
+        WHERE LOWER(user_name) LIKE LOWER($1)
+        ORDER BY user_name ASC
+        LIMIT 20
+      `,
+      [`%${q}%`]
+    )
 
-  return res.json({ friends: result.rows.map((r) => r.user_name) })
+    return res.json({ friends: result.rows.map((r) => r.user_name) })
+  } catch (error) {
+    console.error('Search failed:', error)
+    return res.status(500).json({ error: 'Search failed', friends: [] })
+  }
 })
 
 app.get('/api/friends/:friendName/ratings', async (req, res) => {
