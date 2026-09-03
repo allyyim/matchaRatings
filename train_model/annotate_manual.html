@@ -228,27 +228,16 @@
             img.src = images[index].data;
         }
 
-        function getCanvasCoordinates(e) {
-            const rect = canvas.getBoundingClientRect();
-            // Account for CSS scaling
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            const x = (e.clientX - rect.left) * scaleX;
-            const y = (e.clientY - rect.top) * scaleY;
-            return { x, y };
-        }
-
         function startDrawing(e) {
             isDrawing = true;
+            saveCanvasState();
             const { x, y } = getCanvasCoordinates(e);
             const brushSize = parseInt(document.getElementById('brushSize').value);
 
-            ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+            ctx.fillStyle = '#00FF00'; // Bright green (no transparency)
             ctx.beginPath();
             ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
             ctx.fill();
-
-            canvasStates.push(canvas.toDataURL());
         }
 
         function draw(e) {
@@ -257,7 +246,7 @@
             const { x, y } = getCanvasCoordinates(e);
             const brushSize = parseInt(document.getElementById('brushSize').value);
 
-            ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+            ctx.fillStyle = '#00FF00'; // Bright green
             ctx.beginPath();
             ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
             ctx.fill();
@@ -265,6 +254,23 @@
 
         function stopDrawing() {
             isDrawing = false;
+        }
+
+        function saveCanvasState() {
+            if (canvasStates.length > 50) {
+                canvasStates.shift(); // Keep memory usage down
+            }
+            canvasStates.push(canvas.toDataURL());
+        }
+
+        function getCanvasCoordinates(e) {
+            const rect = canvas.getBoundingClientRect();
+            // Account for CSS scaling
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            return { x, y };
         }
 
         function clearCanvas() {
