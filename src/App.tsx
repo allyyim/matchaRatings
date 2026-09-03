@@ -627,7 +627,7 @@ function App() {
   const [verifiedAccountName, setVerifiedAccountName] = useState<string | null>(null)
 
   const [currentRating, setCurrentRating] = useState(0)
-  const [ratingFlavorPrefs, setRatingFlavorPrefs] = useState({ bold: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0 })
+  const [ratingFlavorPrefs, setRatingFlavorPrefs] = useState({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, mellow: 0 })
   const [location, setLocation] = useState('')
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([])
   const [isLocationLookupPending, setIsLocationLookupPending] = useState(false)
@@ -1706,7 +1706,7 @@ function App() {
       }
 
       setCurrentRating(0)
-      setRatingFlavorPrefs({ bold: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0 })
+      setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, mellow: 0 })
       setLocation('')
       setThoughts('')
       setPhotoDataUrl('')
@@ -3066,7 +3066,7 @@ function App() {
             <div style={{ padding: '1rem', overflowY: 'auto', flex: 1 }}>
               <label className="form-label fw-semibold mb-2 text-success">Flavor Preferences</label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
-                {['bold', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy'].map((flavor) => (
+                {['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy', 'Chocolatey', 'mellow'].map((flavor) => (
                   <button
                     key={flavor}
                     type="button"
@@ -3492,7 +3492,7 @@ function App() {
                 <label className="form-label fw-semibold d-block">Flavor Profile</label>
                 <div className="small text-muted mb-3">Click bubbles to toggle flavors</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', placeItems: 'center' }}>
-                  {(['bold', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy'] as const).map((flavor) => {
+                  {(['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy', 'Chocolatey', 'mellow'] as const).map((flavor) => {
                     const intensity = ratingFlavorPrefs[flavor]
                     const isActive = intensity > 0
 
