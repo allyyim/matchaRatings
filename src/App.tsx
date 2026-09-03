@@ -4349,7 +4349,7 @@ function App() {
                   {exploreUsers.length > 0 && (
                     <div className="d-flex flex-column gap-2">
                       {exploreUsers.map((user, index) => (
-                        <article key={user.userName} className="card border-0 shadow-sm">
+                        <article key={`${user.userName}-${index}`} className="card border-0 shadow-sm">
                           <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
                             <div className="fw-semibold">
                               #{index + 1}{' '}
