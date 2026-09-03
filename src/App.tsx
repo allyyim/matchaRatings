@@ -2474,11 +2474,11 @@ function App() {
                 </div>
               )}
 
-              <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
-
               <div className="mb-3 text-success fw-semibold">
-                {matchaGreenness !== null ? `Greenness: ${matchaGreenness.toFixed(1)}/100` : 'Greenness score pending'}
+                {matchaGreenness !== null ? `Matcha Greenness: ${matchaGreenness.toFixed(1)}/100` : 'Greenness score pending'}
               </div>
+
+              <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
 
               {mlCoveragePercent !== null && mlConfidencePercent !== null && (
                 <div className="mb-3 small detector-chip">
