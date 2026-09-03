@@ -3359,8 +3359,6 @@ function App() {
                           <span className="text-muted small">{entry.date}</span>
                         </div>
                         <div className="entry-metrics">
-                          <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
-                          <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                           <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
@@ -3623,8 +3621,8 @@ function App() {
                         {friendSuggestions.map((friend) => (
                           <div key={friend.userName} className="card border-0 shadow-sm p-3" style={{ minWidth: '220px' }}>
                             <div className="d-flex justify-content-between align-items-start mb-2">
-                              <div>
-                                <h6 className="fw-semibold mb-1">{friend.userName}</h6>
+                              <div style={{ cursor: 'pointer', flex: 1 }} onClick={() => void openFriendRatings(friend.userName)}>
+                                <h6 className="fw-semibold mb-1 text-success">{friend.userName}</h6>
                                 <p className="text-muted small mb-0">{friend.placeCount} places</p>
                               </div>
                               <button
@@ -3906,8 +3904,6 @@ function App() {
                           <span className="text-muted small">{entry.date}</span>
                         </div>
                         <div className="entry-metrics">
-                          <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
-                          <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                           <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
