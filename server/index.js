@@ -1244,21 +1244,48 @@ app.get('/api/explore/users', async (req, res) => {
 
 // User preferences endpoints
 app.get('/api/preferences', async (req, res) => {
-  const email = req.body?.email || (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
-  if (!email) return res.status(404).json({ error: 'User not found' })
+  if (!req.session.userName) {
+    return res.status(401).json({ error: 'Not authenticated' })
+  }
 
-  const result = await pool.query('SELECT * FROM user_preferences WHERE email = $1', [email])
-  const prefs = result.rows[0] || { flavors: [], milk_type: [], visited_countries: [] }
-  return res.json(prefs)
+  try {
+    const emailResult = await pool.query(
+      'SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+      [req.session.userName]
+    )
+    const email = emailResult.rows[0]?.email
+
+    if (!email) {
+      return res.status(404).json({ error: 'User account not found' })
+    }
+
+    const result = await pool.query('SELECT * FROM user_preferences WHERE email = $1', [email])
+    const prefs = result.rows[0] || { flavors: [], milk_type: [], visited_countries: [] }
+    return res.json(prefs)
+  } catch (error) {
+    console.error('Failed to load preferences:', error)
+    return res.status(500).json({ error: 'Failed to load preferences' })
+  }
 })
 
 app.post('/api/preferences', async (req, res) => {
-  const email = req.body?.email || (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
-  if (!email) return res.status(404).json({ error: 'User not found' })
-
-  const flavors = Array.isArray(req.body?.flavors) ? req.body.flavors : []
+  if (!req.session.userName) {
+    return res.status(401).json({ error: 'Not authenticated' })
+  }
 
   try {
+    const emailResult = await pool.query(
+      'SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+      [req.session.userName]
+    )
+    const email = emailResult.rows[0]?.email
+
+    if (!email) {
+      return res.status(404).json({ error: 'User account not found' })
+    }
+
+    const flavors = Array.isArray(req.body?.flavors) ? req.body.flavors : []
+
     const result = await pool.query(
       `INSERT INTO user_preferences (email, flavors, updated_at)
        VALUES ($1, $2, NOW())
@@ -1266,6 +1293,7 @@ app.post('/api/preferences', async (req, res) => {
        RETURNING *`,
       [email, JSON.stringify(flavors)]
     )
+
     return res.json({ ok: true, preferences: result.rows[0] })
   } catch (error) {
     console.error('Failed to save preferences:', error)
