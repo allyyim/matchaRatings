@@ -609,7 +609,7 @@ function App() {
   const [isSubmittingName, setIsSubmittingName] = useState(false)
   const [isUserReady, setIsUserReady] = useState(false)
   const [authError, setAuthError] = useState('')
-  const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser' | 'confirm-account' | 'magic-link'>('choice')
+  const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser' | 'confirm-account' | 'magic-link' | 'magic-link-username'>('choice')
   const [welcomeMessage, setWelcomeMessage] = useState('')
   const [potentialAccounts, setPotentialAccounts] = useState<string[]>([])
   const [selectedPotentialAccount, setSelectedPotentialAccount] = useState<string | null>(null)
@@ -1997,12 +1997,12 @@ function App() {
             <div className="card-body p-3 p-md-4">
               <div className="text-center mb-4">
                 <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>✉️</div>
-                <h1 className="h4 fw-bold text-success mb-1">{isMagicLinkSent ? 'Check your email' : 'Sign up with email'}</h1>
+                <h1 className="h4 fw-bold text-success mb-1">{isMagicLinkSent ? 'Check your email' : 'Sign in with email'}</h1>
               </div>
               {!isMagicLinkSent ? (
                 <>
                   <p className="text-muted mb-4 text-center small">
-                    Enter your email to get a sign-up link
+                    Enter your email to receive a sign-in link
                   </p>
                   <form onSubmit={async (e) => {
                     e.preventDefault()
@@ -2013,11 +2013,18 @@ function App() {
                     try {
                       setIsSubmittingName(true)
                       setAuthError('')
-                      await apiFetch<{ ok: boolean }>('/auth/request-link', {
+                      const response = await apiFetch<{ ok: boolean; mode?: string }>('/auth/request-link', {
                         method: 'POST',
-                        body: JSON.stringify({ email: pendingMagicEmail })
+                        body: JSON.stringify({ email: pendingMagicEmail, userName: pendingUserName })
                       })
-                      setIsMagicLinkSent(true)
+
+                      if (response.mode === 'needs-username') {
+                        setAuthError('')
+                        setPendingUserName('')
+                        setAuthMode('magic-link-username')
+                      } else {
+                        setIsMagicLinkSent(true)
+                      }
                     } catch (error) {
                       setAuthError(error instanceof Error ? error.message : 'Failed to send magic link')
                     } finally {
@@ -2040,6 +2047,17 @@ function App() {
                       {isSubmittingName ? 'Sending…' : 'Send link'}
                     </button>
                   </form>
+                  <button
+                    type="button"
+                    className="btn btn-link text-muted w-100 p-0 small mt-3"
+                    onClick={() => {
+                      setAuthMode('choice')
+                      setAuthError('')
+                      setPendingMagicEmail('')
+                    }}
+                  >
+                    ← Back
+                  </button>
                 </>
               ) : (
                 <>
@@ -2066,6 +2084,67 @@ function App() {
                   setAuthMode('choice')
                   setIsMagicLinkSent(false)
                   setPendingMagicEmail('')
+                  setAuthError('')
+                }}
+              >
+                ← Back
+              </button>
+              {authError && <div className="alert alert-danger border mt-3 mb-0 small">{authError}</div>}
+            </div>
+          </section>
+        ) : authMode === 'magic-link-username' ? (
+          <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
+            <div className="card-body p-3 p-md-4">
+              <div className="text-center mb-4">
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🍵</div>
+                <h1 className="h4 fw-bold text-success mb-1">Create your account</h1>
+              </div>
+              <p className="text-muted mb-4 text-center small">
+                Choose a username for your new account
+              </p>
+              <form onSubmit={async (e) => {
+                e.preventDefault()
+                if (!pendingUserName.trim()) {
+                  setAuthError('Please enter a username')
+                  return
+                }
+                try {
+                  setIsSubmittingName(true)
+                  setAuthError('')
+                  await apiFetch<{ ok: boolean }>('/auth/request-link', {
+                    method: 'POST',
+                    body: JSON.stringify({ email: pendingMagicEmail, userName: pendingUserName.trim() })
+                  })
+                  setIsMagicLinkSent(true)
+                  setAuthMode('magic-link')
+                } catch (error) {
+                  setAuthError(error instanceof Error ? error.message : 'Failed to send magic link')
+                } finally {
+                  setIsSubmittingName(false)
+                }
+              }}>
+                <input
+                  type="text"
+                  className="form-control mb-3"
+                  value={pendingUserName}
+                  onChange={(e) => setPendingUserName(e.target.value)}
+                  placeholder="your username"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="btn btn-success w-100"
+                  disabled={!pendingUserName.trim() || isSubmittingName}
+                >
+                  {isSubmittingName ? 'Sending…' : 'Send link'}
+                </button>
+              </form>
+              <button
+                type="button"
+                className="btn btn-link text-muted w-100 p-0 small mt-3"
+                onClick={() => {
+                  setAuthMode('magic-link')
+                  setPendingUserName('')
                   setAuthError('')
                 }}
               >
