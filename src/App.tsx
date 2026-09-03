@@ -2983,7 +2983,28 @@ function App() {
                         {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
                       </div>
                     </div>
-                    <div className="entry-hint-icon" aria-hidden="true">✎</div>
+                    <div className="d-flex flex-column gap-2 align-items-end">
+                      <button
+                        type="button"
+                        className="btn btn-link p-0 text-muted"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const isLiked = likedRatingsSet.has(entry.id)
+                          if (isLiked) {
+                            void apiFetch(`/ratings/${entry.id}/like`, { method: 'DELETE' })
+                            likedRatingsSet.delete(entry.id)
+                          } else {
+                            void apiFetch(`/ratings/${entry.id}/like`, { method: 'POST' })
+                            likedRatingsSet.add(entry.id)
+                          }
+                          setLikedRatingsSet(new Set(likedRatingsSet))
+                        }}
+                        title={likedRatingsSet.has(entry.id) ? 'Unlike' : 'Like'}
+                      >
+                        {likedRatingsSet.has(entry.id) ? '❤️' : '🤍'} {ratingLikeCounts.get(entry.id) || 0}
+                      </button>
+                      <div className="entry-hint-icon" aria-hidden="true">✎</div>
+                    </div>
                   </div>
 
                   {selectedEntryId === entry.id && (
@@ -3154,15 +3175,34 @@ function App() {
               {friendSuggestions.length > 0 && (
                 <div className="mt-3 d-flex flex-wrap gap-2">
                   {friendSuggestions.map((friend) => (
-                    <button
-                      key={friend}
-                      type="button"
-                      className="btn btn-outline-success btn-sm"
-                      onClick={() => void openFriendRatings(friend)}
-                      disabled={isLoadingFriendRatings}
-                    >
-                      {friend}
-                    </button>
+                    <div key={friend} className="d-flex gap-1 align-items-center">
+                      <button
+                        type="button"
+                        className="btn btn-outline-success btn-sm"
+                        onClick={() => void openFriendRatings(friend)}
+                        disabled={isLoadingFriendRatings}
+                      >
+                        {friend}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-link btn-sm text-muted p-0"
+                        onClick={() => {
+                          const isFollowing = followingSet.has(friend)
+                          if (isFollowing) {
+                            void apiFetch(`/follows/${friend}`, { method: 'DELETE' })
+                            followingSet.delete(friend)
+                          } else {
+                            void apiFetch(`/follows/${friend}`, { method: 'POST' })
+                            followingSet.add(friend)
+                          }
+                          setFollowingSet(new Set(followingSet))
+                        }}
+                        title={followingSet.has(friend) ? 'Unfollow' : 'Follow'}
+                      >
+                        {followingSet.has(friend) ? '✓' : '+'}
+                      </button>
+                    </div>
                   ))}
                 </div>
               )}
@@ -3346,7 +3386,27 @@ function App() {
                                 {user.userName}
                               </button>
                             </div>
-                            <div className="text-success fw-bold">{user.placeCount}</div>
+                            <div className="d-flex gap-3 align-items-center">
+                              <div className="text-success fw-bold">{user.placeCount}</div>
+                              <button
+                                type="button"
+                                className="btn btn-link btn-sm text-muted p-0"
+                                onClick={() => {
+                                  const isFollowing = followingSet.has(user.userName)
+                                  if (isFollowing) {
+                                    void apiFetch(`/follows/${user.userName}`, { method: 'DELETE' })
+                                    followingSet.delete(user.userName)
+                                  } else {
+                                    void apiFetch(`/follows/${user.userName}`, { method: 'POST' })
+                                    followingSet.add(user.userName)
+                                  }
+                                  setFollowingSet(new Set(followingSet))
+                                }}
+                                title={followingSet.has(user.userName) ? 'Unfollow' : 'Follow'}
+                              >
+                                {followingSet.has(user.userName) ? '✓ Following' : '+ Follow'}
+                              </button>
+                            </div>
                           </div>
                         </article>
                       ))}
