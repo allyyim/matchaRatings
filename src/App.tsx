@@ -2963,11 +2963,28 @@ function App() {
                 type="button"
                 className="btn btn-link btn-sm text-start p-0 w-100"
                 onClick={async () => {
-                  const shareData = {
-                    title: 'Matcha Ratings',
-                    text: 'Check out Matcha Ratings - an app for rating matcha and exploring matcha places!',
-                    url: window.location.origin
+                  const getShareLink = () => {
+                    const isTest = window.location.hostname === 'localhost' || window.location.hostname.includes('127.0.0.1')
+                    const isWindows = /Windows|Win32/.test(navigator.userAgent)
+
+                    if (isTest) {
+                      return 'https://allyyim.github.io/matchaRatings/'
+                    }
+
+                    if (isWindows) {
+                      return 'https://www.microsoft.com/store/apps/SipAndScore' // Replace with actual App ID
+                    }
+
+                    return 'https://allyyim.github.io/matchaRatings/'
                   }
+
+                  const shareLink = getShareLink()
+                  const shareData = {
+                    title: 'Sip & Score',
+                    text: 'Check out Sip & Score - an app for rating matcha and exploring matcha places!',
+                    url: shareLink
+                  }
+
                   if (navigator.share) {
                     try {
                       await navigator.share(shareData)
