@@ -979,8 +979,11 @@ function App() {
         const savedName = localStorage.getItem('matchaUserName') || ''
         const savedToken = getSessionToken()
 
+        console.log('Session restore attempt:', { savedName: !!savedName, savedToken: !!savedToken })
+
         if (savedName && savedToken) {
           // Returning user with a cached session: skip the login prompt entirely.
+          console.log('Restoring session for:', savedName)
           if (mounted) {
             setCurrentUserName(savedName)
             setRequiresManualName(false)
@@ -990,6 +993,7 @@ function App() {
           return
         }
 
+        console.log('No saved session found')
         if (mounted) {
           setRequiresManualName(false)
         }
