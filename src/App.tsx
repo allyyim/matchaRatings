@@ -658,6 +658,7 @@ function App() {
   const [isLoadingExplorePlaces, setIsLoadingExplorePlaces] = useState(false)
   const [explorePlaces, setExplorePlaces] = useState<ExplorePlace[]>([])
   const [exploreUsers, setExploreUsers] = useState<ExploreUser[]>([])
+  const [exploreActiveTab, setExploreActiveTab] = useState<'places' | 'users'>('places')
   const [selectedExplorePlaceName, setSelectedExplorePlaceName] = useState('')
   const [selectedExplorePlaceEntries, setSelectedExplorePlaceEntries] = useState<RatingEntry[]>([])
   const [isExplorePlaceModalOpen, setIsExplorePlaceModalOpen] = useState(false)
@@ -2942,76 +2943,89 @@ function App() {
         <main id="main-content" className="container py-3 py-md-5 px-3 px-md-4" tabIndex={-1}>
           <section className="card border-0 shadow-sm matcha-shell mb-4">
             <div className="card-body p-3 p-md-4">
-              <h2 className="h3 fw-bold text-success mb-2">Community</h2>
-  
-              <section className="mb-4">
-                <h3 className="h5 fw-bold text-success mb-2" style={{ cursor: 'pointer' }} onClick={() => setIsExplorePlacesExpanded((prev) => !prev)}>
-                  Places {isExplorePlacesExpanded ? '▼' : '▶'}
-                </h3>
-                <p className="text-muted mb-3">
-                Ranked by community
-                </p>
+              <h2 className="h3 fw-bold text-success mb-4">Community</h2>
 
+              <div className="d-flex gap-2 mb-4" style={{ borderBottom: '1px solid #e9ecef' }}>
+                <button
+                  type="button"
+                  className={`btn btn-link p-0 fw-semibold ${exploreActiveTab === 'places' ? 'text-success' : 'text-muted'}`}
+                  onClick={() => setExploreActiveTab('places')}
+                  style={{ textDecoration: 'none', borderBottom: exploreActiveTab === 'places' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
+                >
+                  Places
+                </button>
+                <button
+                  type="button"
+                  className={`btn btn-link p-0 fw-semibold ${exploreActiveTab === 'users' ? 'text-success' : 'text-muted'}`}
+                  onClick={() => setExploreActiveTab('users')}
+                  style={{ textDecoration: 'none', borderBottom: exploreActiveTab === 'users' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
+                >
+                  Users
+                </button>
+              </div>
 
-                {isExplorePlacesExpanded && explorePlaces.length === 0 && (
-                  <div className="alert alert-light border mb-0">No place data yet. Add ratings to build rankings.</div>
-                )}
+              {exploreActiveTab === 'places' && (
+                <section>
+                  <p className="text-muted mb-3">Ranked by community</p>
 
-                {isExplorePlacesExpanded && explorePlaces.length > 0 && (
-                  <div className="d-flex flex-column gap-2">
-                    {explorePlaces.map((place) => (
-                      <button
-                        type="button"
-                        key={place.placeName}
-                        className="card border-0 shadow-sm explore-place-card"
-                        onClick={() => void openExplorePlaceRatings(place.placeName)}
-                      >
-                        <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-2 text-start">
-                          <div>
-                            <div className="fw-semibold text-success">#{place.rank} {place.placeName}</div>
-                            <div className="small text-muted">{place.entryCount} entries</div>
+                  {explorePlaces.length === 0 && (
+                    <div className="alert alert-light border mb-0">No place data yet. Add ratings to build rankings.</div>
+                  )}
+
+                  {explorePlaces.length > 0 && (
+                    <div className="d-flex flex-column gap-2">
+                      {explorePlaces.map((place) => (
+                        <button
+                          type="button"
+                          key={place.placeName}
+                          className="card border-0 shadow-sm explore-place-card"
+                          onClick={() => void openExplorePlaceRatings(place.placeName)}
+                        >
+                          <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-2 text-start">
+                            <div>
+                              <div className="fw-semibold text-success">#{place.rank} {place.placeName}</div>
+                              <div className="small text-muted">{place.entryCount} entries</div>
+                            </div>
+                            <div className="fw-bold">Average score: {place.averageScore.toFixed(1)} / 200</div>
                           </div>
-                          <div className="fw-bold">Average score: {place.averageScore.toFixed(1)} / 200</div>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </section>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
 
-              <hr className="my-4" />
-              <section>
-                <h3 className="h5 fw-bold text-success mb-2" style={{ cursor: 'pointer' }} onClick={() => setIsExploreUsersExpanded((prev) => !prev)}>
-                  Users {isExploreUsersExpanded ? '▼' : '▶'}
-                </h3>
-                <p className="text-muted mb-3">Community leaderboard</p>
+              {exploreActiveTab === 'users' && (
+                <section>
+                  <p className="text-muted mb-3">Community leaderboard</p>
 
-                {isExploreUsersExpanded && exploreUsers.length === 0 && <div className="alert alert-light border mb-0">No user place data yet.</div>}
+                  {exploreUsers.length === 0 && <div className="alert alert-light border mb-0">No user place data yet.</div>}
 
-                {isExploreUsersExpanded && exploreUsers.length > 0 && (
-                  <div className="d-flex flex-column gap-2">
-                    {exploreUsers.map((user, index) => (
-                      <article key={user.userName} className="card border-0 shadow-sm">
-                        <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
-                          <div className="fw-semibold">
-                            #{index + 1}{' '}
-                            <button
-                              type="button"
-                              className="explore-user-link"
-                              onClick={() => {
-                                void openFriendRatings(user.userName)
-                              }}
-                            >
-                              {user.userName}
-                            </button>
+                  {exploreUsers.length > 0 && (
+                    <div className="d-flex flex-column gap-2">
+                      {exploreUsers.map((user, index) => (
+                        <article key={user.userName} className="card border-0 shadow-sm">
+                          <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
+                            <div className="fw-semibold">
+                              #{index + 1}{' '}
+                              <button
+                                type="button"
+                                className="explore-user-link"
+                                onClick={() => {
+                                  void openFriendRatings(user.userName)
+                                }}
+                              >
+                                {user.userName}
+                              </button>
+                            </div>
+                            <div className="text-success fw-bold">{user.placeCount}</div>
                           </div>
-                          <div className="text-success fw-bold">{user.placeCount}</div>
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                )}
-              </section>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </section>
+              )}
             </div>
           </section>
         </main>
