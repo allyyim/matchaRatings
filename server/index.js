@@ -1210,6 +1210,20 @@ app.get('/api/follows/check/:targetUserName', async (req, res) => {
   return res.json({ isFollowing: result.rowCount > 0 })
 })
 
+app.get('/api/follows/list', async (req, res) => {
+  const email = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
+  if (!email) return res.status(404).json({ error: 'Your account not found' })
+
+  const result = await pool.query(
+    `SELECT a.user_name FROM follows f
+     JOIN accounts a ON f.following_email = a.email
+     WHERE f.follower_email = $1
+     ORDER BY a.user_name`,
+    [email]
+  )
+  return res.json({ following: result.rows.map(r => r.user_name) })
+})
+
 // Like/unlike rating endpoints
 app.post('/api/ratings/:ratingId/like', async (req, res) => {
   const ratingId = Number(req.params.ratingId)

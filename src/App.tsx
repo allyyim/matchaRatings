@@ -1137,6 +1137,28 @@ function App() {
   }, [isUserReady, currentUserName])
 
   useEffect(() => {
+    if (!isUserReady || !currentUserName) return
+
+    let cancelled = false
+
+    async function loadFollowingList() {
+      try {
+        const response = await apiFetch<{ following: string[] }>('/follows/list')
+        if (!cancelled) {
+          setFollowingSet(new Set(response.following))
+        }
+      } catch (error) {
+        console.error('Failed to load following list:', error)
+      }
+    }
+
+    void loadFollowingList()
+    return () => {
+      cancelled = true
+    }
+  }, [isUserReady, currentUserName])
+
+  useEffect(() => {
     const query = location.trim()
 
     if (locationDebounceRef.current !== null) {
