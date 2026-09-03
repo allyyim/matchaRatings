@@ -3561,14 +3561,22 @@ function App() {
                 <button
                   type="button"
                   className={`nav-link ${communityActiveTab === 'following' ? 'active' : ''}`}
-                  onClick={() => setCommunityActiveTab('following')}
+                  onClick={() => {
+                    setCommunityActiveTab('following')
+                    setFriendSuggestions([])
+                    setFriendQuery('')
+                  }}
                 >
                   Following ({followingSet.size})
                 </button>
                 <button
                   type="button"
                   className={`nav-link ${communityActiveTab === 'recommendations' ? 'active' : ''}`}
-                  onClick={() => setCommunityActiveTab('recommendations')}
+                  onClick={() => {
+                    setCommunityActiveTab('recommendations')
+                    setFriendSuggestions([])
+                    setFriendQuery('')
+                  }}
                 >
                   Recs
                 </button>
@@ -3637,14 +3645,6 @@ function App() {
                                 {followingSet.has(friend.userName) ? '✓ Following' : '+ Follow'}
                               </button>
                             </div>
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-outline-success w-100"
-                              onClick={() => void openFriendRatings(friend.userName)}
-                              disabled={isLoadingFriendRatings}
-                            >
-                              View Ratings
-                            </button>
                           </div>
                         ))}
                       </div>
