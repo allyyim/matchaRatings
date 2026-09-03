@@ -2887,7 +2887,7 @@ function App() {
               </button>
             </div>
 
-            <div style={{ padding: '0.75rem', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ padding: '0.75rem', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <div>
                 <button
                   type="button"
