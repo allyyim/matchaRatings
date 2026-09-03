@@ -3349,7 +3349,7 @@ function App() {
       )}
 
       <nav className="navbar navbar-expand-lg navbar-light sticky-top soft-nav minimal-nav" aria-label="Main navigation" style={{ paddingLeft: 0, paddingRight: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingLeft: '1rem', paddingRight: '0.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingLeft: '1rem', paddingRight: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1f5f34' }}>SIP</span>
             <span style={{ fontSize: '1rem', fontWeight: '700', color: '#6c757d' }}>&</span>
@@ -3360,7 +3360,7 @@ function App() {
             className="btn btn-link text-dark p-0 d-flex align-items-center gap-2"
             onClick={() => setIsProfileDrawerOpen(true)}
             title="My Profile"
-            style={{ textDecoration: 'none', marginRight: '0.5rem' }}
+            style={{ textDecoration: 'none', marginRight: 0, paddingRight: '0.75rem' }}
           >
             <span style={{ fontSize: '0.875rem', color: '#495057' }}>{currentUserName}</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -3486,7 +3486,7 @@ function App() {
               <div className="mb-3">
                 <label className="form-label fw-semibold d-block">Flavor Profile</label>
                 <div className="small text-muted mb-3">Click bubbles to toggle flavors</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', placeItems: 'center' }}>
                   {(['bold', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy'] as const).map((flavor) => {
                     const intensity = ratingFlavorPrefs[flavor]
                     const isActive = intensity > 0
@@ -3537,7 +3537,7 @@ function App() {
 
               <div className="mb-3">
                 <label className="form-label fw-semibold d-block">How do you rate this matcha?</label>
-                <div className="small text-muted mb-2">Half-star and 0-star ratings are allowed. Tap on a star to set a value.</div>
+                <div className="small text-muted mb-2 text-center">Half-star and 0-star ratings are allowed. Tap on a star to set a value.</div>
                 <div id="star-rating" className="d-flex gap-2 rating-star-row justify-content-center">
                   {Array.from({ length: 5 }, (_, idx) => {
                     const starIndex = idx + 1

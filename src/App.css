@@ -822,7 +822,11 @@ textarea.form-control {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  font-weight: 600;
+}
+
+.entry-metrics > div:first-child {
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .entry-metrics > div:last-child {
