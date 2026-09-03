@@ -3460,13 +3460,13 @@ function App() {
             </div>
           </section>
 
-          <section>
-            <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
-              <h3 className="h4 fw-bold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => setIsFriendLogsExpanded(!isFriendLogsExpanded)}>
-                {selectedFriend ? selectedFriend : 'Choose friend'}
-              </h3>
-              {selectedFriend && (
-                isFriendSearchOpen ? (
+          {selectedFriend && (
+            <section>
+              <div className="d-flex justify-content-between align-items-center gap-2 mb-3">
+                <h3 className="h4 fw-bold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => setIsFriendLogsExpanded(!isFriendLogsExpanded)}>
+                  {selectedFriend}
+                </h3>
+                {isFriendSearchOpen ? (
                   <div className="search-bar-wrapper">
                     <input
                       id="friend-logs-search-input"
@@ -3581,7 +3581,8 @@ function App() {
                     </button>
                   </div>
                 </article>
-              ))}              {selectedFriend && filteredFriendEntries.length > 3 && !isFriendLogsExpanded && (
+              ))}
+              {selectedFriend && filteredFriendEntries.length > 3 && !isFriendLogsExpanded && (
                 <button
                   type="button"
                   className="btn btn-outline-success w-100 mt-2"
@@ -3592,6 +3593,7 @@ function App() {
               )}
             </div>
           </section>
+          )}
         </main>
       )}
 
