@@ -119,7 +119,7 @@ body {
 
 /* Navigation Styles */
 .navbar-brand {
-  display: none;
+  display: block;
 }
 
 .nav-user {
