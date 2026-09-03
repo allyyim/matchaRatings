@@ -3009,6 +3009,130 @@ function App() {
         document.body
       )}
 
+      {isEditingEntry && createPortal(
+        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => {
+          setIsEditingEntry(false)
+          setEditEntryPhoto('')
+        }}>
+          <div className="modal-card card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="card-header bg-white border-bottom d-flex align-items-center p-4">
+              <h3 className="h5 fw-bold text-success mb-0" style={{ flexShrink: 0 }}>Edit Rating</h3>
+              <button
+                type="button"
+                className="btn btn-link text-muted p-0"
+                onClick={() => {
+                  setIsEditingEntry(false)
+                  setEditEntryPhoto('')
+                }}
+                style={{ marginLeft: 'auto', flexShrink: 0 }}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="card-body p-4">
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label className="form-label fw-semibold mb-2 text-success">Rating</label>
+                <div className="d-flex gap-2 mb-2 rating-star-row">
+                  {Array.from({ length: 5 }, (_, idx) => {
+                    const starIndex = idx + 1
+                    const fillAmount = Math.max(0, Math.min(1, editRating - idx))
+                    return (
+                      <button
+                        type="button"
+                        key={`edit-${starIndex}`}
+                        className="star"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          const bounds = event.currentTarget.getBoundingClientRect()
+                          const clickX = event.clientX - bounds.left
+                          const step = clickX < bounds.width / 2 ? 0.5 : 1
+                          setEditRating((starIndex - 1) + step)
+                        }}
+                        onPointerDown={(event) => {
+                          event.stopPropagation()
+                          setIsEditRatingDragActive(true)
+                          handleEditRatingPointer(starIndex, event)
+                        }}
+                        onPointerMove={(event) => {
+                          if (!isEditRatingDragActive) return
+                          event.stopPropagation()
+                          handleEditRatingPointer(starIndex, event)
+                        }}
+                        onPointerUp={(event) => {
+                          event.stopPropagation()
+                          setIsEditRatingDragActive(false)
+                        }}
+                        aria-label={`Edit to ${starIndex} stars`}
+                      >
+                        <img className="star-base" src={pixelStarUrl} alt="" />
+                        <span className="star-fill-clip" style={{ width: `${fillAmount * 100}%` }}>
+                          <img className="star-fill" src={pixelStarFilledUrl} alt="" />
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={(event) => {
+                    event.stopPropagation()
+                    setEditRating(0)
+                  }}
+                >
+                  Clear rating
+                </button>
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label className="form-label fw-semibold mb-2 text-success">Location</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  value={editLocation}
+                  onChange={(event) => setEditLocation(event.target.value)}
+                  placeholder="Matcha place name"
+                />
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label className="form-label fw-semibold mb-2 text-success">Photo</label>
+                <button
+                  type="button"
+                  className="btn btn-outline-success btn-sm w-100"
+                  onClick={() => setIsCameraModalOpen(true)}
+                >
+                  Change Photo
+                </button>
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label className="form-label fw-semibold mb-2 text-success">Notes</label>
+                <textarea
+                  className="form-control"
+                  rows={5}
+                  value={editThoughts}
+                  onChange={(event) => setEditThoughts(event.target.value)}
+                  placeholder="Your thoughts..."
+                />
+              </div>
+            </div>
+            <div className="card-footer bg-white border-top p-4 d-flex gap-2">
+              <button type="button" className="btn btn-success flex-grow-1" onClick={() => void saveEntryEdit(selectedEntryId!)}>
+                Save
+              </button>
+              <button type="button" className="btn btn-outline-secondary flex-grow-1" onClick={() => {
+                setIsEditingEntry(false)
+                setEditEntryPhoto('')
+              }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <nav className="navbar navbar-expand-lg navbar-light bg-white border-bottom sticky-top soft-nav" aria-label="Main navigation">
         <div className="container d-flex flex-column flex-lg-row justify-content-between align-items-start align-items-lg-center gap-2">
           <div className="d-flex flex-column w-100">
@@ -3437,147 +3561,42 @@ function App() {
                     <div className="entry-hint-icon" aria-hidden="true">✎</div>
                   </div>
 
-                  {selectedEntryId === entry.id && (
+                  {selectedEntryId === entry.id && !isEditingEntry && (
                     <div className="entry-overlay" onClick={(event) => event.stopPropagation()}>
-                      {!isEditingEntry && (
-                        <div className="entry-overlay-actions d-flex flex-column gap-2 align-items-center">
-                          <div className="text-white small fw-semibold mb-2">Tap to edit</div>
-                          <button type="button" className="btn btn-light btn-sm" onClick={() => startEntryEdit(entry)} aria-label="Edit rating">
-                            <span className="action-icon-wrap">
-                              <img src={pencilIconUrl} alt="" className="action-icon" />
-                            </span>
-                            Edit
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-danger btn-sm"
-                            onClick={() => {
-                              if (window.confirm('Delete this rating entry?')) {
-                                void deleteEntry(entry.id)
-                              }
-                            }}
-                            aria-label="Delete rating"
-                          >
-                            <span className="action-icon-wrap">
-                              <img src={trashIconUrl} alt="" className="action-icon" />
-                            </span>
-                            Delete
-                          </button>
-                          <button
-                            type="button"
-                            className="btn btn-outline-light btn-sm"
-                            onClick={() => {
-                              setSelectedEntryId(null)
-                              setIsEditingEntry(false)
-                            }}
-                          >
-                            Close
-                          </button>
-                        </div>
-                      )}
-
-                      {isEditingEntry && (
-                        <div className="entry-edit-panel p-3 bg-white rounded shadow-sm">
-                          <div style={{ marginBottom: '1rem' }}>
-                            <label className="form-label fw-semibold mb-2 text-success">Rating</label>
-                            <div className="d-flex gap-2 mb-2 rating-star-row">
-                              {Array.from({ length: 5 }, (_, idx) => {
-                                const starIndex = idx + 1
-                                const fillAmount = Math.max(0, Math.min(1, editRating - idx))
-                                return (
-                                  <button
-                                    type="button"
-                                    key={`edit-${entry.id}-${starIndex}`}
-                                    className="star"
-                                    onClick={(event) => {
-                                      event.stopPropagation()
-                                      const bounds = event.currentTarget.getBoundingClientRect()
-                                      const clickX = event.clientX - bounds.left
-                                      const step = clickX < bounds.width / 2 ? 0.5 : 1
-                                      setEditRating((starIndex - 1) + step)
-                                    }}
-                                    onPointerDown={(event) => {
-                                      event.stopPropagation()
-                                      setIsEditRatingDragActive(true)
-                                      handleEditRatingPointer(starIndex, event)
-                                    }}
-                                    onPointerMove={(event) => {
-                                      if (!isEditRatingDragActive) return
-                                      event.stopPropagation()
-                                      handleEditRatingPointer(starIndex, event)
-                                    }}
-                                    onPointerUp={(event) => {
-                                      event.stopPropagation()
-                                      setIsEditRatingDragActive(false)
-                                    }}
-                                    aria-label={`Edit to ${starIndex} stars`}
-                                  >
-                                    <img className="star-base" src={pixelStarUrl} alt="" />
-                                    <span className="star-fill-clip" style={{ width: `${fillAmount * 100}%` }}>
-                                      <img className="star-fill" src={pixelStarFilledUrl} alt="" />
-                                    </span>
-                                  </button>
-                                )
-                              })}
-                            </div>
-                            <button
-                              type="button"
-                              className="btn btn-outline-secondary btn-sm"
-                              onClick={(event) => {
-                                event.stopPropagation()
-                                setEditRating(0)
-                              }}
-                            >
-                              Clear rating
-                            </button>
-                          </div>
-
-                          <div style={{ marginBottom: '1rem' }}>
-                            <label className="form-label fw-semibold mb-2 text-success">Location</label>
-                            <input
-                              type="text"
-                              className="form-control"
-                              value={editLocation}
-                              onChange={(event) => setEditLocation(event.target.value)}
-                              placeholder="Matcha place name"
-                            />
-                          </div>
-
-                          <div style={{ marginBottom: '1rem' }}>
-                            <label className="form-label fw-semibold mb-2 text-success">Photo</label>
-                            <button
-                              type="button"
-                              className="btn btn-outline-success btn-sm w-100"
-                              onClick={() => setIsCameraModalOpen(true)}
-                            >
-                              Change Photo
-                            </button>
-                          </div>
-
-                          <div style={{ marginBottom: '1rem' }}>
-                            <label className="form-label fw-semibold mb-2 text-success">Notes</label>
-                            <textarea
-                              className="form-control"
-                              rows={3}
-                              value={editThoughts}
-                              onChange={(event) => setEditThoughts(event.target.value)}
-                              placeholder="Your thoughts..."
-                            />
-                          </div>
-
-                          <div className="d-flex gap-2">
-                            <button type="button" className="btn btn-success btn-sm flex-grow-1" onClick={() => void saveEntryEdit(entry.id)}>
-                              Save
-                            </button>
-                            <button type="button" className="btn btn-outline-secondary btn-sm flex-grow-1" onClick={() => {
-                              setIsEditingEntry(false)
-                              setEditEntryPhoto('')
-                            }}>
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      )}
+                      <div className="entry-overlay-actions d-flex flex-column gap-2 align-items-center">
+                        <div className="text-white small fw-semibold mb-2">Tap to edit</div>
+                        <button type="button" className="btn btn-light btn-sm" onClick={() => startEntryEdit(entry)} aria-label="Edit rating">
+                          <span className="action-icon-wrap">
+                            <img src={pencilIconUrl} alt="" className="action-icon" />
+                          </span>
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm"
+                          onClick={() => {
+                            if (window.confirm('Delete this rating entry?')) {
+                              void deleteEntry(entry.id)
+                            }
+                          }}
+                          aria-label="Delete rating"
+                        >
+                          <span className="action-icon-wrap">
+                            <img src={trashIconUrl} alt="" className="action-icon" />
+                          </span>
+                          Delete
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-outline-light btn-sm"
+                          onClick={() => {
+                            setSelectedEntryId(null)
+                            setIsEditingEntry(false)
+                          }}
+                        >
+                          Close
+                        </button>
+                      </div>
                     </div>
                   )}
                 </article>
