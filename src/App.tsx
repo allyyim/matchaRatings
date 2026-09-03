@@ -1529,19 +1529,19 @@ function App() {
       const count = updated.ratings.length
       if (count === 1) {
         setMilestoneMessage('🎉 Your matcha journey starts here!')
-        confetti({ duration: 1000, spread: 100 })
+        confetti({ duration: 1000, spread: 100 } as any)
       } else if (count === 10) {
         setMilestoneMessage('🏆 10 ratings! You\'re a true matcha enthusiast!')
-        confetti({ duration: 1000, spread: 100 })
+        confetti({ duration: 1000, spread: 100 } as any)
       } else if (count === 25) {
         setMilestoneMessage('✨ 25 ratings! You\'re building an incredible collection!')
-        confetti({ duration: 1000, spread: 100 })
+        confetti({ duration: 1000, spread: 100 } as any)
       } else if (count === 50) {
         setMilestoneMessage('🌟 50 ratings! You\'re a matcha connoisseur!')
-        confetti({ duration: 1000, spread: 100 })
+        confetti({ duration: 1000, spread: 100 } as any)
       } else if (count === 100) {
         setMilestoneMessage('👑 100 ratings! You\'re a matcha legend!')
-        confetti({ duration: 1000, spread: 100 })
+        confetti({ duration: 1000, spread: 100 } as any)
       }
 
       if (milestoneMessage) {
@@ -2997,7 +2997,7 @@ function App() {
                         }}
                         title={likedRatingsSet.has(entry.id) ? 'Unlike' : 'Like'}
                       >
-                        {likedRatingsSet.has(entry.id) ? '❤️' : '🤍'} {ratingLikeCounts.get(entry.id) || 0}
+                        {likedRatingsSet.has(entry.id) ? '❤️' : '🤍'} 0
                       </button>
                       <div className="entry-hint-icon" aria-hidden="true">✎</div>
                     </div>
