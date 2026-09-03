@@ -1,6 +1,6 @@
 {
   "format": "layers-model",
-  "generatedBy": "Drink Area Detection Model",
+  "generatedBy": "Manual Training Pipeline",
   "modelTopology": {
     "class_name": "Sequential",
     "config": {
