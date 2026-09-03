@@ -2777,45 +2777,13 @@ function App() {
             </div>
 
             <div style={{ padding: '0.75rem', flex: 1, overflowY: 'auto' }}>
-              <div className="mb-3">
-                <h6 className="fw-bold text-success mb-2">My Matcha Preferences</h6>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-                  {['bold', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy'].map((flavor) => (
-                    <button
-                      key={flavor}
-                      type="button"
-                      className={`btn btn-sm ${userFlavors.includes(flavor) ? 'btn-success' : 'btn-outline-success'}`}
-                      onClick={() => setUserFlavors(userFlavors.includes(flavor)
-                        ? userFlavors.filter(f => f !== flavor)
-                        : [...userFlavors, flavor]
-                      )}
-                      style={{ textTransform: 'capitalize', fontSize: '0.75rem' }}
-                    >
-                      {flavor}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h6 className="fw-bold text-success mb-2">Milk Preference</h6>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
-                  {['almond', 'oat', 'pistachio', 'whole'].map((milk) => (
-                    <button
-                      key={milk}
-                      type="button"
-                      className={`btn btn-sm ${userMilkTypes.includes(milk) ? 'btn-success' : 'btn-outline-success'}`}
-                      onClick={() => setUserMilkTypes(userMilkTypes.includes(milk)
-                        ? userMilkTypes.filter(m => m !== milk)
-                        : [...userMilkTypes, milk]
-                      )}
-                      style={{ textTransform: 'capitalize', fontSize: '0.75rem' }}
-                    >
-                      {milk}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <button
+                type="button"
+                className="btn btn-success btn-sm w-100 mb-3"
+                onClick={() => setIsPreferencesModalOpen(true)}
+              >
+                My Prefs
+              </button>
             </div>
 
             <div style={{ padding: '0.75rem', borderTop: '1px solid #e9ecef' }}>
@@ -2839,7 +2807,7 @@ function App() {
         <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => setIsPreferencesModalOpen(false)}>
           <div className="modal-card card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
             <div className="card-header bg-white border-bottom d-flex align-items-center p-4">
-              <h3 className="h5 fw-bold text-success mb-0" style={{ flexShrink: 0 }}>Preferences</h3>
+              <h3 className="h5 fw-bold text-success mb-0" style={{ flexShrink: 0 }}>My Matcha Preferences</h3>
               <button
                 type="button"
                 className="btn btn-link text-muted p-0"
@@ -2851,9 +2819,9 @@ function App() {
             </div>
             <div className="card-body p-4">
               <div className="mb-4">
-                <label className="form-label fw-semibold text-success mb-2">Flavor Preferences</label>
-                <div className="d-flex flex-wrap gap-2">
-                  {['bold', 'nutty', 'umami', 'vegetal', 'sweet', 'astringent'].map((flavor) => (
+                <label className="form-label fw-semibold text-success mb-2">Matcha Flavor Preferences</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+                  {['bold', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy'].map((flavor) => (
                     <button
                       key={flavor}
                       type="button"
@@ -2862,6 +2830,7 @@ function App() {
                         ? userFlavors.filter(f => f !== flavor)
                         : [...userFlavors, flavor]
                       )}
+                      style={{ textTransform: 'capitalize', fontSize: '0.75rem' }}
                     >
                       {flavor}
                     </button>
@@ -2869,9 +2838,9 @@ function App() {
                 </div>
               </div>
               <div className="mb-4">
-                <label className="form-label fw-semibold text-success mb-2">Milk Types</label>
-                <div className="d-flex flex-wrap gap-2">
-                  {['oat', 'whole', 'almond', 'soy'].map((milk) => (
+                <label className="form-label fw-semibold text-success mb-2">Milk Preference</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
+                  {['almond', 'oat', 'pistachio', 'whole'].map((milk) => (
                     <button
                       key={milk}
                       type="button"
@@ -2880,6 +2849,7 @@ function App() {
                         ? userMilkTypes.filter(m => m !== milk)
                         : [...userMilkTypes, milk]
                       )}
+                      style={{ textTransform: 'capitalize', fontSize: '0.75rem' }}
                     >
                       {milk}
                     </button>
@@ -3092,7 +3062,7 @@ function App() {
               <div className="mb-3">
                 <label className="form-label fw-semibold d-block">Flavor Profile</label>
                 <div className="small text-muted mb-3">Click bubbles to toggle flavors</div>
-                <div className="d-flex flex-wrap gap-2">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem' }}>
                   {(['bold', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy'] as const).map((flavor) => {
                     const intensity = ratingFlavorPrefs[flavor]
                     const isActive = intensity > 0
