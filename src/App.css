@@ -811,8 +811,8 @@ textarea.form-control {
   padding: 0.45rem 0 0.1rem;
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.9rem;
+  gap: 0.15rem;
+  font-family: inherit;
   line-height: 1.4;
   color: var(--text-secondary);
   letter-spacing: 0.01em;
@@ -825,12 +825,13 @@ textarea.form-control {
 }
 
 .entry-metrics > div:first-child {
+  font-size: 1rem;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .entry-metrics > div:last-child {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   font-weight: 400;
   color: var(--text-secondary);
 }
