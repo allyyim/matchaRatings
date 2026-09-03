@@ -913,10 +913,9 @@ app.post('/api/admin/migrate-photos-to-cloudinary', async (req, res) => {
   }
 })
 
-// Middleware to skip auth for migration endpoint
-app.use((req, res, next) => {
-  console.log('Auth middleware check:', req.path, 'matches:', req.path.startsWith('/api/admin/migrate-photos-to-cloudinary'))
-  if (req.path.startsWith('/api/admin/migrate-photos-to-cloudinary')) {
+// Protect all /api routes with auth, except the migration endpoint
+app.use('/api', (req, res, next) => {
+  if (req.path === '/admin/migrate-photos-to-cloudinary') {
     console.log('Skipping auth for migration endpoint')
     return next()
   }
