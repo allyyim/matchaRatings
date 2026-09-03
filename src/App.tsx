@@ -1843,7 +1843,7 @@ function App() {
                 <h1 className="h4 fw-bold text-success mb-1">Welcome back</h1>
               </div>
               <p className="text-muted mb-4 text-center small">
-                Sign in with Google to access your ratings
+                Choose how you'd like to sign in
               </p>
               <button
                 type="button"
@@ -1855,7 +1855,7 @@ function App() {
                 <svg width="20" height="20" viewBox="0 0 24 24">
                   <text x="2" y="16" fontSize="14" fill="#1f5f34">G</text>
                 </svg>
-                {isSubmittingName ? 'Signing in…' : 'Sign in with Google'}
+                {isSubmittingName ? 'Signing in…' : 'Google'}
               </button>
               <div className="text-muted text-center mb-3" style={{ fontSize: '0.9rem' }}>or</div>
               <button
@@ -1863,7 +1863,7 @@ function App() {
                 className="btn btn-outline-success w-100 mb-3"
                 onClick={() => setAuthMode('magic-link')}
               >
-                Sign in with email
+                Email (magic link)
               </button>
               <button
                 type="button"
@@ -1886,7 +1886,7 @@ function App() {
                 <h1 className="h4 fw-bold text-success mb-1">Let's begin</h1>
               </div>
               <p className="text-muted mb-4 text-center small">
-                Sign up with Google to start rating matcha
+                Choose how you'd like to sign up
               </p>
               <button
                 type="button"
@@ -1898,7 +1898,7 @@ function App() {
                 <svg width="20" height="20" viewBox="0 0 24 24">
                   <text x="2" y="16" fontSize="14" fill="#1f5f34">G</text>
                 </svg>
-                {isSubmittingName ? 'Signing up…' : 'Sign up with Google'}
+                {isSubmittingName ? 'Signing up…' : 'Google'}
               </button>
               <div className="text-muted text-center mb-3" style={{ fontSize: '0.9rem' }}>or</div>
               <button
@@ -1906,7 +1906,7 @@ function App() {
                 className="btn btn-outline-success w-100 mb-3"
                 onClick={() => setAuthMode('magic-link')}
               >
-                Sign up with email
+                Email (magic link)
               </button>
               <button
                 type="button"
@@ -1997,12 +1997,12 @@ function App() {
             <div className="card-body p-3 p-md-4">
               <div className="text-center mb-4">
                 <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>✉️</div>
-                <h1 className="h4 fw-bold text-success mb-1">{isMagicLinkSent ? 'Check your email' : 'Sign in with email'}</h1>
+                <h1 className="h4 fw-bold text-success mb-1">{isMagicLinkSent ? 'Check your email' : 'Email magic link'}</h1>
               </div>
               {!isMagicLinkSent ? (
                 <>
                   <p className="text-muted mb-4 text-center small">
-                    Enter your email to receive a sign-in link
+                    We'll send you a link to sign in or create an account
                   </p>
                   <form onSubmit={async (e) => {
                     e.preventDefault()
