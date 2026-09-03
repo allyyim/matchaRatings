@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom'
 import { useGoogleLogin } from '@react-oauth/google'
 import * as Sentry from '@sentry/react'
 import * as tf from '@tensorflow/tfjs'
+import confetti from 'canvas-confetti'
 import './App.css'
 
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN || ''
@@ -659,6 +660,8 @@ function App() {
   const [explorePlaces, setExplorePlaces] = useState<ExplorePlace[]>([])
   const [exploreUsers, setExploreUsers] = useState<ExploreUser[]>([])
   const [exploreActiveTab, setExploreActiveTab] = useState<'places' | 'users'>('places')
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [currentOnboardingSlide, setCurrentOnboardingSlide] = useState(0)
   const [selectedExplorePlaceName, setSelectedExplorePlaceName] = useState('')
   const [selectedExplorePlaceEntries, setSelectedExplorePlaceEntries] = useState<RatingEntry[]>([])
   const [isExplorePlaceModalOpen, setIsExplorePlaceModalOpen] = useState(false)
@@ -958,6 +961,13 @@ function App() {
       mounted = false
     }
   }, [browserId])
+
+  useEffect(() => {
+    // Show onboarding for first-time users
+    if (isUserReady && myEntries.length === 0 && !localStorage.getItem('onboardingShown')) {
+      setShowOnboarding(true)
+    }
+  }, [isUserReady, myEntries.length])
 
   function signOut() {
     setSessionToken('')
@@ -1481,18 +1491,23 @@ function App() {
       const count = updated.ratings.length
       if (count === 1) {
         setMilestoneMessage('🎉 Your matcha journey starts here!')
+        confetti({ duration: 1000, spread: 100 })
       } else if (count === 10) {
         setMilestoneMessage('🏆 10 ratings! You\'re a true matcha enthusiast!')
+        confetti({ duration: 1000, spread: 100 })
       } else if (count === 25) {
         setMilestoneMessage('✨ 25 ratings! You\'re building an incredible collection!')
+        confetti({ duration: 1000, spread: 100 })
       } else if (count === 50) {
         setMilestoneMessage('🌟 50 ratings! You\'re a matcha connoisseur!')
+        confetti({ duration: 1000, spread: 100 })
       } else if (count === 100) {
         setMilestoneMessage('👑 100 ratings! You\'re a matcha legend!')
+        confetti({ duration: 1000, spread: 100 })
       }
 
       if (milestoneMessage) {
-        setTimeout(() => setMilestoneMessage(''), 4000)
+        setTimeout(() => setMilestoneMessage(''), 1000)
       }
 
       setCurrentRating(0)
@@ -1998,6 +2013,99 @@ function App() {
       {milestoneMessage && createPortal(
         <div className="milestone-toast" role="status" aria-live="polite">
           <div className="milestone-toast-content">{milestoneMessage}</div>
+        </div>,
+        document.body
+      )}
+
+      {showOnboarding && createPortal(
+        <div className="onboarding-overlay">
+          <div className="onboarding-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="onboarding-slides">
+              {currentOnboardingSlide === 0 && (
+                <div className="onboarding-slide">
+                  <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🍵</div>
+                  <h2 className="fw-bold text-success mb-3">Welcome to Sip & Score</h2>
+                  <p className="text-muted mb-4">Track your matcha journey, one sip at a time. Rate experiences, discover favorites, and connect with the community.</p>
+                </div>
+              )}
+              {currentOnboardingSlide === 1 && (
+                <div className="onboarding-slide">
+                  <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📝</div>
+                  <h2 className="fw-bold text-success mb-3">Log Your Ratings</h2>
+                  <p className="text-muted mb-4">Click "New Log" to rate matcha drinks. Capture photos, note flavors, and track your impressions for each location.</p>
+                </div>
+              )}
+              {currentOnboardingSlide === 2 && (
+                <div className="onboarding-slide">
+                  <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📊</div>
+                  <h2 className="fw-bold text-success mb-3">Track Your Metrics</h2>
+                  <p className="text-muted mb-4">See greenness scores, ratings, and total scores. Watch your personal statistics grow as you explore.</p>
+                </div>
+              )}
+              {currentOnboardingSlide === 3 && (
+                <div className="onboarding-slide">
+                  <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🌍</div>
+                  <h2 className="fw-bold text-success mb-3">Explore Community</h2>
+                  <p className="text-muted mb-4">Check out top-rated places and leaderboards. See what other matcha enthusiasts have discovered.</p>
+                </div>
+              )}
+              {currentOnboardingSlide === 4 && (
+                <div className="onboarding-slide">
+                  <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✨</div>
+                  <h2 className="fw-bold text-success mb-3">You're Ready!</h2>
+                  <p className="text-muted mb-4">Start exploring and rating matcha. Build your collection and join the community.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="onboarding-dots">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <button
+                  key={i}
+                  className={`onboarding-dot ${i === currentOnboardingSlide ? 'active' : ''}`}
+                  onClick={() => setCurrentOnboardingSlide(i)}
+                  aria-label={`Slide ${i + 1}`}
+                />
+              ))}
+            </div>
+
+            <div className="onboarding-nav">
+              <button
+                className="btn btn-outline-secondary"
+                onClick={() => setShowOnboarding(false)}
+                disabled={currentOnboardingSlide === 0}
+              >
+                ← Back
+              </button>
+              <button
+                className="btn btn-link text-muted p-0"
+                onClick={() => {
+                  setShowOnboarding(false)
+                  localStorage.setItem('onboardingShown', 'true')
+                }}
+              >
+                Skip
+              </button>
+              {currentOnboardingSlide === 4 ? (
+                <button
+                  className="btn btn-success"
+                  onClick={() => {
+                    setShowOnboarding(false)
+                    localStorage.setItem('onboardingShown', 'true')
+                  }}
+                >
+                  Get Started
+                </button>
+              ) : (
+                <button
+                  className="btn btn-success"
+                  onClick={() => setCurrentOnboardingSlide(currentOnboardingSlide + 1)}
+                >
+                  Next →
+                </button>
+              )}
+            </div>
+          </div>
         </div>,
         document.body
       )}

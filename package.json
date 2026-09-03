@@ -17,6 +17,7 @@
     "@sentry/react": "^10.70.0",
     "@tensorflow/tfjs": "^4.22.0",
     "bootstrap": "^5.3.8",
+    "canvas-confetti": "^1.9.4",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
