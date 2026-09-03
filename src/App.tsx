@@ -199,72 +199,92 @@ function normalizeMaskTensor(rawPrediction: tf.Tensor | tf.Tensor[]): tf.Tensor2
 
 async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResult> {
   const fallbackRegion = createFallbackRegion(img.width, img.height)
+  const model = await loadDrinkAreaModel()
 
-  // Use color-based detection (more reliable than random-weight ML)
-  const canvas = document.createElement('canvas')
-  canvas.width = img.width
-  canvas.height = img.height
-  const ctx = canvas.getContext('2d')
-  if (!ctx) {
+  if (!model) {
     return {
       region: fallbackRegion,
-      statusMessage: 'Canvas unavailable. Using heuristic drink area.',
+      statusMessage: 'ML model not found. Using heuristic drink area.',
       coveragePercent: null,
       confidencePercent: null
     }
   }
 
-  ctx.drawImage(img, 0, 0)
-  const imageData = ctx.getImageData(0, 0, img.width, img.height)
-  const data = imageData.data
+  const inputTensor = tf.tidy(() => {
+    const pixels = tf.browser.fromPixels(img)
+    const resized = tf.image.resizeBilinear(pixels, [drinkAreaModelConfig.inputSize, drinkAreaModelConfig.inputSize])
+    return resized.toFloat().div(255).expandDims(0)
+  })
 
-  // Detect matcha: greenish/brownish pixels
-  const drinkPixels: Uint8ClampedArray = new Uint8ClampedArray(img.width * img.height)
+  let maskTensor: tf.Tensor2D | null = null
+  try {
+    const rawPrediction = model.predict(inputTensor) as tf.Tensor | tf.Tensor[]
+    maskTensor = normalizeMaskTensor(rawPrediction)
+    if (Array.isArray(rawPrediction)) {
+      rawPrediction.forEach((tensor) => tensor.dispose())
+    } else {
+      rawPrediction.dispose()
+    }
+  } catch {
+    inputTensor.dispose()
+    return {
+      region: fallbackRegion,
+      statusMessage: 'ML detector failed at runtime. Using heuristic drink area.',
+      coveragePercent: null,
+      confidencePercent: null
+    }
+  }
+
+  inputTensor.dispose()
+
+  if (!maskTensor) {
+    return {
+      region: fallbackRegion,
+      statusMessage: 'ML output was incompatible. Using heuristic drink area.',
+      coveragePercent: null,
+      confidencePercent: null
+    }
+  }
+
+  const resizedMask = tf.tidy(() => {
+    const expanded = maskTensor.expandDims(-1) as tf.Tensor3D
+    const resized = tf.image.resizeBilinear(expanded, [img.height, img.width])
+    return resized.squeeze() as tf.Tensor2D
+  })
+  const maskValues = await resizedMask.data()
+  maskTensor.dispose()
+  resizedMask.dispose()
+
   let activePixels = 0
   let activeConfidenceSum = 0
-
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i]
-    const g = data[i + 1]
-    const b = data[i + 2]
-
-    // Detect matcha: greenish or brownish colors
-    const isGreenish = g > r && g > b && g > 80 && Math.abs(r - b) < 50
-    const isBrownish = r > 60 && g > 50 && b < 100 && g < r + 20
-    const isMatcha = isGreenish || isBrownish
-
-    if (isMatcha) {
-      const pixelIndex = i / 4
-      const confidence = Math.min(Math.max(g - 50, 0) / 200, 1)
-      drinkPixels[pixelIndex] = Math.round(confidence * 255)
-      if (confidence > drinkAreaModelConfig.maskThreshold / 255) {
-        activePixels++
-        activeConfidenceSum += confidence
-      }
+  for (let index = 0; index < maskValues.length; index++) {
+    const value = maskValues[index]
+    if (value >= drinkAreaModelConfig.maskThreshold) {
+      activePixels++
+      activeConfidenceSum += value
     }
   }
 
   if (!activePixels) {
     return {
       region: fallbackRegion,
-      statusMessage: 'Color detection: no drink area found. Using heuristic.',
+      statusMessage: 'ML found no drink region. Using heuristic drink area.',
       coveragePercent: null,
       confidencePercent: null
     }
   }
 
-  const coveragePercent = (activePixels / drinkPixels.length) * 100
+  const coveragePercent = (activePixels / maskValues.length) * 100
   const confidencePercent = (activeConfidenceSum / activePixels) * 100
 
   return {
     region: {
-      source: 'color-detection',
+      source: 'ml-mask',
       contains(x: number, y: number) {
-        const pixelIndex = y * img.width + x
-        return drinkPixels[pixelIndex] >= drinkAreaModelConfig.maskThreshold
+        return maskValues[y * img.width + x] >= drinkAreaModelConfig.maskThreshold
       }
     },
-    statusMessage: 'Drink area detected using color analysis.',
+    statusMessage: 'ML drink-area detector active.',
     coveragePercent,
     confidencePercent
   }
