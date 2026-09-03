@@ -2997,12 +2997,12 @@ function App() {
                     style={{
                       textTransform: 'capitalize',
                       fontSize: '0.8rem',
-                      background: 'rgba(102, 225, 215, 0.3)',
-                      backdropFilter: 'blur(8px)',
-                      border: '1px solid rgba(102, 225, 215, 0.4)',
-                      color: '#0d7f7f',
-                      fontWeight: userFlavors.includes(flavor) ? '600' : '500',
-                      opacity: userFlavors.includes(flavor) ? 1 : 0.7
+                      background: userFlavors.includes(flavor)
+                        ? 'linear-gradient(135deg, #1a9b8e 0%, #20B2AA 100%)'
+                        : 'linear-gradient(135deg, #5cd9d0 0%, #7fe5de 100%)',
+                      border: '1px solid ' + (userFlavors.includes(flavor) ? 'rgba(26, 155, 142, 0.4)' : 'rgba(92, 217, 208, 0.3)'),
+                      color: userFlavors.includes(flavor) ? 'white' : '#1a9b8e',
+                      fontWeight: userFlavors.includes(flavor) ? '600' : '500'
                     }}
                   >
                     {flavor}
@@ -3030,10 +3030,9 @@ function App() {
                   }
                 }}
                 style={{
-                  background: 'rgba(102, 225, 215, 0.5)',
-                  backdropFilter: 'blur(10px)',
-                  color: '#0d7f7f',
-                  border: '1px solid rgba(102, 225, 215, 0.4)',
+                  background: 'linear-gradient(135deg, #1a9b8e 0%, #20B2AA 100%)',
+                  color: 'white',
+                  border: '1px solid rgba(26, 155, 142, 0.4)',
                   fontWeight: '600'
                 }}
               >
