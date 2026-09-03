@@ -697,6 +697,7 @@ function App() {
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false)
   const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false)
   const [isChangeEmailDrawerOpen, setIsChangeEmailDrawerOpen] = useState(false)
+  const [isPrivacyPolicyModalOpen, setIsPrivacyPolicyModalOpen] = useState(false)
   const [newEmail, setNewEmail] = useState('')
   const [userFlavors, setUserFlavors] = useState<string[]>([])
   const [likedRatingsSet, setLikedRatingsSet] = useState<Set<number>>(new Set())
@@ -2540,6 +2541,7 @@ function App() {
                             <div className="fw-bold mb-2">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
                             <div className="mb-2">Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                             <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                            <div style={{ color: '#198754', marginBottom: '0.5rem' }}>Matcha greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                             {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
                                 {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
@@ -3008,9 +3010,7 @@ function App() {
               <button
                 type="button"
                 className="btn btn-link btn-sm text-start p-0 w-100"
-                onClick={() => {
-                  window.open('https://example.com/privacy-policy', '_blank')
-                }}
+                onClick={() => setIsPrivacyPolicyModalOpen(true)}
                 style={{ textDecoration: 'none', color: '#198754' }}
               >
                 Privacy Policy
@@ -3133,6 +3133,72 @@ function App() {
               >
                 Save
               </button>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
+
+      {isPrivacyPolicyModalOpen && createPortal(
+        <>
+          <div
+            className="modal-overlay"
+            onClick={() => setIsPrivacyPolicyModalOpen(false)}
+            style={{ zIndex: 1040 }}
+          />
+          <div
+            className="profile-drawer"
+            style={{
+              position: 'fixed',
+              right: 0,
+              top: 0,
+              height: '100vh',
+              width: '280px',
+              maxWidth: '100vw',
+              backgroundColor: 'white',
+              boxShadow: '-2px 0 8px rgba(0,0,0,0.1)',
+              zIndex: 1050,
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef' }}>
+              <button
+                type="button"
+                className="close-btn"
+                onClick={() => setIsPrivacyPolicyModalOpen(false)}
+                style={{ float: 'right' }}
+              >
+                ✕
+              </button>
+              <h6 className="fw-bold text-success mb-0">Privacy Policy</h6>
+            </div>
+
+            <div style={{ padding: '1rem', overflowY: 'auto', flex: 1, fontSize: '0.875rem', lineHeight: '1.6' }}>
+              <h6 className="fw-semibold text-success mb-2">Data Collection</h6>
+              <p className="text-muted mb-3">
+                We collect information you provide when creating an account, including your email address and flavor preferences. We also store your matcha ratings, photos, and location data.
+              </p>
+
+              <h6 className="fw-semibold text-success mb-2">Data Usage</h6>
+              <p className="text-muted mb-3">
+                Your data is used to personalize your experience, generate community leaderboards, and improve our app. We do not sell your personal information to third parties.
+              </p>
+
+              <h6 className="fw-semibold text-success mb-2">Data Security</h6>
+              <p className="text-muted mb-3">
+                We implement industry-standard security measures to protect your data. However, no method of internet transmission is completely secure.
+              </p>
+
+              <h6 className="fw-semibold text-success mb-2">Your Rights</h6>
+              <p className="text-muted mb-3">
+                You can request access to, update, or delete your personal data at any time. Contact us at support@sipandscore.com for data-related requests.
+              </p>
+
+              <h6 className="fw-semibold text-success mb-2">Changes to This Policy</h6>
+              <p className="text-muted">
+                We may update this privacy policy periodically. We will notify you of significant changes via email or through the app.
+              </p>
             </div>
           </div>
         </>,
@@ -3601,6 +3667,7 @@ function App() {
                         </div>
                         <div className="entry-metrics">
                           <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                          <div style={{ color: '#198754', marginBottom: '0.5rem' }}>Matcha greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
                               {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
@@ -4112,6 +4179,7 @@ function App() {
                         </div>
                         <div className="entry-metrics">
                           <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                          <div style={{ color: '#198754', marginBottom: '0.5rem' }}>Matcha greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
                               {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
