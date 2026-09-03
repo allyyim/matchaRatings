@@ -1253,16 +1253,20 @@ app.post('/api/preferences', async (req, res) => {
   if (!email) return res.status(404).json({ error: 'User not found' })
 
   const flavors = Array.isArray(req.body?.flavors) ? req.body.flavors : []
-  const milkType = Array.isArray(req.body?.milk_type) ? req.body.milk_type : []
 
-  const result = await pool.query(
-    `INSERT INTO user_preferences (email, flavors, milk_type, updated_at)
-     VALUES ($1, $2, $3, NOW())
-     ON CONFLICT (email) DO UPDATE SET flavors = $2, milk_type = $3, updated_at = NOW()
-     RETURNING *`,
-    [email, JSON.stringify(flavors), JSON.stringify(milkType)]
-  )
-  return res.json(result.rows[0])
+  try {
+    const result = await pool.query(
+      `INSERT INTO user_preferences (email, flavors, updated_at)
+       VALUES ($1, $2, NOW())
+       ON CONFLICT (email) DO UPDATE SET flavors = $2, updated_at = NOW()
+       RETURNING *`,
+      [email, JSON.stringify(flavors)]
+    )
+    return res.json({ ok: true, preferences: result.rows[0] })
+  } catch (error) {
+    console.error('Failed to save preferences:', error)
+    return res.status(500).json({ error: 'Failed to save preferences' })
+  }
 })
 
 // Follow/unfollow endpoints
