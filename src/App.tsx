@@ -3464,16 +3464,21 @@ function App() {
                                 type="button"
                                 className="btn btn-link btn-sm text-success p-0"
                                 style={{ textDecoration: 'none' }}
-                                onClick={() => {
+                                onClick={async () => {
                                   const isFollowing = followingSet.has(friend)
-                                  if (isFollowing) {
-                                    void apiFetch(`/follows/${friend}`, { method: 'DELETE' })
-                                    followingSet.delete(friend)
-                                  } else {
-                                    void apiFetch(`/follows/${friend}`, { method: 'POST' })
-                                    followingSet.add(friend)
+                                  try {
+                                    if (isFollowing) {
+                                      await apiFetch(`/follows/${friend}`, { method: 'DELETE' })
+                                      followingSet.delete(friend)
+                                    } else {
+                                      await apiFetch(`/follows/${friend}`, { method: 'POST' })
+                                      followingSet.add(friend)
+                                    }
+                                    setFollowingSet(new Set(followingSet))
+                                  } catch (error) {
+                                    console.error('Failed to update follow status:', error)
+                                    alert(error instanceof Error ? error.message : 'Failed to update follow status')
                                   }
-                                  setFollowingSet(new Set(followingSet))
                                 }}
                                 title={followingSet.has(friend) ? 'Unfollow' : 'Follow'}
                               >
@@ -3517,10 +3522,15 @@ function App() {
                             <button
                               type="button"
                               className="btn btn-sm btn-outline-danger w-100"
-                              onClick={() => {
-                                void apiFetch(`/follows/${friend}`, { method: 'DELETE' })
-                                followingSet.delete(friend)
-                                setFollowingSet(new Set(followingSet))
+                              onClick={async () => {
+                                try {
+                                  await apiFetch(`/follows/${friend}`, { method: 'DELETE' })
+                                  followingSet.delete(friend)
+                                  setFollowingSet(new Set(followingSet))
+                                } catch (error) {
+                                  console.error('Failed to unfollow:', error)
+                                  alert(error instanceof Error ? error.message : 'Failed to unfollow')
+                                }
                               }}
                             >
                               Unfollow
@@ -3762,16 +3772,21 @@ function App() {
                                 type="button"
                                 className="btn btn-link btn-sm text-muted p-0"
                                 style={{ textDecoration: 'none' }}
-                                onClick={() => {
+                                onClick={async () => {
                                   const isFollowing = followingSet.has(user.userName)
-                                  if (isFollowing) {
-                                    void apiFetch(`/follows/${user.userName}`, { method: 'DELETE' })
-                                    followingSet.delete(user.userName)
-                                  } else {
-                                    void apiFetch(`/follows/${user.userName}`, { method: 'POST' })
-                                    followingSet.add(user.userName)
+                                  try {
+                                    if (isFollowing) {
+                                      await apiFetch(`/follows/${user.userName}`, { method: 'DELETE' })
+                                      followingSet.delete(user.userName)
+                                    } else {
+                                      await apiFetch(`/follows/${user.userName}`, { method: 'POST' })
+                                      followingSet.add(user.userName)
+                                    }
+                                    setFollowingSet(new Set(followingSet))
+                                  } catch (error) {
+                                    console.error('Failed to update follow status:', error)
+                                    alert(error instanceof Error ? error.message : 'Failed to update follow status')
                                   }
-                                  setFollowingSet(new Set(followingSet))
                                 }}
                                 title={followingSet.has(user.userName) ? 'Unfollow' : 'Follow'}
                               >
