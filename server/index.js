@@ -1043,15 +1043,18 @@ app.get('/api/ratings', async (req, res) => {
 
 app.get('/api/friends/search', async (req, res) => {
   const q = sanitizeText(String(req.query.q || '').trim(), 40)
-  if (!q) {
-    return res.json({ friends: [] })
-  }
+  console.log('Raw query param:', req.query.q)
+  console.log('Sanitized query:', q)
 
-  if (q.length < 1) {
+  if (!q || q.length < 1) {
     return res.json({ friends: [] })
   }
 
   try {
+    // First check if accounts table has any data
+    const allAccounts = await pool.query('SELECT user_name FROM accounts LIMIT 5')
+    console.log('Sample accounts in DB:', allAccounts.rows.map(r => r.user_name))
+
     const result = await pool.query(
       `
         SELECT
@@ -1067,7 +1070,7 @@ app.get('/api/friends/search', async (req, res) => {
       [`%${q}%`]
     )
 
-    console.log('Search query:', q, 'Results found:', result.rows.length)
+    console.log('Search query:', q, 'Results found:', result.rows.length, 'Rows:', result.rows.map(r => r.user_name))
     return res.json({ friends: result.rows.map((r) => ({ userName: r.user_name, placeCount: Number(r.place_count) })) })
   } catch (error) {
     console.error('Search failed:', error)
