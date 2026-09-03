@@ -945,6 +945,26 @@ function App() {
     setCurrentUserName('')
   }, [])
 
+  // Check for app updates from service worker
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      // Check for updates every 5 minutes
+      const updateInterval = setInterval(() => {
+        navigator.serviceWorker.controller?.postMessage({ type: 'CHECK_FOR_UPDATES' })
+      }, 5 * 60 * 1000)
+
+      // Listen for update messages from service worker
+      navigator.serviceWorker.onmessage = (event) => {
+        if (event.data.type === 'APP_UPDATED') {
+          // Auto-reload the app with the new version
+          window.location.reload()
+        }
+      }
+
+      return () => clearInterval(updateInterval)
+    }
+  }, [])
+
   useEffect(() => {
     let mounted = true
 
