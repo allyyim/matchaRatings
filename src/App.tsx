@@ -3246,7 +3246,10 @@ function App() {
       )}
 
       <nav className="navbar navbar-expand-lg navbar-light sticky-top soft-nav minimal-nav" aria-label="Main navigation">
-        <div className="container d-flex justify-content-end align-items-center">
+        <div className="container d-flex justify-content-between align-items-center">
+          <div className="navbar-brand" style={{ marginBottom: 0 }}>
+            <span style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#1f5f34' }}>Sip & Score</span>
+          </div>
           <button
             type="button"
             className="btn btn-link text-dark p-1"
