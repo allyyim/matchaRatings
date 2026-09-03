@@ -3884,7 +3884,21 @@ function App() {
                                           <h6 className="card-title fw-semibold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => void openFriendRatings(user.userName)}>
                                             {user.userName}
                                           </h6>
-                                          <span className="badge bg-success" style={{ fontSize: '0.75rem' }}>
+                                          <span className="badge" style={{
+                                            fontSize: '0.75rem',
+                                            background: `linear-gradient(90deg,
+                                              hsl(0, 100%, 50%) 0%,
+                                              hsl(30, 100%, 50%) 16.67%,
+                                              hsl(60, 100%, 50%) 33.33%,
+                                              hsl(120, 100%, 40%) 50%,
+                                              hsl(240, 100%, 50%) 66.67%,
+                                              hsl(270, 100%, 50%) 83.33%,
+                                              hsl(300, 100%, 50%) 100%)`,
+                                            color: 'white',
+                                            fontWeight: 'bold',
+                                            padding: '0.35rem 0.65rem',
+                                            borderRadius: '0.375rem'
+                                          }}>
                                             {(user.matchScore * 100).toFixed(0)}% match
                                           </span>
                                         </div>
@@ -3929,7 +3943,21 @@ function App() {
                                           <h6 className="card-title fw-semibold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => setSelectedExplorePlaceName(place.location)}>
                                             {place.location}
                                           </h6>
-                                          <span className="badge bg-success" style={{ fontSize: '0.75rem' }}>
+                                          <span className="badge" style={{
+                                            fontSize: '0.75rem',
+                                            background: `linear-gradient(90deg,
+                                              hsl(0, 100%, 50%) 0%,
+                                              hsl(30, 100%, 50%) 16.67%,
+                                              hsl(60, 100%, 50%) 33.33%,
+                                              hsl(120, 100%, 40%) 50%,
+                                              hsl(240, 100%, 50%) 66.67%,
+                                              hsl(270, 100%, 50%) 83.33%,
+                                              hsl(300, 100%, 50%) 100%)`,
+                                            color: 'white',
+                                            fontWeight: 'bold',
+                                            padding: '0.35rem 0.65rem',
+                                            borderRadius: '0.375rem'
+                                          }}>
                                             {(place.matchScore * 100).toFixed(0)}% match
                                           </span>
                                         </div>
