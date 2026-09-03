@@ -2994,11 +2994,11 @@ function App() {
                       fontSize: '0.8rem',
                       padding: '0.375rem 0.75rem',
                       borderRadius: '0.5rem',
-                      border: '1px solid ' + (userFlavors.includes(flavor) ? 'rgba(26, 155, 142, 0.4)' : 'rgba(92, 217, 208, 0.3)'),
+                      border: '1px solid ' + (userFlavors.includes(flavor) ? 'rgba(144, 202, 193, 0.4)' : 'rgba(176, 222, 214, 0.3)'),
                       background: userFlavors.includes(flavor)
-                        ? 'linear-gradient(135deg, #1a9b8e 0%, #20B2AA 100%)'
-                        : 'linear-gradient(135deg, #5cd9d0 0%, #7fe5de 100%)',
-                      color: userFlavors.includes(flavor) ? '#ffffff' : '#1a9b8e',
+                        ? 'linear-gradient(135deg, #a8d8d0 0%, #b8e0d8 100%)'
+                        : 'linear-gradient(135deg, #d4ede9 0%, #e0f3f0 100%)',
+                      color: userFlavors.includes(flavor) ? '#4a8b82' : '#6b9e95',
                       fontWeight: userFlavors.includes(flavor) ? '600' : '500',
                       cursor: 'pointer'
                     }}
@@ -3032,9 +3032,9 @@ function App() {
                   }
                 }}
                 style={{
-                  background: 'linear-gradient(135deg, #1a9b8e 0%, #20B2AA 100%)',
-                  color: 'white',
-                  border: '1px solid rgba(26, 155, 142, 0.4)',
+                  background: 'linear-gradient(135deg, #a8d8d0 0%, #b8e0d8 100%)',
+                  color: '#4a8b82',
+                  border: '1px solid rgba(144, 202, 193, 0.4)',
                   fontWeight: '600'
                 }}
               >
