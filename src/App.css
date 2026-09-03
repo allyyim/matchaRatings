@@ -731,12 +731,8 @@ textarea.form-control {
   color: var(--accent-teal);
   box-shadow: 0 2px 8px rgba(26, 155, 142, 0.15);
   transition: all 0.2s ease;
-}
-
-.rating-badge:hover {
-  background: linear-gradient(135deg, rgba(26, 155, 142, 0.16), rgba(212, 155, 74, 0.12));
-  box-shadow: 0 4px 12px rgba(26, 155, 142, 0.25);
-  transform: translateY(-2px);
+  width: 100%;
+  max-width: fit-content;
 }
 
 .rating-value {
@@ -746,6 +742,29 @@ textarea.form-control {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.greenness-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: linear-gradient(135deg, rgba(26, 155, 142, 0.12), rgba(212, 155, 74, 0.08));
+  border: 1.5px solid var(--accent-teal);
+  border-radius: 0.75rem;
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+  font-size: 1rem;
+  color: var(--accent-teal);
+  box-shadow: 0 2px 8px rgba(26, 155, 142, 0.15);
+  width: 100%;
+  max-width: fit-content;
+}
+
+.total-score-badge {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary-green);
+  padding: 0.5rem 0;
 }
 
 /* Entry Card Styles */
@@ -807,6 +826,12 @@ textarea.form-control {
   align-items: center;
   gap: 0.35rem;
   font-weight: 600;
+}
+
+.entry-metrics > div:last-child {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--primary-green);
 }
 
 .entry-card {
@@ -986,6 +1011,17 @@ textarea.form-control {
   background: white;
   border-radius: 1.25rem;
   box-shadow: var(--shadow-lg);
+}
+
+.explore-place-modal .card-body h3 {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  line-height: 1.3;
+}
+
+.explore-place-modal .btn-link {
+  text-decoration: none !important;
 }
 
 .explore-place-modal-list {

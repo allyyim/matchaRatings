@@ -2538,8 +2538,8 @@ function App() {
                           <div className="small text-muted mb-1">{entry.location || selectedExplorePlaceName}</div>
                           <div className="entry-metrics">
                             <div className="rating-badge mb-2">Rating: <span className="rating-value">{entry.rating.toFixed(1)}</span> / 5.0</div>
-                            <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
-                            <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                            <div className="greenness-badge">Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                            <div className="total-score-badge mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
                             {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
                                 {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
