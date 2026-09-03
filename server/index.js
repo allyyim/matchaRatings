@@ -782,6 +782,76 @@ app.post('/api/admin/fix-ali', async (req, res) => {
   }
 })
 
+app.post('/api/admin/migrate-photos-to-cloudinary', async (req, res) => {
+  try {
+    console.log('Starting photo migration to Cloudinary...')
+
+    // Get all ratings with photos
+    const allRatings = await pool.query(
+      'SELECT id, photo, user_name FROM ratings WHERE photo IS NOT NULL AND photo != \'\' ORDER BY created_at DESC'
+    )
+
+    console.log(`Found ${allRatings.rows.length} ratings with photos`)
+
+    let uploadedCount = 0
+    let skippedCount = 0
+    const errors = []
+
+    for (const rating of allRatings.rows) {
+      try {
+        // Skip if already a Cloudinary URL
+        if (rating.photo.includes('cloudinary.com') || rating.photo.includes('res.cloudinary.com')) {
+          skippedCount++
+          continue
+        }
+
+        // Skip if not a data URL or valid image
+        if (!rating.photo.startsWith('data:image/')) {
+          console.log(`Skipping invalid photo format for rating ${rating.id}: ${rating.photo.substring(0, 50)}`)
+          skippedCount++
+          continue
+        }
+
+        console.log(`Uploading photo for rating ${rating.id}...`)
+
+        // Upload to Cloudinary
+        const result = await cloudinary.uploader.upload(rating.photo, {
+          folder: 'matcha-ratings-migration',
+          resource_type: 'auto',
+          quality: 'auto',
+          fetch_format: 'auto'
+        })
+
+        // Update database with new URL
+        await pool.query(
+          'UPDATE ratings SET photo = $1 WHERE id = $2',
+          [result.secure_url, rating.id]
+        )
+
+        uploadedCount++
+        console.log(`Successfully migrated photo for rating ${rating.id}: ${result.secure_url}`)
+      } catch (error) {
+        console.error(`Failed to migrate photo for rating ${rating.id}:`, error.message)
+        errors.push({ ratingId: rating.id, error: error.message })
+      }
+    }
+
+    console.log(`Migration complete: ${uploadedCount} uploaded, ${skippedCount} skipped, ${errors.length} errors`)
+
+    return res.json({
+      ok: true,
+      message: `Photo migration complete`,
+      uploadedCount,
+      skippedCount,
+      errorCount: errors.length,
+      errors: errors.slice(0, 10) // Return first 10 errors
+    })
+  } catch (error) {
+    console.error('Photo migration failed:', error)
+    return res.status(500).json({ error: 'Photo migration failed', details: String(error.message) })
+  }
+})
+
 app.post('/api/users/session', async (req, res) => {
   const browserId = String(req.body?.browserId || '').trim()
   const incomingUserName = sanitizeUserName(String(req.body?.userName || '').trim())
