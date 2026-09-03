@@ -1063,6 +1063,7 @@ app.put('/api/ratings/:id', async (req, res) => {
   const greenness = incomingGreenness === undefined || incomingGreenness === null ? null : Number(incomingGreenness)
   const location = normalizeLocationText(req.body?.location || '')
   const thoughts = sanitizeText(req.body?.thoughts || '', 800)
+  const photo = req.body?.photo || null
 
   if (!Number.isInteger(id) || id <= 0) {
     return res.status(400).json({ error: 'Valid rating id is required' })
@@ -1090,11 +1091,12 @@ app.put('/api/ratings/:id', async (req, res) => {
       SET rating = $3,
           greenness = COALESCE($4, greenness),
           location = $5,
-          thoughts = $6
+          thoughts = $6,
+          photo = COALESCE($7, photo)
       WHERE id = $1 AND user_name = $2
       RETURNING *
     `,
-    [id, userName, rating, greenness, location, thoughts]
+    [id, userName, rating, greenness, location, thoughts, photo]
   )
 
   if (updated.rowCount === 0) {

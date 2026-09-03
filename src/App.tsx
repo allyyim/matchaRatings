@@ -652,6 +652,7 @@ function App() {
   const [editRating, setEditRating] = useState(0)
   const [editLocation, setEditLocation] = useState('')
   const [editThoughts, setEditThoughts] = useState('')
+  const [editEntryPhoto, setEditEntryPhoto] = useState<string>('')
   const [friendQuery, setFriendQuery] = useState('')
   const [friendSuggestions, setFriendSuggestions] = useState<Array<{ userName: string; placeCount: number }>>([])
   const [selectedFriend, setSelectedFriend] = useState('')
@@ -1514,6 +1515,9 @@ function App() {
         new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Image processing timed out.')), IMAGE_PROCESS_TIMEOUT_MS))
       ])
       setPhotoDataUrl(optimizedDataUrl)
+      if (isEditingEntry) {
+        setEditEntryPhoto(optimizedDataUrl)
+      }
 
       try {
         setMlStatus('Analyzing drink area...')
@@ -1798,6 +1802,7 @@ function App() {
     setEditRating(entry.rating)
     setEditLocation(entry.location)
     setEditThoughts(entry.thoughts)
+    setEditEntryPhoto(entry.photo)
   }
 
   async function saveEntryEdit(entryId: number) {
@@ -1809,13 +1814,29 @@ function App() {
     setIsSavingEntry(true)
     const overlayShownAt = Date.now()
     try {
+      let photoUrl = editEntryPhoto
+      if (editEntryPhoto.startsWith('data:image/')) {
+        try {
+          const uploadRes = await apiFetch<{ url: string }>('/upload-image', {
+            method: 'POST',
+            body: JSON.stringify({ image: editEntryPhoto })
+          })
+          console.log('Image upload successful:', uploadRes.url)
+          photoUrl = uploadRes.url
+        } catch (error) {
+          console.error('Image upload failed:', error)
+          alert('Image upload failed. Using existing photo.')
+        }
+      }
+
       await apiFetch<{ rating: RatingEntry }>(`/ratings/${entryId}`, {
         method: 'PUT',
         body: JSON.stringify({
           userName: currentUserName,
           rating: editRating,
           location: editLocation.trim(),
-          thoughts: editThoughts.trim()
+          thoughts: editThoughts.trim(),
+          photo: photoUrl
         })
       })
 
@@ -1823,6 +1844,7 @@ function App() {
       setMyEntries(updated.ratings)
       setIsEditingEntry(false)
       setSelectedEntryId(null)
+      setEditEntryPhoto('')
     } finally {
       const elapsed = Date.now() - overlayShownAt
       const minimumOverlayMs = 700
@@ -3516,6 +3538,14 @@ function App() {
                             placeholder="Matcha place name (e.g. Cha Cha Matcha)"
                           />
 
+                          <button
+                            type="button"
+                            className="btn btn-outline-success btn-sm mb-2 w-100"
+                            onClick={() => setIsCameraModalOpen(true)}
+                          >
+                            Change Photo
+                          </button>
+
                           <textarea
                             className="form-control mb-2"
                             rows={2}
@@ -3528,7 +3558,10 @@ function App() {
                             <button type="button" className="btn btn-success btn-sm" onClick={() => void saveEntryEdit(entry.id)}>
                               Save
                             </button>
-                            <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setIsEditingEntry(false)}>
+                            <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => {
+                              setIsEditingEntry(false)
+                              setEditEntryPhoto('')
+                            }}>
                               Cancel
                             </button>
                           </div>
