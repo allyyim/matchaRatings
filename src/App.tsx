@@ -3266,82 +3266,143 @@ function App() {
         <main id="main-content" className="container py-3 py-md-5 px-3 px-md-4" tabIndex={-1}>
           <section className="card border-0 shadow-sm matcha-shell mb-4">
             <div className="card-body p-3 p-md-4">
-              <h2 className="h3 fw-bold text-success mb-3">Friends</h2>
-              <div className="row g-2 align-items-end">
-                <div className="col-12 col-md-8">
-                  <label className="form-label fw-semibold">Search</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={friendQuery}
-                    placeholder="Type a friend's name"
-                    onChange={(event) => void searchFriends(event.target.value)}
-                  />
-                </div>
-                <div className="col-12 col-md-4">
-                  <button
-                    type="button"
-                    className="btn btn-success w-100"
-                    onClick={() => void openFriendRatings(friendQuery.trim())}
-                    disabled={!friendQuery.trim() || isLoadingFriendRatings}
-                  >
-                    View Log
-                  </button>
-                </div>
+              <h2 className="h3 fw-bold text-success mb-4">Community</h2>
+
+              {/* Navigation Tabs */}
+              <div className="nav nav-tabs border-bottom mb-4" role="tablist">
+                <button
+                  type="button"
+                  className={`nav-link ${friendQuery || friendSuggestions.length > 0 ? '' : 'active'}`}
+                  onClick={() => {
+                    setFriendQuery('')
+                    setFriendSuggestions([])
+                  }}
+                >
+                  Search Users
+                </button>
+                <button
+                  type="button"
+                  className={`nav-link ${followingSet.size > 0 ? 'active' : ''}`}
+                  onClick={() => {
+                    setFriendQuery('')
+                    setFriendSuggestions([])
+                  }}
+                >
+                  Following ({followingSet.size})
+                </button>
               </div>
 
-              {friendSuggestions.length > 0 && (
-                <div className="mt-3 d-flex flex-wrap gap-2">
-                  {friendSuggestions.map((friend) => (
-                    <div key={friend} className="d-flex gap-1 align-items-center">
+              {/* Search Users Tab */}
+              {(friendQuery === '' && friendSuggestions.length === 0) && (
+                <div className="mb-4">
+                  <p className="text-muted small mb-3">Discover and connect with other matcha enthusiasts</p>
+                  <div className="row g-2 align-items-end">
+                    <div className="col-12 col-md-8">
+                      <label className="form-label fw-semibold">Search Users</label>
+                      <input
+                        type="text"
+                        className="form-control"
+                        value={friendQuery}
+                        placeholder="Enter username"
+                        onChange={(event) => void searchFriends(event.target.value)}
+                      />
+                    </div>
+                    <div className="col-12 col-md-4">
                       <button
                         type="button"
-                        className="btn btn-outline-success btn-sm"
-                        onClick={() => void openFriendRatings(friend)}
-                        disabled={isLoadingFriendRatings}
+                        className="btn btn-success w-100"
+                        onClick={() => void openFriendRatings(friendQuery.trim())}
+                        disabled={!friendQuery.trim() || isLoadingFriendRatings}
                       >
-                        {friend}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-link btn-sm text-muted p-0"
-                        style={{ textDecoration: 'none' }}
-                        onClick={() => {
-                          const isFollowing = followingSet.has(friend)
-                          if (isFollowing) {
-                            void apiFetch(`/follows/${friend}`, { method: 'DELETE' })
-                            followingSet.delete(friend)
-                          } else {
-                            void apiFetch(`/follows/${friend}`, { method: 'POST' })
-                            followingSet.add(friend)
-                          }
-                          setFollowingSet(new Set(followingSet))
-                        }}
-                        title={followingSet.has(friend) ? 'Unfollow' : 'Follow'}
-                      >
-                        {followingSet.has(friend) ? '✓' : '+'}
+                        View Ratings
                       </button>
                     </div>
-                  ))}
+                  </div>
+
+                  {friendSuggestions.length > 0 && (
+                    <div className="mt-4">
+                      <h5 className="fw-semibold text-success mb-3">Search Results</h5>
+                      <div className="d-flex flex-wrap gap-2">
+                        {friendSuggestions.map((friend) => (
+                          <div key={friend} className="card border-0 shadow-sm p-3" style={{ minWidth: '200px' }}>
+                            <div className="d-flex justify-content-between align-items-start mb-2">
+                              <span className="fw-semibold">{friend}</span>
+                              <button
+                                type="button"
+                                className="btn btn-link btn-sm text-success p-0"
+                                style={{ textDecoration: 'none' }}
+                                onClick={() => {
+                                  const isFollowing = followingSet.has(friend)
+                                  if (isFollowing) {
+                                    void apiFetch(`/follows/${friend}`, { method: 'DELETE' })
+                                    followingSet.delete(friend)
+                                  } else {
+                                    void apiFetch(`/follows/${friend}`, { method: 'POST' })
+                                    followingSet.add(friend)
+                                  }
+                                  setFollowingSet(new Set(followingSet))
+                                }}
+                                title={followingSet.has(friend) ? 'Unfollow' : 'Follow'}
+                              >
+                                {followingSet.has(friend) ? '✓ Following' : '+ Follow'}
+                              </button>
+                            </div>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-success w-100"
+                              onClick={() => void openFriendRatings(friend)}
+                              disabled={isLoadingFriendRatings}
+                            >
+                              View Ratings
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
+              {/* Following Tab */}
               {followingSet.size > 0 && (
-                <div className="mt-4">
-                  <h5 className="fw-semibold text-success mb-2">My Friends</h5>
-                  <div className="d-flex flex-wrap gap-2">
+                <div>
+                  <p className="text-muted small mb-3">Users you're following</p>
+                  <div className="row g-3">
                     {Array.from(followingSet).map((friend) => (
-                      <button
-                        key={friend}
-                        type="button"
-                        className="btn btn-outline-success btn-sm"
-                        onClick={() => void openFriendRatings(friend)}
-                        disabled={isLoadingFriendRatings}
-                      >
-                        {friend}
-                      </button>
+                      <div key={friend} className="col-12 col-md-6 col-lg-4">
+                        <div className="card border-0 shadow-sm h-100">
+                          <div className="card-body">
+                            <h6 className="card-title fw-semibold text-success mb-3">{friend}</h6>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-success w-100 mb-2"
+                              onClick={() => void openFriendRatings(friend)}
+                              disabled={isLoadingFriendRatings}
+                            >
+                              View Ratings
+                            </button>
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-outline-danger w-100"
+                              onClick={() => {
+                                void apiFetch(`/follows/${friend}`, { method: 'DELETE' })
+                                followingSet.delete(friend)
+                                setFollowingSet(new Set(followingSet))
+                              }}
+                            >
+                              Unfollow
+                            </button>
+                          </div>
+                        </div>
+                      </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {followingSet.size === 0 && friendSuggestions.length === 0 && friendQuery === '' && (
+                <div className="text-center py-5">
+                  <p className="text-muted">No one following yet. Search for users to get started!</p>
                 </div>
               )}
             </div>
