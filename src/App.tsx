@@ -680,6 +680,7 @@ function App() {
   const [pendingMagicEmail, setPendingMagicEmail] = useState('')
   const [isMagicLinkSent, setIsMagicLinkSent] = useState(false)
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false)
+  const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false)
   const [userFlavors, setUserFlavors] = useState<string[]>([])
   const [userMilkTypes, setUserMilkTypes] = useState<string[]>([])
   const [followingSet, setFollowingSet] = useState<Set<string>>(new Set())
@@ -2180,7 +2181,7 @@ function App() {
               {currentOnboardingSlide === 3 && (
                 <div className="onboarding-slide">
                   <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🌍</div>
-                  <h2 className="fw-bold text-success mb-3">Explore Community</h2>
+                  <h2 className="fw-bold text-success mb-3">Explore</h2>
                   <p className="text-muted mb-4">Check out top-rated places and leaderboards. See what other matcha enthusiasts have discovered.</p>
                 </div>
               )}
@@ -2561,6 +2562,122 @@ function App() {
         document.body
       )}
 
+      {isProfileDrawerOpen && createPortal(
+        <>
+          <div
+            className="modal-overlay"
+            onClick={() => setIsProfileDrawerOpen(false)}
+            style={{ zIndex: 1040 }}
+          />
+          <div
+            className="profile-drawer"
+            style={{
+              position: 'fixed',
+              right: 0,
+              top: 0,
+              height: '100vh',
+              width: '320px',
+              maxWidth: '100vw',
+              backgroundColor: 'white',
+              boxShadow: '-2px 0 8px rgba(0,0,0,0.1)',
+              zIndex: 1050,
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <div style={{ padding: '1rem', borderBottom: '1px solid #e9ecef' }}>
+              <button
+                type="button"
+                className="btn btn-link text-muted p-0"
+                onClick={() => setIsProfileDrawerOpen(false)}
+                style={{ textDecoration: 'none', float: 'right' }}
+              >
+                ✕
+              </button>
+              <h5 className="fw-bold text-success mb-0">{currentUserName}</h5>
+            </div>
+
+            <div style={{ padding: '1rem', overflowY: 'auto', flex: 1 }}>
+              <div className="mb-4">
+                <h6 className="fw-semibold text-success mb-3">My Preferences</h6>
+
+                <div className="mb-3">
+                  <label className="form-label fw-semibold small mb-2">Flavor Preferences</label>
+                  <div className="d-flex flex-wrap gap-2">
+                    {['bold', 'nutty', 'umami', 'vegetal', 'sweet', 'astringent'].map((flavor) => (
+                      <button
+                        key={flavor}
+                        type="button"
+                        className={`btn btn-sm ${userFlavors.includes(flavor) ? 'btn-success' : 'btn-outline-success'}`}
+                        onClick={() => setUserFlavors(userFlavors.includes(flavor)
+                          ? userFlavors.filter(f => f !== flavor)
+                          : [...userFlavors, flavor]
+                        )}
+                      >
+                        {flavor}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="form-label fw-semibold small mb-2">Milk Types</label>
+                  <div className="d-flex flex-wrap gap-2">
+                    {['oat', 'whole', 'almond', 'soy'].map((milk) => (
+                      <button
+                        key={milk}
+                        type="button"
+                        className={`btn btn-sm ${userMilkTypes.includes(milk) ? 'btn-success' : 'btn-outline-success'}`}
+                        onClick={() => setUserMilkTypes(userMilkTypes.includes(milk)
+                          ? userMilkTypes.filter(m => m !== milk)
+                          : [...userMilkTypes, milk]
+                        )}
+                      >
+                        {milk}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: '1rem', borderTop: '1px solid #e9ecef' }}>
+              <button
+                type="button"
+                className="btn btn-success w-100 mb-2 btn-sm"
+                onClick={async () => {
+                  try {
+                    await apiFetch('/preferences', {
+                      method: 'POST',
+                      body: JSON.stringify({
+                        flavors: userFlavors,
+                        milk_type: userMilkTypes,
+                        visited_countries: []
+                      })
+                    })
+                  } catch (error) {
+                    alert(error instanceof Error ? error.message : 'Failed to save preferences')
+                  }
+                }}
+              >
+                Save Preferences
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-danger w-100 btn-sm"
+                onClick={() => {
+                  signOut()
+                  setIsProfileDrawerOpen(false)
+                }}
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
+
       {isPreferencesModalOpen && createPortal(
         <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => setIsPreferencesModalOpen(false)}>
           <div className="modal-card card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
@@ -2649,10 +2766,10 @@ function App() {
               <button
                 type="button"
                 className="btn btn-link btn-sm text-muted p-0 d-lg-none"
-                onClick={signOut}
-                title="Sign out"
+                onClick={() => setIsProfileDrawerOpen(true)}
+                title="Profile"
               >
-                Sign out
+                👤
               </button>
             </div>
             <small className="text-muted nav-user d-none d-lg-flex">
@@ -2684,19 +2801,12 @@ function App() {
             </button>
             <button
               type="button"
-              className="btn btn-link btn-sm text-muted p-0"
-              onClick={() => setIsPreferencesModalOpen(true)}
-              title="Preferences"
-            >
-              ⚙️
-            </button>
-            <button
-              type="button"
               className="btn btn-link btn-sm text-muted p-0 ms-auto d-none d-lg-block"
-              onClick={signOut}
-              title="Sign out"
+              onClick={() => setIsProfileDrawerOpen(true)}
+              title="Profile"
+              style={{ textDecoration: 'none' }}
             >
-              Sign out
+              👤
             </button>
           </div>
         </div>
@@ -3316,7 +3426,7 @@ function App() {
         <main id="main-content" className="container py-3 py-md-5 px-3 px-md-4" tabIndex={-1}>
           <section className="card border-0 shadow-sm matcha-shell mb-4">
             <div className="card-body p-3 p-md-4">
-              <h2 className="h3 fw-bold text-success mb-4">Community</h2>
+              <h2 className="h3 fw-bold text-success mb-4">Community Leaderboard</h2>
 
               <div className="d-flex gap-2 mb-4" style={{ borderBottom: '1px solid #e9ecef' }}>
                 <button
@@ -3370,7 +3480,7 @@ function App() {
 
               {exploreActiveTab === 'users' && (
                 <section>
-                  <p className="text-muted mb-3">Community leaderboard</p>
+                  <p className="text-muted mb-3">Leaderboard</p>
 
                   {exploreUsers.length === 0 && <div className="alert alert-light border mb-0">No user place data yet.</div>}
 
