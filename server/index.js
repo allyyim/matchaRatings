@@ -962,71 +962,77 @@ app.get('/api/friends/:friendName/ratings', async (req, res) => {
 app.get('/api/explore/places', async (req, res) => {
   const limit = Math.max(1, Math.min(50, Number(req.query.limit) || 10))
 
-  const result = await pool.query(
-    `
-      SELECT location, rating, greenness
-      FROM ratings
-      WHERE TRIM(location) <> ''
-    `
-  )
+  try {
+    const result = await pool.query(
+      `
+        SELECT location, AVG(rating::numeric) as avg_rating, AVG(greenness::numeric) as avg_greenness, COUNT(*) as entry_count
+        FROM ratings
+        WHERE TRIM(location) <> ''
+        GROUP BY location
+      `
+    )
 
-  const placeBuckets = new Map()
+    const placeBuckets = new Map()
 
-  for (const row of result.rows) {
-    const { displayName, canonicalKey } = getCanonicalPlaceData(row.location)
-    if (!displayName || !canonicalKey) continue
+    for (const row of result.rows) {
+      const { displayName, canonicalKey } = getCanonicalPlaceData(row.location)
+      if (!displayName || !canonicalKey) continue
 
-    const rating = Number(row.rating)
-    const greenness = Number(row.greenness)
-    const scoreOutOf200 = getWeightedScore(rating, greenness)
+      const rating = Number(row.avg_rating)
+      const greenness = Number(row.avg_greenness)
+      const scoreOutOf200 = getWeightedScore(rating, greenness)
 
-    const existing = placeBuckets.get(canonicalKey)
-    if (existing) {
-      existing.totalScore += scoreOutOf200
-      existing.entryCount += 1
-    } else {
-      placeBuckets.set(canonicalKey, {
-        placeName: displayName,
-        canonicalKey,
-        totalScore: scoreOutOf200,
-        entryCount: 1
+      const existing = placeBuckets.get(canonicalKey)
+      if (existing) {
+        existing.totalScore += scoreOutOf200
+        existing.entryCount += Number(row.entry_count)
+      } else {
+        placeBuckets.set(canonicalKey, {
+          placeName: displayName,
+          canonicalKey,
+          totalScore: scoreOutOf200,
+          entryCount: Number(row.entry_count)
+        })
+      }
+    }
+
+    const mergedBuckets = []
+    for (const bucket of placeBuckets.values()) {
+      const existingCluster = mergedBuckets.find((cluster) => shouldMergePlaces(cluster.canonicalKey, bucket.canonicalKey))
+
+      if (!existingCluster) {
+        mergedBuckets.push({ ...bucket })
+        continue
+      }
+
+      existingCluster.totalScore += bucket.totalScore
+      existingCluster.entryCount += bucket.entryCount
+
+      if (bucket.placeName.length < existingCluster.placeName.length) {
+        existingCluster.placeName = bucket.placeName
+      }
+    }
+
+    const places = mergedBuckets
+      .sort((a, b) => {
+        const bAverage = b.totalScore / b.entryCount
+        const aAverage = a.totalScore / a.entryCount
+        if (bAverage !== aAverage) return bAverage - aAverage
+        return b.entryCount - a.entryCount
       })
-    }
+      .slice(0, limit)
+      .map((place, index) => ({
+        rank: index + 1,
+        placeName: place.placeName,
+        entryCount: place.entryCount,
+        averageScore: Number((place.totalScore / place.entryCount).toFixed(1))
+      }))
+
+    return res.json({ places })
+  } catch (error) {
+    console.error('Explore places error:', error)
+    return res.status(500).json({ error: 'Failed to load places' })
   }
-
-  const mergedBuckets = []
-  for (const bucket of placeBuckets.values()) {
-    const existingCluster = mergedBuckets.find((cluster) => shouldMergePlaces(cluster.canonicalKey, bucket.canonicalKey))
-
-    if (!existingCluster) {
-      mergedBuckets.push({ ...bucket })
-      continue
-    }
-
-    existingCluster.totalScore += bucket.totalScore
-    existingCluster.entryCount += bucket.entryCount
-
-    if (bucket.placeName.length < existingCluster.placeName.length) {
-      existingCluster.placeName = bucket.placeName
-    }
-  }
-
-  const places = mergedBuckets
-    .sort((a, b) => {
-      const bAverage = b.totalScore / b.entryCount
-      const aAverage = a.totalScore / a.entryCount
-      if (bAverage !== aAverage) return bAverage - aAverage
-      return b.entryCount - a.entryCount
-    })
-    .slice(0, limit)
-    .map((place, index) => ({
-      rank: index + 1,
-      placeName: place.placeName,
-      entryCount: place.entryCount,
-      averageScore: Number((place.totalScore / place.entryCount).toFixed(1))
-    }))
-
-  return res.json({ places })
 })
 
 app.get('/api/explore/places/:placeName/ratings', async (req, res) => {
@@ -1071,39 +1077,32 @@ app.get('/api/explore/places/:placeName/ratings', async (req, res) => {
 app.get('/api/explore/users', async (req, res) => {
   const limit = Math.max(1, Math.min(200, Number(req.query.limit) || 50))
 
-  const result = await pool.query(
-    `
-      SELECT user_name, location
-      FROM ratings
-      WHERE TRIM(location) <> ''
-    `
-  )
+  try {
+    const result = await pool.query(
+      `
+        SELECT user_name, COUNT(DISTINCT location) as place_count
+        FROM ratings
+        WHERE TRIM(location) <> ''
+        GROUP BY user_name
+        ORDER BY place_count DESC, user_name ASC
+        LIMIT $1
+      `,
+      [limit * 2]
+    )
 
-  const userPlaces = new Map()
+    const users = result.rows
+      .map((row) => ({
+        userName: String(row.user_name || '').trim(),
+        placeCount: Number(row.place_count)
+      }))
+      .filter((u) => u.userName)
+      .slice(0, limit)
 
-  for (const row of result.rows) {
-    const userName = String(row.user_name || '').trim()
-    const { canonicalKey } = getCanonicalPlaceData(row.location)
-    if (!userName || !canonicalKey) continue
-
-    if (!userPlaces.has(userName)) {
-      userPlaces.set(userName, new Set())
-    }
-    userPlaces.get(userName).add(canonicalKey)
+    return res.json({ users })
+  } catch (error) {
+    console.error('Explore users error:', error)
+    return res.status(500).json({ error: 'Failed to load users' })
   }
-
-  const users = [...userPlaces.entries()]
-    .map(([userName, places]) => ({
-      userName,
-      placeCount: places.size
-    }))
-    .sort((a, b) => {
-      if (b.placeCount !== a.placeCount) return b.placeCount - a.placeCount
-      return a.userName.localeCompare(b.userName)
-    })
-    .slice(0, limit)
-
-  return res.json({ users })
 })
 
 app.use((err, _req, res, _next) => {
