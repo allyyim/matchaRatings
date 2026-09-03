@@ -653,7 +653,7 @@ function App() {
   const [editLocation, setEditLocation] = useState('')
   const [editThoughts, setEditThoughts] = useState('')
   const [friendQuery, setFriendQuery] = useState('')
-  const [friendSuggestions, setFriendSuggestions] = useState<string[]>([])
+  const [friendSuggestions, setFriendSuggestions] = useState<Array<{ userName: string; ratingCount: number }>>([])
   const [selectedFriend, setSelectedFriend] = useState('')
   const [friendEntries, setFriendEntries] = useState<RatingEntry[]>([])
   const [isSavingEntry, setIsSavingEntry] = useState(false)
@@ -1652,7 +1652,7 @@ function App() {
     }
 
     try {
-      const response = await apiFetch<{ friends: string[] }>(`/friends/search?q=${encodeURIComponent(query.trim())}`)
+      const response = await apiFetch<{ friends: Array<{ userName: string; ratingCount: number }> }>(`/friends/search?q=${encodeURIComponent(query.trim())}`)
       setFriendSuggestions(response.friends || [])
     } catch (error) {
       console.error('Search failed:', error)
@@ -3526,22 +3526,25 @@ function App() {
                       <h5 className="fw-semibold text-success mb-3">Search Results</h5>
                       <div className="d-flex flex-wrap gap-2">
                         {friendSuggestions.map((friend) => (
-                          <div key={friend} className="card border-0 shadow-sm p-3" style={{ minWidth: '200px' }}>
+                          <div key={friend.userName} className="card border-0 shadow-sm p-3" style={{ minWidth: '220px' }}>
                             <div className="d-flex justify-content-between align-items-start mb-2">
-                              <span className="fw-semibold">{friend}</span>
+                              <div>
+                                <h6 className="fw-semibold mb-1">{friend.userName}</h6>
+                                <p className="text-muted small mb-0">{friend.ratingCount} ratings</p>
+                              </div>
                               <button
                                 type="button"
                                 className="btn btn-link btn-sm text-success p-0"
-                                style={{ textDecoration: 'none' }}
+                                style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}
                                 onClick={async () => {
-                                  const isFollowing = followingSet.has(friend)
+                                  const isFollowing = followingSet.has(friend.userName)
                                   try {
                                     if (isFollowing) {
-                                      await apiFetch(`/follows/${friend}`, { method: 'DELETE' })
-                                      followingSet.delete(friend)
+                                      await apiFetch(`/follows/${friend.userName}`, { method: 'DELETE' })
+                                      followingSet.delete(friend.userName)
                                     } else {
-                                      await apiFetch(`/follows/${friend}`, { method: 'POST' })
-                                      followingSet.add(friend)
+                                      await apiFetch(`/follows/${friend.userName}`, { method: 'POST' })
+                                      followingSet.add(friend.userName)
                                     }
                                     setFollowingSet(new Set(followingSet))
                                   } catch (error) {
@@ -3549,15 +3552,15 @@ function App() {
                                     alert(error instanceof Error ? error.message : 'Failed to update follow status')
                                   }
                                 }}
-                                title={followingSet.has(friend) ? 'Unfollow' : 'Follow'}
+                                title={followingSet.has(friend.userName) ? 'Unfollow' : 'Follow'}
                               >
-                                {followingSet.has(friend) ? '✓ Following' : '+ Follow'}
+                                {followingSet.has(friend.userName) ? '✓ Following' : '+ Follow'}
                               </button>
                             </div>
                             <button
                               type="button"
                               className="btn btn-sm btn-outline-success w-100"
-                              onClick={() => void openFriendRatings(friend)}
+                              onClick={() => void openFriendRatings(friend.userName)}
                               disabled={isLoadingFriendRatings}
                             >
                               View Ratings

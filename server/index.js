@@ -1054,16 +1054,20 @@ app.get('/api/friends/search', async (req, res) => {
   try {
     const result = await pool.query(
       `
-        SELECT DISTINCT user_name
-        FROM accounts
-        WHERE LOWER(user_name) LIKE LOWER($1)
-        ORDER BY user_name ASC
+        SELECT
+          a.user_name,
+          COUNT(r.id) as rating_count
+        FROM accounts a
+        LEFT JOIN ratings r ON a.user_name = r.user_name
+        WHERE LOWER(a.user_name) LIKE LOWER($1)
+        GROUP BY a.user_name
+        ORDER BY rating_count DESC, a.user_name ASC
         LIMIT 20
       `,
       [`%${q}%`]
     )
 
-    return res.json({ friends: result.rows.map((r) => r.user_name) })
+    return res.json({ friends: result.rows.map((r) => ({ userName: r.user_name, ratingCount: Number(r.rating_count) })) })
   } catch (error) {
     console.error('Search failed:', error)
     return res.status(500).json({ error: 'Search failed', friends: [] })
@@ -1412,19 +1416,18 @@ app.get('/api/similar-places', async (req, res) => {
       return res.json({ similarPlaces: [] })
     }
 
-    // Find ratings with matching flavor profiles
+    // Find ratings with matching flavor profiles - group by location to get diverse places
     const result = await pool.query(
       `
-        SELECT DISTINCT
+        SELECT DISTINCT ON (r.location)
           r.location,
           r.flavor_preferences,
-          COUNT(*) as rating_count
+          COUNT(*) OVER (PARTITION BY r.location) as rating_count
         FROM ratings r
         WHERE r.location IS NOT NULL
           AND r.location != ''
           AND r.flavor_preferences IS NOT NULL
-        GROUP BY r.location, r.flavor_preferences
-        ORDER BY rating_count DESC
+        ORDER BY r.location, r.created_at DESC
         LIMIT 50
       `
     )
@@ -1433,17 +1436,30 @@ app.get('/api/similar-places', async (req, res) => {
     const similarPlaces = result.rows
       .map((row) => {
         const placeFlavorPrefs = row.flavor_preferences || {}
+        // Extract only flavors with intensity >= 75 (selected)
         const placeFlavorsList = Object.keys(placeFlavorPrefs)
-          .filter(f => placeFlavorPrefs[f] > 0)
+          .filter(f => placeFlavorPrefs[f] >= 75)
 
         const matchCount = userFlavors.filter(f => placeFlavorsList.includes(f)).length
         const matchScore = matchCount > 0 ? (matchCount / Math.max(userFlavors.length, placeFlavorsList.length)) : 0
 
         return {
           location: row.location,
-          flavors: placeFlavorsList.slice(0, 5), // Show top 5 flavors
+          flavors: placeFlavorsList.slice(0, 5),
           matchScore: matchScore,
           ratingCount: row.rating_count || 0
+        }
+      })
+      .filter(p => p.matchScore > 0)
+      .sort((a, b) => b.matchScore - a.matchScore)
+      .slice(0, 20)
+
+    return res.json({ similarPlaces })
+  } catch (error) {
+    console.error('Similar places lookup failed:', error)
+    return res.status(500).json({ error: 'Failed to find similar places' })
+  }
+})
         }
       })
       .filter(p => p.matchScore > 0)
