@@ -691,7 +691,6 @@ function App() {
   const [isChangeEmailOpen, setIsChangeEmailOpen] = useState(false)
   const [newEmail, setNewEmail] = useState('')
   const [userFlavors, setUserFlavors] = useState<string[]>([])
-  const [userMilkTypes, setUserMilkTypes] = useState<string[]>([])
   const [likedRatingsSet, setLikedRatingsSet] = useState<Set<number>>(new Set())
   const [followingSet, setFollowingSet] = useState<Set<string>>(new Set())
 
@@ -2447,21 +2446,22 @@ function App() {
                             <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                             <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
                             {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', maxWidth: '320px', marginTop: '0.5rem' }}>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
                                 {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
                                   intensity > 0 ? (
                                     <span
                                       key={flavor}
                                       className="badge"
                                       style={{
-                                        fontSize: '0.7rem',
+                                        fontSize: '0.65rem',
                                         background: 'linear-gradient(135deg, rgba(32, 201, 151, 0.3) 0%, rgba(0, 0, 0, 0.3) 100%)',
                                         backdropFilter: 'blur(10px)',
                                         border: '1px solid rgba(32, 201, 151, 0.5)',
                                         color: '#20c997',
                                         textTransform: 'capitalize',
-                                        padding: '0.25rem 0.5rem',
-                                        textAlign: 'center'
+                                        padding: '0.2rem 0.4rem',
+                                        textAlign: 'center',
+                                        whiteSpace: 'nowrap'
                                       }}
                                     >
                                       {flavor}
@@ -2868,25 +2868,6 @@ function App() {
                   ))}
                 </div>
               </div>
-              <div className="mb-4">
-                <label className="form-label fw-semibold text-success mb-2">Milk Preference</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
-                  {['almond', 'oat', 'pistachio', 'whole'].map((milk) => (
-                    <button
-                      key={milk}
-                      type="button"
-                      className={`btn btn-sm ${userMilkTypes.includes(milk) ? 'btn-success' : 'btn-outline-success'}`}
-                      onClick={() => setUserMilkTypes(userMilkTypes.includes(milk)
-                        ? userMilkTypes.filter(m => m !== milk)
-                        : [...userMilkTypes, milk]
-                      )}
-                      style={{ textTransform: 'capitalize', fontSize: '0.75rem' }}
-                    >
-                      {milk}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
             <div className="card-footer bg-white border-top p-4">
               <button
@@ -2897,8 +2878,7 @@ function App() {
                     await apiFetch('/preferences', {
                       method: 'POST',
                       body: JSON.stringify({
-                        flavors: userFlavors,
-                        milk_type: userMilkTypes
+                        flavors: userFlavors
                       })
                     })
                     setIsPreferencesModalOpen(false)
