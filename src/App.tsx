@@ -2983,18 +2983,26 @@ function App() {
             </div>
 
             <div style={{ padding: '1rem', overflowY: 'auto', flex: 1 }}>
-              <label className="form-label fw-semibold mb-2">Flavor Preferences</label>
+              <label className="form-label fw-semibold mb-2 text-success">Flavor Preferences</label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
                 {['bold', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy'].map((flavor) => (
                   <button
                     key={flavor}
                     type="button"
-                    className={`btn btn-sm ${userFlavors.includes(flavor) ? 'btn-success' : 'btn-outline-success'}`}
+                    className="btn btn-sm"
                     onClick={() => setUserFlavors(userFlavors.includes(flavor)
                       ? userFlavors.filter(f => f !== flavor)
                       : [...userFlavors, flavor]
                     )}
-                    style={{ textTransform: 'capitalize', fontSize: '0.8rem' }}
+                    style={{
+                      textTransform: 'capitalize',
+                      fontSize: '0.8rem',
+                      background: userFlavors.includes(flavor)
+                        ? 'linear-gradient(135deg, rgba(25, 135, 84, 0.8) 0%, rgba(200, 245, 220, 0.6) 100%)'
+                        : 'linear-gradient(135deg, rgba(25, 135, 84, 0.2) 0%, rgba(255, 255, 255, 0.4) 100%)',
+                      border: '1px solid rgba(25, 135, 84, 0.3)',
+                      color: userFlavors.includes(flavor) ? 'white' : '#198754'
+                    }}
                   >
                     {flavor}
                   </button>
@@ -3003,7 +3011,7 @@ function App() {
 
               <button
                 type="button"
-                className="btn btn-success w-100"
+                className="btn w-100"
                 onClick={async () => {
                   try {
                     const response = await apiFetch('/preferences', {
@@ -3019,6 +3027,12 @@ function App() {
                     console.error('Failed to save preferences:', error)
                     alert(error instanceof Error ? error.message : 'Failed to save preferences')
                   }
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, rgba(25, 135, 84, 0.8) 0%, rgba(200, 245, 220, 0.6) 100%)',
+                  color: 'white',
+                  border: '1px solid rgba(25, 135, 84, 0.3)',
+                  fontWeight: '500'
                 }}
               >
                 Save
