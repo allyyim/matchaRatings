@@ -100,7 +100,7 @@ const noPhotoPlaceholderUrl = `data:image/svg+xml;charset=UTF-8,${encodeURICompo
 `)}`
 
 const drinkAreaModelConfig = {
-  modelUrl: `${import.meta.env.BASE_URL}ml/drink-area/saved_model.pb`,
+  modelUrl: `${import.meta.env.BASE_URL}ml/drink-area/model.json`,
   inputSize: 224,
   maskThreshold: 0.1
 }
