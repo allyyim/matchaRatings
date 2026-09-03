@@ -2473,10 +2473,12 @@ function App() {
                   </div>
                 </div>
               )}
-
+              
+              <center> 
               <div className="mb-3 text-success fw-semibold">
-                {matchaGreenness !== null ? `Matcha Greenness: ${matchaGreenness.toFixed(1)}/100` : 'Greenness score pending'}
+                {matchaGreenness !== null ? `Matcha Greenness: ${matchaGreenness.toFixed(1)}/100` : 'Matcha Greenness score pending'}
               </div>
+              </center>
 
               <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
 
