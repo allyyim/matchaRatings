@@ -1140,6 +1140,27 @@ app.use((err, _req, res, _next) => {
 
 async function start() {
   await initDb()
+
+  // Link users to emails (one-time initialization)
+  try {
+    const usersToLink = [
+      { userName: 'daniella', email: 'daniella.choy@gmail.com' },
+      { userName: 'zakoray', email: 'clarence.z.choy@gmail.com' }
+    ]
+
+    for (const { userName, email } of usersToLink) {
+      const result = await pool.query(
+        'UPDATE accounts SET email = $1 WHERE LOWER(user_name) = LOWER($2) AND (email IS NULL OR email = \'\') RETURNING user_name',
+        [email, userName]
+      )
+      if (result.rowCount > 0) {
+        console.log(`✓ Linked ${userName} to ${email}`)
+      }
+    }
+  } catch (error) {
+    console.error('Error linking users:', error)
+  }
+
   app.listen(port, () => {
     console.log(`API server running on http://localhost:${port}`)
   })
