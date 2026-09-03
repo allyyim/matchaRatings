@@ -2921,18 +2921,20 @@ function App() {
             <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
               <button
                 type="button"
-                className="btn btn-success btn-sm w-100"
+                className="btn btn-link btn-sm text-start p-0 w-100"
                 onClick={() => setIsPreferencesModalOpen(true)}
+                style={{ textDecoration: 'none', color: '#198754' }}
               >
                 My Matcha Preferences
               </button>
               <button
                 type="button"
-                className="btn btn-outline-danger w-100 btn-sm mt-2"
+                className="btn btn-link btn-sm text-start p-0 w-100 mt-2"
                 onClick={() => {
                   signOut()
                   setIsProfileDrawerOpen(false)
                 }}
+                style={{ textDecoration: 'none', color: '#dc3545' }}
               >
                 Log Out
               </button>
