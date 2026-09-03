@@ -616,7 +616,7 @@ function App() {
   const [verifiedAccountName, setVerifiedAccountName] = useState<string | null>(null)
 
   const [currentRating, setCurrentRating] = useState(0)
-  const [ratingFlavorPrefs, setRatingFlavorPrefs] = useState({ bold: 0, nutty: 0, umami: 0, vegetal: 0, sweet: 0, astringent: 0, creamy: 0, floral: 0 })
+  const [ratingFlavorPrefs, setRatingFlavorPrefs] = useState({ bold: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0 })
   const [location, setLocation] = useState('')
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([])
   const [isLocationLookupPending, setIsLocationLookupPending] = useState(false)
@@ -1594,7 +1594,7 @@ function App() {
       }
 
       setCurrentRating(0)
-      setRatingFlavorPrefs({ bold: 0, nutty: 0, umami: 0, vegetal: 0, sweet: 0, astringent: 0, creamy: 0, floral: 0 })
+      setRatingFlavorPrefs({ bold: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0 })
       setLocation('')
       setThoughts('')
       setPhotoDataUrl('')
@@ -2416,7 +2416,7 @@ function App() {
                             <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                             <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
                             {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.5rem', maxWidth: '320px', marginTop: '0.5rem' }}>
                                 {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
                                   intensity > 0 ? (
                                     <span
@@ -2779,8 +2779,8 @@ function App() {
             <div style={{ padding: '0.75rem', flex: 1, overflowY: 'auto' }}>
               <div className="mb-3">
                 <h6 className="fw-bold text-success mb-2">My Matcha Preferences</h6>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
-                  {['bold', 'nutty', 'umami', 'vegetal', 'sweet', 'astringent', 'creamy', 'floral'].map((flavor) => (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+                  {['bold', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy'].map((flavor) => (
                     <button
                       key={flavor}
                       type="button"
@@ -3093,7 +3093,7 @@ function App() {
                 <label className="form-label fw-semibold d-block">Flavor Profile</label>
                 <div className="small text-muted mb-3">Click bubbles to toggle flavors</div>
                 <div className="d-flex flex-wrap gap-2">
-                  {(['bold', 'nutty', 'umami', 'vegetal', 'sweet', 'astringent', 'creamy', 'floral'] as const).map((flavor) => {
+                  {(['bold', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy'] as const).map((flavor) => {
                     const intensity = ratingFlavorPrefs[flavor]
                     const isActive = intensity > 0
 
