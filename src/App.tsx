@@ -2579,7 +2579,7 @@ function App() {
               right: 0,
               top: 0,
               height: '100vh',
-              width: '320px',
+              width: '280px',
               maxWidth: '100vw',
               backgroundColor: 'white',
               boxShadow: '-2px 0 8px rgba(0,0,0,0.1)',
@@ -2588,7 +2588,7 @@ function App() {
               flexDirection: 'column'
             }}
           >
-            <div style={{ padding: '1rem', borderBottom: '1px solid #e9ecef' }}>
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef' }}>
               <button
                 type="button"
                 className="btn btn-link text-muted p-0"
@@ -2597,10 +2597,10 @@ function App() {
               >
                 ✕
               </button>
-              <h5 className="fw-bold text-success mb-0">{currentUserName}</h5>
+              <h6 className="fw-bold text-success mb-0">{currentUserName}</h6>
             </div>
 
-            <div style={{ padding: '1rem', overflowY: 'auto', flex: 1 }}>
+            <div style={{ padding: '0.75rem', overflowY: 'auto', flex: 1 }}>
               <div className="mb-4">
                 <h6 className="fw-semibold text-success mb-3">My Preferences</h6>
 
@@ -2656,7 +2656,7 @@ function App() {
               </div>
             </div>
 
-            <div style={{ padding: '1rem', borderTop: '1px solid #e9ecef' }}>
+            <div style={{ padding: '0.75rem', borderTop: '1px solid #e9ecef' }}>
               <button
                 type="button"
                 className="btn btn-success w-100 mb-2 btn-sm"
