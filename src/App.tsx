@@ -3222,7 +3222,7 @@ function App() {
             </small>
           </div>
 
-          <div className="d-flex align-items-center gap-2 nav-actions w-100">
+          <div className="d-flex align-items-center gap-2 nav-actions w-100 d-none d-lg-flex">
             <button
               type="button"
               className={`btn btn-sm ${activePage === 'home' ? 'btn-success' : 'btn-outline-success'}`}
@@ -4289,7 +4289,37 @@ function App() {
           </section>
         </main>
       )}
-    </>
+
+      <nav className="bottom-nav d-lg-none">
+        <button
+          type="button"
+          className={`bottom-nav-btn ${activePage === 'home' ? 'active' : ''}`}
+          onClick={() => setActivePage('home')}
+          title="My Log"
+        >
+          <span>📝</span>
+          <span className="label">My Log</span>
+        </button>
+        <button
+          type="button"
+          className={`bottom-nav-btn ${activePage === 'friends' ? 'active' : ''}`}
+          onClick={() => setActivePage('friends')}
+          title="Explore"
+        >
+          <span>🌍</span>
+          <span className="label">Explore</span>
+        </button>
+        <button
+          type="button"
+          className={`bottom-nav-btn ${activePage === 'explore' ? 'active' : ''}`}
+          onClick={() => setActivePage('explore')}
+          title="Leaderboard"
+        >
+          <span>🏆</span>
+          <span className="label">Leaderboard</span>
+        </button>
+      </nav>
+</>
   )
 }
 
