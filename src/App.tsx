@@ -2074,28 +2074,15 @@ function App() {
         <div className="upload-menu-overlay" role="dialog" aria-modal="true" aria-label="Upload picture options" onClick={() => setIsUploadMenuOpen(false)}>
           <div className="upload-menu-card card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
             <div className="card-body p-3">
-              <h3 className="h5 fw-bold text-success mb-4">Upload Picture</h3>
-              
-              <div className="d-flex flex-column gap-2">
-                <button
-                  type="button"
-                  className="btn btn-success w-100 text-start"
-                  onClick={() => {
-                    setIsUploadMenuOpen(false)
-                    setIsCameraModalOpen(true)
-                  }}
-                >
-                  Open Camera
-                </button>
-                
-                <button
-                  type="button"
-                  className="btn btn-success w-100 text-start"
-                  onClick={openPhotoLibrary}
-                >
-                  Photo Library
-                </button>
-              </div>
+              <h3 className="h5 fw-bold text-success mb-4">Choose Photo</h3>
+
+              <button
+                type="button"
+                className="btn btn-success w-100 text-start"
+                onClick={openPhotoLibrary}
+              >
+                Photo Album
+              </button>
             </div>
           </div>
         </div>,
@@ -2446,28 +2433,42 @@ function App() {
               </div>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold">Picture</label>
-                <div className="d-flex gap-2 flex-wrap align-items-center justify-content-center justify-content-md-start">
-                  <button 
-                    type="button" 
-                    className="btn btn-success" 
-                    onClick={() => setIsUploadMenuOpen(true)}
-                  >
-                    Upload Picture
-                  </button>
-                  {photoDataUrl && photoDataUrl !== noPhotoPlaceholderUrl && (
-                    <span className="small text-success fw-semibold">Photo ready</span>
-                  )}
-                  {photoDataUrl === noPhotoPlaceholderUrl && (
-                    <span className="small text-muted fw-semibold">No photo selected</span>
-                  )}
-                  {cameraError && <span className="small text-danger align-self-center">{cameraError}</span>}
-                </div>
+                <button
+                  type="button"
+                  className="btn btn-link text-start text-muted p-0 d-flex align-items-center gap-2"
+                  onClick={() => setIsUploadMenuOpen(true)}
+                  style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                    <circle cx="12" cy="13" r="4"></circle>
+                  </svg>
+                  <span>Add photo</span>
+                  <span className="text-muted">›</span>
+                </button>
               </div>
 
               {photoDataUrl && photoDataUrl !== noPhotoPlaceholderUrl && (
-                <div className="preview-wrap mb-3">
-                  <img src={photoDataUrl} alt="Matcha preview" className="preview-image" loading="lazy" decoding="async" />
+                <div className="mb-3">
+                  <div className="preview-wrap mb-2">
+                    <img src={photoDataUrl} alt="Matcha preview" className="preview-image" loading="lazy" decoding="async" />
+                  </div>
+                  <div className="d-flex gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-secondary flex-grow-1"
+                      onClick={() => setIsUploadMenuOpen(true)}
+                    >
+                      Change photo
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => setPhotoDataUrl(noPhotoPlaceholderUrl)}
+                    >
+                      Remove
+                    </button>
+                  </div>
                 </div>
               )}
 

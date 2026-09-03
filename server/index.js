@@ -675,6 +675,34 @@ app.post('/api/migrate/ali', async (req, res) => {
   }
 })
 
+app.post('/api/admin/link-users', async (req, res) => {
+  try {
+    const { links } = req.body
+
+    if (!Array.isArray(links)) {
+      return res.status(400).json({ error: 'links must be an array' })
+    }
+
+    const results = []
+    for (const { userName, email } of links) {
+      const result = await pool.query(
+        'UPDATE accounts SET email = $1 WHERE LOWER(user_name) = LOWER($2) RETURNING user_name, email',
+        [email, userName]
+      )
+      if (result.rowCount > 0) {
+        results.push({ userName: result.rows[0].user_name, email: result.rows[0].email, success: true })
+      } else {
+        results.push({ userName, email, success: false, error: 'User not found' })
+      }
+    }
+
+    return res.json({ results })
+  } catch (error) {
+    console.error('Link users failed:', error)
+    return res.status(400).json({ error: 'Failed to link users' })
+  }
+})
+
 app.post('/api/users/session', async (req, res) => {
   const browserId = String(req.body?.browserId || '').trim()
   const incomingUserName = sanitizeUserName(String(req.body?.userName || '').trim())
