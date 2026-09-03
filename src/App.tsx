@@ -1368,7 +1368,8 @@ function App() {
   useEffect(() => {
     if (!isPreferencesModalOpen) return
 
-    void apiFetch<{ flavors?: string[] }>('/api/preferences')
+    void apiFetch<{ flavors?: string[] }>('/preferences')
+
       .then((data) => {
         if (data.flavors && Array.isArray(data.flavors)) {
           setUserFlavors(data.flavors)
@@ -1454,7 +1455,7 @@ function App() {
 
     async function loadPreferences() {
       try {
-        const data = await apiFetch<{ flavors?: string[] }>('/api/preferences')
+        const data = await apiFetch<{ flavors?: string[] }>('/preferences')
         if (data?.flavors) {
           setUserFlavors(data.flavors)
         }
@@ -2954,7 +2955,7 @@ function App() {
                 className="btn btn-success w-100"
                 onClick={async () => {
                   try {
-                    await apiFetch('/api/preferences', {
+                    await apiFetch('/preferences', {
                       method: 'POST',
                       body: JSON.stringify({
                         flavors: userFlavors
