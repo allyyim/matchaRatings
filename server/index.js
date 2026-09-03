@@ -1273,6 +1273,22 @@ app.post('/api/preferences', async (req, res) => {
   }
 })
 
+app.post('/account/email', async (req, res) => {
+  const { newEmail } = req.body
+  if (!newEmail?.trim()) return res.status(400).json({ error: 'Email is required' })
+
+  const email = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
+  if (!email) return res.status(404).json({ error: 'User not found' })
+
+  try {
+    await pool.query('UPDATE accounts SET email = $1 WHERE LOWER(user_name) = LOWER($2)', [newEmail, req.session.userName])
+    return res.json({ ok: true, message: 'Email updated successfully' })
+  } catch (error) {
+    console.error('Failed to update email:', error)
+    return res.status(500).json({ error: 'Failed to update email' })
+  }
+})
+
 // Follow/unfollow endpoints
 app.post('/api/follows/:targetUserName', async (req, res) => {
   const followerEmail = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
