@@ -920,11 +920,16 @@ app.post('/api/ratings', async (req, res) => {
 app.post('/api/upload-image', async (req, res) => {
   try {
     const image = String(req.body?.image || '').trim()
+    console.log('Image upload requested, data URL length:', image.length)
+
     if (!image || !image.startsWith('data:image/')) {
+      console.error('Invalid image data:', image.substring(0, 50))
       return res.status(400).json({ error: 'Valid base64 image data is required' })
     }
 
     console.log('Uploading image to Cloudinary...')
+    console.log('Cloud name:', process.env.CLOUDINARY_CLOUD_NAME)
+
     const result = await cloudinary.uploader.upload(image, {
       folder: 'matcha-ratings',
       resource_type: 'auto',
@@ -935,8 +940,9 @@ app.post('/api/upload-image', async (req, res) => {
     console.log('Image uploaded successfully:', result.secure_url)
     return res.json({ url: result.secure_url })
   } catch (error) {
-    console.error('Image upload failed:', error)
-    return res.status(500).json({ error: 'Image upload failed', details: String(error) })
+    console.error('Image upload failed:', error.message)
+    console.error('Full error:', error)
+    return res.status(500).json({ error: 'Image upload failed', details: String(error.message) })
   }
 })
 
