@@ -2957,15 +2957,17 @@ function App() {
                 className="btn btn-success w-100"
                 onClick={async () => {
                   try {
-                    await apiFetch('/preferences', {
+                    const response = await apiFetch('/preferences', {
                       method: 'POST',
                       body: JSON.stringify({
                         flavors: userFlavors
                       })
                     })
+                    console.log('Preferences saved:', response)
                     setIsPreferencesModalOpen(false)
                     alert('Preferences saved!')
                   } catch (error) {
+                    console.error('Failed to save preferences:', error)
                     alert(error instanceof Error ? error.message : 'Failed to save preferences')
                   }
                 }}
