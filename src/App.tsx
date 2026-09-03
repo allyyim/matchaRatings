@@ -970,9 +970,15 @@ function App() {
   }, [browserId])
 
   useEffect(() => {
-    // Show onboarding for first-time users
+    // Show onboarding ONLY for brand new accounts (first login, 0 entries)
+    // Don't show if returning user or they already dismissed it
     if (isUserReady && myEntries.length === 0 && !localStorage.getItem('onboardingShown')) {
-      setShowOnboarding(true)
+      // Check if this is truly a new account by seeing if they just signed up
+      const justSignedUp = sessionStorage.getItem('justSignedUp')
+      if (justSignedUp) {
+        setShowOnboarding(true)
+        sessionStorage.removeItem('justSignedUp')
+      }
     }
   }, [isUserReady, myEntries.length])
 
@@ -982,7 +988,7 @@ function App() {
     const authToken = params.get('authToken')
     const purpose = params.get('purpose')
 
-    if (authToken && purpose === 'login') {
+    if (authToken && (purpose === 'login' || purpose === 'signup')) {
       const verifyMagicLink = async () => {
         try {
           setIsSubmittingName(true)
@@ -993,6 +999,7 @@ function App() {
           setSessionToken(response.token || '')
           localStorage.setItem('matchaUserName', response.userName)
           setCurrentUserName(response.userName)
+          sessionStorage.setItem('justSignedUp', 'true')
           setIsUserReady(true)
           window.history.replaceState({}, document.title, window.location.pathname)
           void loadDrinkAreaModel().catch(() => undefined)
@@ -2979,28 +2986,7 @@ function App() {
                         {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
                       </div>
                     </div>
-                    <div className="d-flex flex-column gap-2 align-items-end">
-                      <button
-                        type="button"
-                        className="btn btn-link p-0 text-muted"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          const isLiked = likedRatingsSet.has(entry.id)
-                          if (isLiked) {
-                            void apiFetch(`/ratings/${entry.id}/like`, { method: 'DELETE' })
-                            likedRatingsSet.delete(entry.id)
-                          } else {
-                            void apiFetch(`/ratings/${entry.id}/like`, { method: 'POST' })
-                            likedRatingsSet.add(entry.id)
-                          }
-                          setLikedRatingsSet(new Set(likedRatingsSet))
-                        }}
-                        title={likedRatingsSet.has(entry.id) ? 'Unlike' : 'Like'}
-                      >
-                        {likedRatingsSet.has(entry.id) ? '❤️' : '🤍'} 0
-                      </button>
-                      <div className="entry-hint-icon" aria-hidden="true">✎</div>
-                    </div>
+                    <div className="entry-hint-icon" aria-hidden="true">✎</div>
                   </div>
 
                   {selectedEntryId === entry.id && (
@@ -3183,6 +3169,7 @@ function App() {
                       <button
                         type="button"
                         className="btn btn-link btn-sm text-muted p-0"
+                        style={{ textDecoration: 'none' }}
                         onClick={() => {
                           const isFollowing = followingSet.has(friend)
                           if (isFollowing) {
@@ -3270,23 +3257,45 @@ function App() {
 
               {(isFriendLogsExpanded || !selectedFriend ? filteredFriendEntries : filteredFriendEntries.slice(0, 3)).map((entry) => (
                 <article key={entry.id} className="card border-0 shadow-sm">
-                  <div className="card-body d-flex gap-3 align-items-start">
-                    <div className="entry-media-col">
-                      <img src={entry.photo} alt="Friend's matcha" className="entry-thumb" loading="lazy" decoding="async" />
-                      <div className="entry-rank-circle">#{friendRankById.get(entry.id) || 0}</div>
-                    </div>
-                    <div className="flex-grow-1">
-                      <div className="d-flex justify-content-between flex-wrap gap-2">
-                        <strong>{entry.location || 'Unknown location'}</strong>
-                        <span className="text-muted small">{entry.date}</span>
+                  <div className="card-body d-flex gap-3 align-items-start justify-content-between">
+                    <div className="d-flex gap-3 flex-grow-1 align-items-start">
+                      <div className="entry-media-col">
+                        <img src={entry.photo} alt="Friend's matcha" className="entry-thumb" loading="lazy" decoding="async" />
+                        <div className="entry-rank-circle">#{friendRankById.get(entry.id) || 0}</div>
                       </div>
-                      <div className="entry-metrics">
-                        <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
-                        <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
-                        <div>Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                      <div className="flex-grow-1">
+                        <div className="d-flex justify-content-between flex-wrap gap-2">
+                          <strong>{entry.location || 'Unknown location'}</strong>
+                          <span className="text-muted small">{entry.date}</span>
+                        </div>
+                        <div className="entry-metrics">
+                          <div>Rating: {entry.rating.toFixed(1)} / 5.0</div>
+                          <div>Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                          <div>Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
+                        </div>
+                        {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
                       </div>
-                      {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
                     </div>
+                    <button
+                      type="button"
+                      className="btn btn-link p-0 text-muted"
+                      style={{ textDecoration: 'none' }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        const isLiked = likedRatingsSet.has(entry.id)
+                        if (isLiked) {
+                          void apiFetch(`/ratings/${entry.id}/like`, { method: 'DELETE' })
+                          likedRatingsSet.delete(entry.id)
+                        } else {
+                          void apiFetch(`/ratings/${entry.id}/like`, { method: 'POST' })
+                          likedRatingsSet.add(entry.id)
+                        }
+                        setLikedRatingsSet(new Set(likedRatingsSet))
+                      }}
+                      title={likedRatingsSet.has(entry.id) ? 'Unlike' : 'Like'}
+                    >
+                      {likedRatingsSet.has(entry.id) ? '★' : '☆'}
+                    </button>
                   </div>
                 </article>
               ))}              {selectedFriend && filteredFriendEntries.length > 3 && !isFriendLogsExpanded && (
@@ -3387,6 +3396,7 @@ function App() {
                               <button
                                 type="button"
                                 className="btn btn-link btn-sm text-muted p-0"
+                                style={{ textDecoration: 'none' }}
                                 onClick={() => {
                                   const isFollowing = followingSet.has(user.userName)
                                   if (isFollowing) {
