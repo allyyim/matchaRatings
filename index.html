@@ -26,6 +26,22 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
+      // GitHub Pages SPA routing redirect restoration
+      (function() {
+        var redirect = sessionStorage.redirect;
+        delete sessionStorage.redirect;
+        if (redirect && redirect !== location.href) {
+          history.replaceState(null, null, redirect);
+        }
+      })();
+    </script>
+    <script>
+      // Redirect handler for 404.html
+      if (window.location.pathname !== '/' && !window.location.pathname.includes('.')) {
+        sessionStorage.redirect = window.location.href;
+      }
+    </script>
+    <script>
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/service-worker.js').catch(err => {
           console.log('Service Worker registration failed:', err);
