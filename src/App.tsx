@@ -3281,34 +3281,34 @@ function App() {
                 })}
               </div>
 
-              <button
-                type="button"
-                className="btn w-100"
-                onClick={async () => {
-                  try {
-                    setIsPreferencesModalOpen(false)
-                    setIsProfileDrawerOpen(false)
+                <button
+                  type="button"
+                  className="btn w-100"
+                  onClick={async () => {
                     try {
-                      if (userBodyPref) {
-                        localStorage.setItem('matchaBodyPref', userBodyPref)
-                      } else {
-                        localStorage.removeItem('matchaBodyPref')
-                      }
-                    } catch { /* ignore */ }
-                    const response = await apiFetch('/preferences', {
-                      method: 'POST',
-                      body: JSON.stringify({
-                        flavors: userFlavors
+                      setIsPreferencesModalOpen(false)
+                      setIsProfileDrawerOpen(false)
+                      try {
+                        if (userBodyPref) {
+                          localStorage.setItem('matchaBodyPref', userBodyPref)
+                        } else {
+                          localStorage.removeItem('matchaBodyPref')
+                        }
+                      } catch { /* ignore */ }
+                      const response = await apiFetch('/preferences', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                          flavors: userFlavors
+                        })
                       })
-                    })
-                    console.log('Preferences saved:', response)
-                    alert('Preferences saved!')
-                  } catch (error) {
-                    console.error('Failed to save preferences:', error)
-                    setIsPreferencesModalOpen(true)
-                    alert(error instanceof Error ? error.message : 'Failed to save preferences')
-                  }
-                }}
+                      console.log('Preferences saved:', response)
+                      setRecsRefreshKey((k) => k + 1)
+                    } catch (error) {
+                      console.error('Failed to save preferences:', error)
+                      setIsPreferencesModalOpen(true)
+                      alert(error instanceof Error ? error.message : 'Failed to save preferences')
+                    }
+                  }}
                 style={{
                   background: '#0d4f4a',
                   color: '#4dd0c1',
@@ -4583,7 +4583,7 @@ function App() {
                                               {cleanFlavors.map((flavor) => {
                                                 const _c = flavorColor(flavor)
                                                 return (
-                                                <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 700, padding: '0.3rem 0.55rem' }}>
+                                                <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 500, padding: '0.3rem 0.55rem' }}>
                                                   {flavor}
                                                 </span>
                                                 )
@@ -4594,7 +4594,7 @@ function App() {
                                         {derivedBody && (
                                           <div className="small mt-2">
                                             <p className="text-muted mb-2">Matcha body profile:</p>
-                                            <span className="badge" style={{ ...(function(){ const _c = bodyColor(derivedBody); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>
+                                            <span className="badge" style={{ ...(function(){ const _c = bodyColor(derivedBody); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 500, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>
                                               {bodyProfileLabel(derivedBody)}
                                             </span>
                                           </div>
