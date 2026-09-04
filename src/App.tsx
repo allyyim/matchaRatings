@@ -1161,6 +1161,10 @@ function App() {
       if (photoInputRef.current) {
         photoInputRef.current.value = ''
       }
+      // Also clear inline friend-ratings page so it doesn't stick around when
+      // returning to Following after previously viewing a friend's full page.
+      setSelectedFriend('')
+      setFriendEntries([])
     }
   }, [activePage])
 
@@ -1973,6 +1977,10 @@ function App() {
 
   async function openFriendModal(friendName: string) {
     if (!friendName.trim()) return
+    // Clear any lingering inline friend-ratings page so switching between
+    // friends via the modal doesn't leave a stale page behind.
+    setSelectedFriend('')
+    setFriendEntries([])
     setFriendModalUser(friendName)
     setFriendModalEntries([])
     setIsFriendModalOpen(true)
@@ -4273,7 +4281,7 @@ function App() {
                       <button
                         type="button"
                         className="btn btn-success w-100"
-                        onClick={() => void openFriendRatings(friendQuery.trim())}
+                        onClick={() => void openFriendModal(friendQuery.trim())}
                         disabled={!friendQuery.trim() || isLoadingFriendRatings}
                       >
                         View Ratings
@@ -4289,7 +4297,7 @@ function App() {
                           <div key={friend.userName} className="col-12 col-sm-6 col-md-4">
                             <div className="card border-0 shadow-sm h-100">
                               <div className="card-body">
-                                <h6 className="card-title fw-semibold text-success mb-2" style={{ cursor: 'pointer' }} onClick={() => void openFriendRatings(friend.userName)}>
+                                <h6 className="card-title fw-semibold text-success mb-2" style={{ cursor: 'pointer' }} onClick={() => void openFriendModal(friend.userName)}>
                                   {friend.userName}
                                 </h6>
                                 <p className="text-muted small mb-3">{friend.placeCount} places</p>
