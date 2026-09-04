@@ -454,6 +454,11 @@ textarea.form-control {
   transform-origin: center;
   transition: transform 0.15s ease, filter 0.15s ease;
   filter: drop-shadow(0 1px 3px rgba(26, 155, 142, 0.15));
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .star:hover {
@@ -468,6 +473,10 @@ textarea.form-control {
   object-fit: contain;
   image-rendering: pixelated;
   transform: rotate(0deg);
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .star-base,

@@ -742,8 +742,6 @@ function App() {
   const [friendSort, setFriendSort] = useState<'highest' | 'lowest' | 'greenest' | 'newest' | 'oldest'>('highest')
   const [isFriendFilterOpen, setIsFriendFilterOpen] = useState(false)
   const [isFriendSearchOpen, setIsFriendSearchOpen] = useState(false)
-  const [isRatingDragActive, setIsRatingDragActive] = useState(false)
-  const [isEditRatingDragActive, setIsEditRatingDragActive] = useState(false)
 
   // Phase 2 & 3 features
   const [pendingMagicEmail, setPendingMagicEmail] = useState('')
@@ -1483,10 +1481,7 @@ function App() {
   }, [isCameraModalOpen])
 
   useEffect(() => {
-    function clearDragState() {
-      setIsRatingDragActive(false)
-      setIsEditRatingDragActive(false)
-    }
+    function clearDragState() {}
 
     window.addEventListener('pointerup', clearDragState)
     window.addEventListener('pointercancel', clearDragState)
@@ -1534,18 +1529,6 @@ function App() {
   function updateRatingFromClick(starIndex: number, event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
     setCurrentRating((prev) => (Math.round(prev) === starIndex ? 0 : starIndex))
-  }
-
-  function getRatingFromPointer(starIndex: number, _clientX: number, _target: HTMLButtonElement) {
-    return starIndex
-  }
-
-  function handleCurrentRatingPointer(starIndex: number, event: React.PointerEvent<HTMLButtonElement>) {
-    setCurrentRating(getRatingFromPointer(starIndex, event.clientX, event.currentTarget))
-  }
-
-  function handleEditRatingPointer(starIndex: number, event: React.PointerEvent<HTMLButtonElement>) {
-    setEditRating(getRatingFromPointer(starIndex, event.clientX, event.currentTarget))
   }
 
   function stopCameraAccess() {
@@ -2538,9 +2521,9 @@ function App() {
                           <div className="small text-muted mb-1">{entry.location || selectedExplorePlaceName}</div>
                           <div className="entry-metrics">
                             <div className="fw-bold mb-2">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
-                            <div className="mb-2">Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                            <div className="mb-2">Greenness: {entry.greenness.toFixed(0)}%</div>
                             <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
-                            <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                            <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
                             {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
                                 {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
@@ -3171,31 +3154,30 @@ function App() {
                           event.preventDefault()
                           setEditRating((prev) => (Math.round(prev) === starIndex ? 0 : starIndex))
                         }}
-                        onPointerDown={(event) => {
-                          event.stopPropagation()
-                          setIsEditRatingDragActive(true)
-                          handleEditRatingPointer(starIndex, event)
-                        }}
-                        onPointerMove={(event) => {
-                          if (!isEditRatingDragActive) return
-                          event.stopPropagation()
-                          handleEditRatingPointer(starIndex, event)
-                        }}
-                        onPointerUp={(event) => {
-                          event.stopPropagation()
-                          setIsEditRatingDragActive(false)
-                        }}
+                        onContextMenu={(event) => event.preventDefault()}
                         aria-label={`Edit to ${starIndex} stars`}
                       >
-                        <img className="star-base" src={pixelStarUrl} alt="" />
+                        <img className="star-base" src={pixelStarUrl} alt="" draggable={false} />
                         <span className="star-fill-clip" style={{ width: `${fillAmount * 100}%` }}>
-                          <img className="star-fill" src={pixelStarFilledUrl} alt="" />
+                          <img className="star-fill" src={pixelStarFilledUrl} alt="" draggable={false} />
                         </span>
                       </button>
                     )
                   })}
                 </div>
-                <div className="text-center small text-muted mt-2">Tap a star to rate. Tap the same star again to clear.</div>
+                <div className="d-flex justify-content-center mt-2">
+                  <button
+                    type="button"
+                    className="btn btn-link btn-sm text-muted"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      setEditRating(0)
+                    }}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    Clear rating
+                  </button>
+                </div>
               </div>
 
               <div style={{ marginBottom: '1.5rem' }}>
@@ -3417,7 +3399,7 @@ function App() {
               
               <center> 
               <div className="mb-3 text-success fw-semibold">
-                {matchaGreenness !== null ? `Matcha Greenness: ${matchaGreenness.toFixed(1)}/100` : 'How green is your matcha?'}
+                {matchaGreenness !== null ? `Matcha Greenness: ${matchaGreenness.toFixed(0)}%` : 'How green is your matcha?'}
               </div>
               </center>
 
@@ -3474,26 +3456,27 @@ function App() {
                         key={starIndex}
                         className="star"
                         onClick={(event) => updateRatingFromClick(starIndex, event)}
-                        onPointerDown={(event) => {
-                          setIsRatingDragActive(true)
-                          handleCurrentRatingPointer(starIndex, event)
-                        }}
-                        onPointerMove={(event) => {
-                          if (!isRatingDragActive) return
-                          handleCurrentRatingPointer(starIndex, event)
-                        }}
-                        onPointerUp={() => setIsRatingDragActive(false)}
+                        onContextMenu={(event) => event.preventDefault()}
                         aria-label={`Rate ${starIndex} stars`}
                       >
-                        <img className="star-base" src={pixelStarUrl} alt="" />
+                        <img className="star-base" src={pixelStarUrl} alt="" draggable={false} />
                         <span className="star-fill-clip" style={{ width: `${fillAmount * 100}%` }}>
-                          <img className="star-fill" src={pixelStarFilledUrl} alt="" />
+                          <img className="star-fill" src={pixelStarFilledUrl} alt="" draggable={false} />
                         </span>
                       </button>
                     )
                   })}
                 </div>
-                <div className="text-center small text-muted mt-2">Tap a star to rate. Tap again to clear.</div>
+                <div className="d-flex justify-content-center mt-2">
+                  <button
+                    type="button"
+                    className="btn btn-link btn-sm text-muted"
+                    onClick={() => setCurrentRating(0)}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    Clear rating
+                  </button>
+                </div>
               </div>
 
               <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
@@ -3637,7 +3620,7 @@ function App() {
                         </div>
                         <div className="entry-metrics">
                           <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
-                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
                               {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
@@ -4182,7 +4165,7 @@ function App() {
                         </div>
                         <div className="entry-metrics">
                           <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
-                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
                               {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
