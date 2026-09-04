@@ -151,7 +151,7 @@ let randomForestPromise: Promise<any> = null
 
 async function loadRandomForest() {
   if (randomForestModel) return randomForestModel
-  if (randomForestPromise) return randomForestPromise
+  if (randomForestPromise) return await randomForestPromise
 
   randomForestPromise = (async () => {
     try {
