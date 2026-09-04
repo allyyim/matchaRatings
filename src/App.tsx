@@ -765,8 +765,8 @@ function App() {
   const [similarPlaces, setSimilarPlaces] = useState<Array<{ location: string; flavors: string[]; body?: string; matchScore: number }>>([])
   const [isLoadingSimilarPlaces, setIsLoadingSimilarPlaces] = useState(false)
   const [recsRefreshKey, setRecsRefreshKey] = useState(0)
-  const [similarUsersVisible, setSimilarUsersVisible] = useState(9)
-  const [similarPlacesVisible, setSimilarPlacesVisible] = useState(9)
+  const [similarUsersVisible, setSimilarUsersVisible] = useState(10)
+  const [similarPlacesVisible, setSimilarPlacesVisible] = useState(10)
   const [friendModalUser, setFriendModalUser] = useState('')
   const [friendModalEntries, setFriendModalEntries] = useState<RatingEntry[]>([])
   const [isFriendModalOpen, setIsFriendModalOpen] = useState(false)
@@ -4411,7 +4411,7 @@ function App() {
                             )}
                             {similarUsers.length > similarUsersVisible && (
                               <div className="text-center mt-3">
-                                <button type="button" className="btn btn-outline-success btn-sm" onClick={() => setSimilarUsersVisible((n) => n + 9)}>
+                                <button type="button" className="btn btn-outline-success btn-sm" onClick={() => setSimilarUsersVisible((n) => n + 10)}>
                                   See more ({similarUsers.length - similarUsersVisible} more)
                                 </button>
                               </div>
@@ -4486,7 +4486,7 @@ function App() {
                             )}
                             {similarPlaces.length > similarPlacesVisible && (
                               <div className="text-center mt-3">
-                                <button type="button" className="btn btn-outline-success btn-sm" onClick={() => setSimilarPlacesVisible((n) => n + 9)}>
+                                <button type="button" className="btn btn-outline-success btn-sm" onClick={() => setSimilarPlacesVisible((n) => n + 10)}>
                                   See more ({similarPlaces.length - similarPlacesVisible} more)
                                 </button>
                               </div>
