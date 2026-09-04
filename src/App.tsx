@@ -148,7 +148,7 @@ function BodyInfoIcon() {
             pointerEvents: 'none'
           }}
         >
-          The body of a matcha is how thick and heavy it feels on the tongue.
+          The Body Of A Matcha Is How Thick And Heavy It Feels On The Tongue.
         </span>
       )}
     </span>
@@ -1145,11 +1145,22 @@ function App() {
   }, [])
 
   // Reset My Log sort when the user navigates away from the home tab so that
-  // returning to it always shows the canonical default ranking.
+  // returning to it always shows the canonical default ranking. Also clear any
+  // in-progress New Log draft so reopening it starts fresh.
   useEffect(() => {
     if (activePage !== 'home') {
       setMyRatingsSort('highest')
       setIsMyRatingsFilterOpen(false)
+      setIsNewLogOpen(false)
+      setCurrentRating(0)
+      setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, mellow: 0, bitter: 0 })
+      setLocation('')
+      setThoughts('')
+      setPhotoDataUrl('')
+      setMatchaGreenness(null)
+      if (photoInputRef.current) {
+        photoInputRef.current.value = ''
+      }
     }
   }, [activePage])
 
@@ -4379,18 +4390,17 @@ function App() {
                   ) : (
                     <div>
                       <div className="mb-4">
-                        <h5 className="fw-semibold text-success mb-3">Your Flavor Preferences</h5>
-                        <div className="d-flex flex-wrap gap-2 mb-4">
-                          {userFlavors.map((flavor) => (
-                            <span
-                              key={flavor}
-                              className="badge bg-success"
-                              style={{ fontSize: '0.85rem', textTransform: 'capitalize' }}
-                            >
-                              {flavor}
-                            </span>
-                          ))}
-                        </div>
+                        <button
+                          type="button"
+                          className="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-2"
+                          onClick={() => {
+                            setIsProfileDrawerOpen(true)
+                            setIsPreferencesModalOpen(true)
+                          }}
+                        >
+                          <span aria-hidden="true">✏️</span>
+                          Edit my matcha preferences
+                        </button>
                       </div>
 
                       <div className="mb-5">
