@@ -561,19 +561,26 @@ app.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
 
         const sanitizedName = sanitizeUserName(providedUserName)
 
+        // Ensure sanitized name is not empty
+        if (!sanitizedName) {
+          return res.status(400).json({ error: 'Invalid username - must contain alphanumeric characters' })
+        }
+
         // Check if username is available
         const nameTaken = await pool.query(
           'SELECT 1 FROM accounts WHERE LOWER(user_name) = LOWER($1)',
           [sanitizedName]
         )
 
-        const finalName = nameTaken.rowCount > 0 ? `${sanitizedName}_${googleId.slice(0, 6)}` : sanitizedName
+        if (nameTaken.rowCount > 0) {
+          return res.status(409).json({ error: 'Username already taken' })
+        }
 
         await pool.query(
           'INSERT INTO accounts (email, user_name, google_id) VALUES ($1, $2, $3)',
-          [email, finalName, googleId]
+          [email, sanitizedName, googleId]
         )
-        userName = finalName
+        userName = sanitizedName
       }
     }
 
