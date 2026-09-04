@@ -1601,6 +1601,24 @@ function App() {
     loadUserPreferences()
   }, [isUserReady, currentUserName])
 
+  // If the user opens the Recs tab without any flavor prefs set, auto-open
+  // the preferences modal so they can set them right away (Recs is useless
+  // without prefs). Fires at most once per session so we don't fight the
+  // user if they close it deliberately.
+  const hasAutoPromptedPrefsRef = useRef(false)
+  useEffect(() => {
+    if (
+      communityActiveTab === 'recommendations' &&
+      isUserReady &&
+      userFlavors.length === 0 &&
+      !hasAutoPromptedPrefsRef.current
+    ) {
+      hasAutoPromptedPrefsRef.current = true
+      setIsProfileDrawerOpen(true)
+      setIsPreferencesModalOpen(true)
+    }
+  }, [communityActiveTab, isUserReady, userFlavors.length])
+
   function updateRatingFromClick(starIndex: number, event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
     setCurrentRating((prev) => (Math.round(prev) === starIndex ? 0 : starIndex))
@@ -3091,8 +3109,29 @@ function App() {
                 ))}
               </div>
 
-              <label className="form-label fw-semibold mb-2 text-success">Matcha body preference</label>
-              <div className="small text-muted mb-2">The body of a matcha is how thick and heavy it feels on the tongue. Pick the mouthfeel you gravitate toward.</div>
+              <label className="form-label fw-semibold mb-2 text-success d-inline-flex align-items-center gap-2">
+                Matcha body preference
+                <span
+                  title="The body of a matcha is how thick and heavy it feels on the tongue. Pick the mouthfeel you gravitate toward."
+                  aria-label="What is matcha body?"
+                  role="img"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '1.1rem',
+                    height: '1.1rem',
+                    borderRadius: '50%',
+                    background: '#e9ecef',
+                    color: '#495057',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    cursor: 'help'
+                  }}
+                >
+                  i
+                </span>
+              </label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 {BODY_PROFILE_OPTIONS.map((opt) => {
                   const active = userBodyPref === opt.value
@@ -3118,11 +3157,6 @@ function App() {
                   )
                 })}
               </div>
-              {userBodyPref && (
-                <div className="small text-muted mb-3" style={{ fontStyle: 'italic' }}>
-                  * {BODY_PROFILE_OPTIONS.find((o) => o.value === userBodyPref)?.desc}
-                </div>
-              )}
 
               <button
                 type="button"
@@ -3752,9 +3786,30 @@ function App() {
               </div>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold d-block">Matcha body profile</label>
-                <div className="small text-muted mb-3">The "body" of a matcha is how thick and heavy it feels on the tongue. Pick the one that best matches this cup.</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', placeItems: 'center' }}>
+                <label className="form-label fw-semibold d-inline-flex align-items-center gap-2">
+                  Matcha body profile
+                  <span
+                    title="The body of a matcha is how thick and heavy it feels on the tongue. Pick the one that best matches this cup."
+                    aria-label="What is matcha body?"
+                    role="img"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '1.1rem',
+                      height: '1.1rem',
+                      borderRadius: '50%',
+                      background: '#e9ecef',
+                      color: '#495057',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      cursor: 'help'
+                    }}
+                  >
+                    i
+                  </span>
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', placeItems: 'center', marginTop: '0.5rem' }}>
                   {BODY_PROFILE_OPTIONS.map((opt) => {
                     const active = getBodyProfile(ratingFlavorPrefs) === opt.value
                     return (
@@ -4254,13 +4309,16 @@ function App() {
                   <p className="text-muted small mb-3">Find matcha places and users with similar flavor preferences</p>
                   {userFlavors.length === 0 ? (
                     <div className="alert alert-info border">
-                      <p className="mb-0">Set your flavor preferences in your profile to discover similar users and places.</p>
+                      <p className="mb-2">You haven't set your flavor preferences yet, so there's nothing to match on. Set them now and we'll surface users and places that share your taste.</p>
                       <button
                         type="button"
-                        className="btn btn-link btn-sm text-success p-0 mt-2"
-                        onClick={() => setIsProfileDrawerOpen(true)}
+                        className="btn btn-success btn-sm"
+                        onClick={() => {
+                          setIsProfileDrawerOpen(true)
+                          setIsPreferencesModalOpen(true)
+                        }}
                       >
-                        Go to Profile →
+                        Set my preferences →
                       </button>
                     </div>
                   ) : (
