@@ -3382,6 +3382,14 @@ function App() {
                         setShowLocationSuggestions(true)
                       }
                     }}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                        applyLocationSuggestion(location.trim())
+                      } else if (event.key === 'Escape') {
+                        setShowLocationSuggestions(false)
+                      }
+                    }}
                     onBlur={() => {
                       if (locationBlurTimeoutRef.current !== null) {
                         window.clearTimeout(locationBlurTimeoutRef.current)
@@ -3394,30 +3402,49 @@ function App() {
                     autoComplete="off"
                   />
 
-                  {showLocationSuggestions && location.trim().length >= 2 && (
-                    <div className="location-dropdown border rounded shadow-sm bg-white">
-                      {isLocationLookupPending && <div className="location-item muted">Searching locations...</div>}
+                  {showLocationSuggestions && location.trim().length >= 2 && (() => {
+                    const trimmed = location.trim()
+                    const alreadyListed = locationSuggestions.some(
+                      (s) => s.toLowerCase() === trimmed.toLowerCase()
+                    )
+                    const showUseTyped = !isLocationLookupPending && !alreadyListed
+                    return (
+                      <div className="location-dropdown border rounded shadow-sm bg-white">
+                        {isLocationLookupPending && <div className="location-item muted">Searching locations…</div>}
 
-                      {!isLocationLookupPending && locationSuggestions.length === 0 && (
-                        <div className="location-item muted">No matching places found.</div>
-                      )}
+                        {!isLocationLookupPending &&
+                          locationSuggestions.map((suggestion) => (
+                            <button
+                              type="button"
+                              key={suggestion}
+                              className="location-item"
+                              onMouseDown={(event) => {
+                                event.preventDefault()
+                                applyLocationSuggestion(suggestion)
+                              }}
+                            >
+                              {suggestion}
+                            </button>
+                          ))}
 
-                      {!isLocationLookupPending &&
-                        locationSuggestions.map((suggestion) => (
+                        {showUseTyped && (
                           <button
                             type="button"
-                            key={suggestion}
                             className="location-item"
                             onMouseDown={(event) => {
                               event.preventDefault()
-                              applyLocationSuggestion(suggestion)
+                              applyLocationSuggestion(trimmed)
                             }}
+                            style={{ fontStyle: 'italic' }}
                           >
-                            {suggestion}
+                            {locationSuggestions.length === 0
+                              ? `Use “${trimmed}” as the location`
+                              : `Can’t find it? Use “${trimmed}”`}
                           </button>
-                        ))}
-                    </div>
-                  )}
+                        )}
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
 
