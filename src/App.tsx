@@ -4507,11 +4507,11 @@ function App() {
                                             {(user.matchScore * 100).toFixed(0)}% match
                                           </span>
                                         </div>
-                                        {user.flavors.filter((f) => !f.startsWith('__')).length > 0 && (
+                                        {user.flavors.filter((f) => !f.startsWith('__') && isKnownFlavor(f)).length > 0 && (
                                           <div className="small mt-2">
                                             <p className="text-muted mb-2">Shared flavors:</p>
                                             <div className="d-flex flex-wrap gap-1">
-                                              {user.flavors.filter((f) => !f.startsWith('__')).map((flavor) => {
+                                              {user.flavors.filter((f) => !f.startsWith('__') && isKnownFlavor(f)).map((flavor) => {
                                                 const _c = flavorColor(flavor)
                                                 return (
                                                 <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.25rem 0.55rem' }}>
@@ -4551,8 +4551,10 @@ function App() {
                             ) : (
                               <div className="row g-3">
                                 {similarPlaces.slice(0, 10).map((place) => {
-                                  // Defensive: filter out reserved __body:* keys and extract body if server hasn't provided it yet
-                                  const cleanFlavors = (place.flavors || []).filter((f) => !f.startsWith('__'))
+                                  // Defensive: filter out reserved __body:* keys AND any legacy/unknown
+                                  // flavor names (e.g. old "bold" body value that got saved as a flavor
+                                  // before body moved to __body:*). Only surface real flavor tags.
+                                  const cleanFlavors = (place.flavors || []).filter((f) => !f.startsWith('__') && isKnownFlavor(f))
                                   const derivedBody = place.body || (
                                     (place.flavors || []).find((f) => f.startsWith('__body:'))?.slice('__body:'.length) || ''
                                   )

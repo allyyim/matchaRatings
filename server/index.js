@@ -1613,6 +1613,15 @@ app.get('/api/similar-places', async (req, res) => {
     )
 
     // Group ratings by location, then build a frequency profile of flavors
+    // Canonical flavor allowlist. Anything not in this set is treated as
+    // legacy/junk data (e.g. old "bold" body value written before body moved
+    // to the __body:* namespace) and is ignored for aggregation + display.
+    const KNOWN_FLAVORS = new Set([
+      'sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent',
+      'creamy', 'floral', 'earthy', 'chocolatey', 'mellow', 'bitter'
+    ])
+
+    // Aggregate per-location: track how often each flavor is chosen (>=75)
     // and body-profile choices across all raters at that place.
     const byLocation = new Map()
     for (const row of result.rows) {
@@ -1630,7 +1639,7 @@ app.get('/api/similar-places', async (req, res) => {
         if (k.startsWith('__body:')) {
           const body = k.slice('__body:'.length)
           g.bodyCounts[body] = (g.bodyCounts[body] || 0) + 1
-        } else if (!k.startsWith('__')) {
+        } else if (!k.startsWith('__') && KNOWN_FLAVORS.has(String(k).toLowerCase())) {
           g.flavorCounts[k] = (g.flavorCounts[k] || 0) + 1
         }
       }
