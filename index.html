@@ -87,6 +87,16 @@
         }).catch(err => {
           console.log('Service Worker registration failed:', err);
         });
+
+        // Auto-reload once when a new service worker takes control so users get
+        // fresh code without having to reinstall the PWA. Auth token lives in
+        // localStorage, so this does not sign anyone out.
+        let __swRefreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (__swRefreshing) return;
+          __swRefreshing = true;
+          window.location.reload();
+        });
       }
     </script>
   </body>
