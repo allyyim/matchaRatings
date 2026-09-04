@@ -645,8 +645,6 @@ function App() {
   const [milestoneMessage, setMilestoneMessage] = useState('')
   const [photoDataUrl, setPhotoDataUrl] = useState('')
   const [matchaGreenness, setMatchaGreenness] = useState<number | null>(null)
-  const [mlCoveragePercent, setMlCoveragePercent] = useState<number | null>(null)
-  const [mlConfidencePercent, setMlConfidencePercent] = useState<number | null>(null)
   const [cameraReady, setCameraReady] = useState(false)
   const [cameraError, setCameraError] = useState('')
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false)
@@ -1543,8 +1541,6 @@ function App() {
   }
 
   async function processImage(dataUrl: string) {
-    setMlCoveragePercent(null)
-    setMlConfidencePercent(null)
 
     try {
       const optimizedDataUrl = await Promise.race([
@@ -1557,23 +1553,17 @@ function App() {
       }
 
       try {
-        const { score, coveragePercent, confidencePercent } = await Promise.race([
+        const { score } = await Promise.race([
           analyzeGreennessFromDataUrl(optimizedDataUrl),
           new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Greenness analysis timed out.')), IMAGE_PROCESS_TIMEOUT_MS))
         ])
         setMatchaGreenness(score)
-        setMlCoveragePercent(coveragePercent)
-        setMlConfidencePercent(confidencePercent)
       } catch {
         setMatchaGreenness(0)
-        setMlCoveragePercent(null)
-        setMlConfidencePercent(null)
       }
     } catch {
       setMatchaGreenness(0)
       setPhotoDataUrl('')
-      setMlCoveragePercent(null)
-      setMlConfidencePercent(null)
     }
   }
 
@@ -1599,8 +1589,6 @@ function App() {
   function retakeCameraPhoto() {
     setPhotoDataUrl('')
     setMatchaGreenness(null)
-    setMlCoveragePercent(null)
-    setMlConfidencePercent(null)
   }
 
   function openPhotoLibrary() {
@@ -1710,8 +1698,6 @@ function App() {
         photoInputRef.current.value = ''
       }
       setMatchaGreenness(null)
-      setMlCoveragePercent(null)
-      setMlConfidencePercent(null)
     } finally {
       const elapsed = Date.now() - overlayShownAt
       const minimumOverlayMs = 700
@@ -3521,17 +3507,6 @@ function App() {
                   })}
                 </div>
               </div>
-
-              <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
-              {matchaGreenness !== null && mlCoveragePercent !== null && mlConfidencePercent !== null && (
-                <div className="mb-3 small detector-chip">
-                  <div className="detector-metrics">
-                    Coverage: {mlCoveragePercent.toFixed(1)}%
-                    {' | '}
-                    Confidence: {mlConfidencePercent.toFixed(1)}%
-                  </div>
-                </div>
-              )}
 
               <div className="mb-3">
                 <label className="form-label fw-semibold d-block">How do you rate this matcha?</label>
