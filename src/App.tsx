@@ -849,7 +849,7 @@ function App() {
   const [exploreUsers, setExploreUsers] = useState<ExploreUser[]>([])
   const [exploreActiveTab, setExploreActiveTab] = useState<'places' | 'users'>('places')
   const [similarActiveTab, setSimilarActiveTab] = useState<'users' | 'places'>('users')
-  const [communityActiveTab, setCommunityActiveTab] = useState<'search' | 'following' | 'recommendations'>('search')
+  const [communityActiveTab, setCommunityActiveTab] = useState<'search' | 'following' | 'recommendations'>('recommendations')
   const [similarUsers, setSimilarUsers] = useState<Array<{ userName: string; flavors: string[]; matchScore: number }>>([])
   const [isLoadingSimilarUsers, setIsLoadingSimilarUsers] = useState(false)
   const [similarPlaces, setSimilarPlaces] = useState<Array<{ location: string; flavors: string[]; body?: string; matchScore: number }>>([])
@@ -3184,7 +3184,6 @@ function App() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
                 {['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'creamy', 'floral', 'earthy', 'Chocolatey', 'mellow'].map((flavor) => {
                   const isSelected = userFlavors.includes(flavor)
-                  const c = flavorColor(flavor)
                   return (
                   <button
                     key={flavor}
@@ -3194,9 +3193,9 @@ function App() {
                       fontSize: '0.8rem',
                       padding: '0.375rem 0.75rem',
                       borderRadius: '0.5rem',
-                      border: '1px solid ' + (isSelected ? c.border : 'rgba(176, 222, 214, 0.3)'),
-                      background: isSelected ? c.bg : 'linear-gradient(135deg, #d4ede9 0%, #e0f3f0 100%)',
-                      color: isSelected ? c.fg : '#6b9e95',
+                      border: '1px solid ' + (isSelected ? '#0d4f4a' : 'rgba(176, 222, 214, 0.3)'),
+                      background: isSelected ? '#0d4f4a' : 'linear-gradient(135deg, #d4ede9 0%, #e0f3f0 100%)',
+                      color: isSelected ? '#ffffff' : '#6b9e95',
                       fontWeight: isSelected ? '600' : '500',
                       cursor: 'pointer'
                     }}
@@ -3218,7 +3217,6 @@ function App() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 {BODY_PROFILE_OPTIONS.map((opt) => {
                   const active = userBodyPref === opt.value
-                  const c = bodyColor(opt.value)
                   return (
                     <button
                       key={`pref-body-${opt.value}`}
@@ -3228,9 +3226,9 @@ function App() {
                         fontSize: '0.8rem',
                         padding: '0.375rem 0.5rem',
                         borderRadius: '0.5rem',
-                        border: '1px solid ' + (active ? c.border : 'rgba(176, 222, 214, 0.3)'),
-                        background: active ? c.bg : 'linear-gradient(135deg, #d4ede9 0%, #e0f3f0 100%)',
-                        color: active ? c.fg : '#6b9e95',
+                        border: '1px solid ' + (active ? '#0d4f4a' : 'rgba(176, 222, 214, 0.3)'),
+                        background: active ? '#0d4f4a' : 'linear-gradient(135deg, #d4ede9 0%, #e0f3f0 100%)',
+                        color: active ? '#ffffff' : '#6b9e95',
                         fontWeight: active ? '600' : '500',
                         cursor: 'pointer'
                       }}
@@ -4225,14 +4223,16 @@ function App() {
               <div className="d-flex gap-3 mb-4" style={{ borderBottom: '1px solid #e9ecef' }}>
                 <button
                   type="button"
-                  className={`btn btn-link p-0 fw-semibold ${communityActiveTab === 'search' ? 'text-success' : 'text-muted'}`}
+                  className={`btn btn-link p-0 fw-semibold ${communityActiveTab === 'recommendations' ? 'text-success' : 'text-muted'}`}
                   onClick={() => {
-                    setCommunityActiveTab('search')
+                    setCommunityActiveTab('recommendations')
                     setSelectedFriend('')
+                    setFriendSuggestions([])
+                    setFriendQuery('')
                   }}
-                  style={{ textDecoration: 'none', borderBottom: communityActiveTab === 'search' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
+                  style={{ textDecoration: 'none', borderBottom: communityActiveTab === 'recommendations' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
                 >
-                  Search Users
+                  Recs
                 </button>
                 <button
                   type="button"
@@ -4249,16 +4249,14 @@ function App() {
                 </button>
                 <button
                   type="button"
-                  className={`btn btn-link p-0 fw-semibold ${communityActiveTab === 'recommendations' ? 'text-success' : 'text-muted'}`}
+                  className={`btn btn-link p-0 fw-semibold ${communityActiveTab === 'search' ? 'text-success' : 'text-muted'}`}
                   onClick={() => {
-                    setCommunityActiveTab('recommendations')
+                    setCommunityActiveTab('search')
                     setSelectedFriend('')
-                    setFriendSuggestions([])
-                    setFriendQuery('')
                   }}
-                  style={{ textDecoration: 'none', borderBottom: communityActiveTab === 'recommendations' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
+                  style={{ textDecoration: 'none', borderBottom: communityActiveTab === 'search' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
                 >
-                  Recs
+                  Search Users
                 </button>
               </div>
 

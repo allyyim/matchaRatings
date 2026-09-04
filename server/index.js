@@ -1639,9 +1639,17 @@ app.get('/api/similar-places', async (req, res) => {
         const flavorScore = matchCount > 0 ? (matchCount / denom) : 0
         const bodyMatch = userBody && placeBody && userBody === placeBody
         // Weight: 70% flavor overlap, 30% body match bonus
-        const matchScore = userBody
+        let matchScore = userBody
           ? (flavorScore * 0.7) + (bodyMatch ? 0.3 : 0)
           : flavorScore
+        // Penalize places whose signature flavors include bitter or astringent
+        // unless the user explicitly likes those. Bitter/astringent are less
+        // universally desirable so we rank them lower in Recs.
+        const hasHarshFlavor = placeFlavorsList.some(f => f === 'bitter' || f === 'astringent')
+        const userLikesHarsh = userFlavors.some(f => f === 'bitter' || f === 'astringent')
+        if (hasHarshFlavor && !userLikesHarsh) {
+          matchScore = matchScore * 0.5
+        }
 
         return {
           location: row.location,
