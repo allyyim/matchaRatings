@@ -889,6 +889,43 @@ textarea.form-control {
   height: 2rem;
 }
 
+.entry-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+.entry-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border-radius: 0.4rem;
+  border: 1px solid #dee2e6;
+  background-color: #fff;
+  color: #495057;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.entry-action-btn:hover,
+.entry-action-btn:focus {
+  background-color: rgba(25, 135, 84, 0.08);
+  color: var(--primary-green, #198754);
+  border-color: var(--primary-green, #198754);
+  outline: none;
+}
+.entry-action-btn.entry-action-danger:hover,
+.entry-action-btn.entry-action-danger:focus {
+  background-color: rgba(220, 53, 69, 0.08);
+  color: #dc3545;
+  border-color: #dc3545;
+}
+.entry-card {
+  cursor: pointer;
+}
+
 .entry-card:hover .entry-hint-icon {
   opacity: 1;
   color: var(--primary-green);
@@ -2062,6 +2099,80 @@ main#main-content {
   margin: 1.5rem 0;
   background-color: #fff;
   border-radius: 1rem;
+}
+
+/* Filter dropdown (My Ratings header) */
+.filter-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  padding: 0;
+  border-radius: 0.5rem;
+  border: 1px solid #ced4da;
+  background-color: #fff;
+  color: #495057;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.filter-icon-button:hover,
+.filter-icon-button:focus,
+.filter-icon-button[aria-expanded="true"] {
+  background-color: rgba(25, 135, 84, 0.08);
+  border-color: var(--primary-green, #198754);
+  color: var(--primary-green, #198754);
+  outline: none;
+}
+.filter-dropdown-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1039;
+}
+.filter-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  z-index: 1040;
+  min-width: 12rem;
+  background-color: #fff;
+  border: 1px solid #e9ecef;
+  border-radius: 0.5rem;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  padding: 0.35rem;
+}
+.filter-dropdown-label {
+  padding: 0.35rem 0.6rem 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #6c757d;
+}
+.filter-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  border: none;
+  background-color: transparent;
+  color: #212529;
+  font-size: 0.95rem;
+  text-align: left;
+  border-radius: 0.35rem;
+  cursor: pointer;
+}
+.filter-dropdown-item:hover,
+.filter-dropdown-item:focus {
+  background-color: rgba(25, 135, 84, 0.08);
+  color: var(--primary-green, #198754);
+  outline: none;
+}
+.filter-dropdown-item.active {
+  color: var(--primary-green, #198754);
+  font-weight: 600;
 }
 
 .close-btn {

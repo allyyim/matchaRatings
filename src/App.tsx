@@ -568,6 +568,21 @@ function friendlyErrorMessage(status: number): string {
   return 'Something went wrong. Please try again.'
 }
 
+function isPlausibleLocationName(value: string): boolean {
+  const trimmed = value.trim()
+  if (trimmed.length < 2 || trimmed.length > 120) return false
+  if (!/[a-zA-Z\u00C0-\u024F]/.test(trimmed)) return false
+  if (/^[^a-zA-Z0-9]+$/.test(trimmed)) return false
+  if (/(.)\1{4,}/.test(trimmed)) return false
+  const letters = trimmed.replace(/[^a-zA-Z\u00C0-\u024F]/g, '')
+  if (letters.length >= 6) {
+    const uniqueLetters = new Set(letters.toLowerCase()).size
+    if (uniqueLetters < 3) return false
+    if (!/[aeiouAEIOU\u00C0-\u024F]/.test(letters)) return false
+  }
+  return true
+}
+
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   if (typeof window !== 'undefined' && window.location.protocol === 'http:' && !window.location.hostname.match(/^(localhost|127\.0\.0\.1)$/)) {
     console.warn('Warning: Using HTTP in production. Consider using HTTPS.')
@@ -692,7 +707,6 @@ function App() {
   const [isMyRatingsLoading, setIsMyRatingsLoading] = useState(true)
   const [myRatingsSort, setMyRatingsSort] = useState<'highest' | 'lowest' | 'greenest' | 'newest' | 'oldest'>('highest')
   const [isMyRatingsFilterOpen, setIsMyRatingsFilterOpen] = useState(false)
-  const [isMyRatingsSearchOpen, setIsMyRatingsSearchOpen] = useState(false)
   const [selectedEntryId, setSelectedEntryId] = useState<number | null>(null)
   const [isEditingEntry, setIsEditingEntry] = useState(false)
   const [editRating, setEditRating] = useState(0)
@@ -1633,6 +1647,12 @@ function App() {
       return
     }
 
+    const trimmedLocation = location.trim()
+    if (!isPlausibleLocationName(trimmedLocation)) {
+      alert('Please enter a valid cafe or shop name (at least 2 letters, no gibberish).')
+      return
+    }
+
     setIsSavingEntry(true)
     const overlayShownAt = Date.now()
     try {
@@ -1785,21 +1805,6 @@ function App() {
     setLocationSuggestions([])
   }
 
-  function openEntryOverlay(entry: RatingEntry) {
-    setSelectedEntryId(entry.id)
-    setIsEditingEntry(false)
-    setEditRating(entry.rating)
-    setEditLocation(entry.location)
-    setEditThoughts(entry.thoughts)
-
-    setTimeout(() => {
-      const element = document.querySelector(`[data-entry-id="${entry.id}"]`)
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      }
-    }, 0)
-  }
-
   function startEntryEdit(entry: RatingEntry) {
     setSelectedEntryId(entry.id)
     setIsEditingEntry(true)
@@ -1854,6 +1859,10 @@ function App() {
       setIsEditingEntry(false)
       setSelectedEntryId(null)
       setEditEntryPhoto('')
+    } catch (error) {
+      console.error('Save rating failed:', error)
+      const status = error instanceof ApiError ? error.status : 500
+      alert(friendlyErrorMessage(status))
     } finally {
       const elapsed = Date.now() - overlayShownAt
       const minimumOverlayMs = 700
@@ -2590,7 +2599,7 @@ function App() {
         document.body
       )}
 
-      {isMyRatingsFilterOpen && createPortal(
+      {false && isMyRatingsFilterOpen && createPortal(
         <div className="filter-menu-overlay" role="dialog" aria-modal="true" aria-label="Filter ratings" onClick={() => setIsMyRatingsFilterOpen(false)}>
           <div className="filter-menu-card card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
             <div className="card-body p-3">
@@ -2840,16 +2849,16 @@ function App() {
               flexDirection: 'column'
             }}
           >
-            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h6 className="fw-bold text-success mb-0">{currentUserName}</h6>
               <button
                 type="button"
                 className="close-btn"
                 onClick={() => setIsProfileDrawerOpen(false)}
-                style={{ float: 'right' }}
+                aria-label="Close profile"
               >
                 ✕
               </button>
-              <h6 className="fw-bold text-success mb-0">{currentUserName}</h6>
             </div>
 
             <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
@@ -2949,16 +2958,16 @@ function App() {
               flexDirection: 'column'
             }}
           >
-            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef' }}>
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h6 className="fw-bold text-success mb-0">My Matcha Preferences</h6>
               <button
                 type="button"
                 className="close-btn"
                 onClick={() => setIsPreferencesModalOpen(false)}
-                style={{ float: 'right' }}
+                aria-label="Close preferences"
               >
                 ✕
               </button>
-              <h6 className="fw-bold text-success mb-0">My Matcha Preferences</h6>
             </div>
 
             <div style={{ padding: '1rem', overflowY: 'auto', flex: 1 }}>
@@ -3050,16 +3059,16 @@ function App() {
               flexDirection: 'column'
             }}
           >
-            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef' }}>
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h6 className="fw-bold text-success mb-0">Privacy Policy</h6>
               <button
                 type="button"
                 className="close-btn"
                 onClick={() => setIsPrivacyPolicyModalOpen(false)}
-                style={{ float: 'right' }}
+                aria-label="Close privacy policy"
               >
                 ✕
               </button>
-              <h6 className="fw-bold text-success mb-0">Privacy Policy</h6>
             </div>
 
             <div style={{ padding: '1rem', overflowY: 'auto', flex: 1, fontSize: '0.875rem', lineHeight: '1.6' }}>
@@ -3129,12 +3138,9 @@ function App() {
       )}
 
       {isEditingEntry && createPortal(
-        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => {
-          setIsEditingEntry(false)
-          setEditEntryPhoto('')
-        }}>
+        <div className="modal-overlay" role="dialog" aria-modal="true">
           <div className="modal-card card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="card-header bg-white border-bottom d-flex align-items-center p-4">
+            <div className="card-header bg-white border-bottom d-flex align-items-center justify-content-between p-4">
               <h3 className="h5 fw-bold text-success mb-0" style={{ flexShrink: 0 }}>Edit Rating</h3>
               <button
                 type="button"
@@ -3143,6 +3149,7 @@ function App() {
                   setIsEditingEntry(false)
                   setEditEntryPhoto('')
                 }}
+                aria-label="Close edit"
               >
                 ✕
               </button>
@@ -3197,9 +3204,11 @@ function App() {
                   type="text"
                   className="form-control"
                   value={editLocation}
-                  onChange={(event) => setEditLocation(event.target.value)}
-                  placeholder="Matcha place name"
+                  readOnly
+                  disabled
+                  style={{ backgroundColor: '#f8f9fa', color: '#6c757d', cursor: 'not-allowed' }}
                 />
+                <small className="text-muted d-block mt-1">Location can't be changed. Delete this entry and log a new one to use a different place.</small>
               </div>
 
               <div style={{ marginBottom: '1.5rem' }}>
@@ -3225,10 +3234,10 @@ function App() {
               </div>
             </div>
             <div className="card-footer bg-white border-top p-4 d-flex gap-2">
-              <button type="button" className="btn btn-success flex-grow-1" onClick={() => void saveEntryEdit(selectedEntryId!)}>
-                Save
+              <button type="button" className="btn btn-success flex-grow-1" disabled={isSavingEntry} onClick={() => void saveEntryEdit(selectedEntryId!)}>
+                {isSavingEntry ? 'Saving...' : 'Save'}
               </button>
-              <button type="button" className="btn btn-outline-secondary flex-grow-1" onClick={() => {
+              <button type="button" className="btn btn-outline-secondary flex-grow-1" disabled={isSavingEntry} onClick={() => {
                 setIsEditingEntry(false)
                 setEditEntryPhoto('')
               }}>
@@ -3540,60 +3549,68 @@ function App() {
                 </button>
               </div>
 
-              <div className="my-ratings-controls">
-                {isMyRatingsSearchOpen ? (
-                  <div className="my-ratings-search-bar">
-                    <div className="search-bar-wrapper">
-                      <span className="search-bar-icon">⌕</span>
-                      <input
-                        id="my-ratings-search-input"
-                        type="text"
-                        className="form-control search-bar-input"
-                        placeholder="Search your list"
-                        value={myLogsSearchTerm}
-                        onChange={(event) => setMyLogsSearchTerm(event.target.value)}
-                        autoFocus
+              <div className="my-ratings-controls d-flex gap-2 align-items-center">
+                <div className="search-bar-wrapper flex-grow-1">
+                  <span className="search-bar-icon" aria-hidden="true">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="11" cy="11" r="8" />
+                      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                    </svg>
+                  </span>
+                  <input
+                    id="my-ratings-search-input"
+                    type="text"
+                    className="form-control search-bar-input"
+                    placeholder="Search your list"
+                    value={myLogsSearchTerm}
+                    onChange={(event) => setMyLogsSearchTerm(event.target.value)}
+                  />
+                </div>
+                <div className="filter-dropdown-wrapper" style={{ position: 'relative' }}>
+                  <button
+                    type="button"
+                    className="filter-icon-button"
+                    onClick={() => setIsMyRatingsFilterOpen((open) => !open)}
+                    aria-label="Filter and sort"
+                    title="Filter and sort"
+                    aria-expanded={isMyRatingsFilterOpen}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                    </svg>
+                  </button>
+                  {isMyRatingsFilterOpen && (
+                    <>
+                      <div
+                        className="filter-dropdown-backdrop"
+                        onClick={() => setIsMyRatingsFilterOpen(false)}
                       />
-                    </div>
-                    <button
-                      type="button"
-                      className="search-bar-close"
-                      onClick={() => {
-                        setIsMyRatingsSearchOpen(false)
-                        setMyLogsSearchTerm('')
-                      }}
-                      aria-label="Close search"
-                    >
-                      Close
-                    </button>
-                  </div>
-                ) : (
-                  <div className="my-ratings-action-row">
-                    <div className="score-sort-bubble">
-                      <button
-                        type="button"
-                        className="filter-bubble-button"
-                        onClick={() => setIsMyRatingsFilterOpen(true)}
-                        aria-label="Open filter menu"
-                        title="Filter and sort"
-                      >
-                        <span className="filter-icon">☰</span>
-                        <span className="score-sort-label">Filter by</span>
-                      </button>
-                    </div>
-
-                    <div className="ratings-search-shell">
-                      <button
-                        type="button"
-                        className="search-icon-button"
-                        aria-label="Search ratings"
-                        onClick={() => setIsMyRatingsSearchOpen(true)}
-                      >
-                        <span aria-hidden="true">⌕</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
+                      <div className="filter-dropdown-menu" role="menu">
+                        <div className="filter-dropdown-label">Sort by</div>
+                        {[
+                          { value: 'highest' as const, label: 'Overall score' },
+                          { value: 'greenest' as const, label: 'Greenness score' },
+                          { value: 'newest' as const, label: 'Date added' },
+                        ].map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            role="menuitemradio"
+                            aria-checked={myRatingsSort === opt.value}
+                            className={`filter-dropdown-item${myRatingsSort === opt.value ? ' active' : ''}`}
+                            onClick={() => {
+                              setMyRatingsSort(opt.value)
+                              setIsMyRatingsFilterOpen(false)
+                            }}
+                          >
+                            {opt.label}
+                            {myRatingsSort === opt.value && <span aria-hidden="true">✓</span>}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
             <div className="d-flex flex-column gap-3">
@@ -3606,7 +3623,7 @@ function App() {
               {!isMyRatingsLoading && filteredMine.length === 0 && <div className="alert alert-light border">Your matcha journey starts here 🍵</div>}
 
               {!isMyRatingsLoading && (isMyLogsExpanded ? filteredMine : filteredMine.slice(0, 3)).map((entry) => (
-                <article key={entry.id} data-entry-id={entry.id} className="card border-0 shadow-sm entry-card cursor-pointer" onClick={() => openEntryOverlay(entry)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openEntryOverlay(entry) }}>
+                <article key={entry.id} data-entry-id={entry.id} className="card border-0 shadow-sm entry-card" onClick={() => startEntryEdit(entry)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') startEntryEdit(entry) }}>
                   <div className="card-body d-flex gap-3 align-items-start justify-content-between">
                     <div className="d-flex gap-3 flex-grow-1 align-items-start">
                       <div className="entry-media-col">
@@ -3664,10 +3681,43 @@ function App() {
                         )}
                       </div>
                     </div>
-                    <div className="entry-hint-icon" aria-hidden="true">✎</div>
+                    <div className="entry-actions" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        type="button"
+                        className="entry-action-btn"
+                        onClick={(e) => { e.stopPropagation(); startEntryEdit(entry) }}
+                        aria-label="Edit rating"
+                        title="Edit"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 20h9"/>
+                          <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        className="entry-action-btn entry-action-danger"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (window.confirm('Delete this rating entry?')) {
+                            void deleteEntry(entry.id)
+                          }
+                        }}
+                        aria-label="Delete rating"
+                        title="Delete"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="3 6 5 6 21 6"/>
+                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                          <path d="M10 11v6"/>
+                          <path d="M14 11v6"/>
+                          <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+                        </svg>
+                      </button>
+                    </div>
                   </div>
 
-                  {selectedEntryId === entry.id && !isEditingEntry && (
+                  {false && selectedEntryId === entry.id && !isEditingEntry && (
                     <div className="entry-overlay" onClick={(event) => event.stopPropagation()}>
                       <div className="entry-overlay-actions d-flex flex-column gap-2 align-items-center">
                         <div className="d-flex gap-2 w-100">
