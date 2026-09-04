@@ -4265,32 +4265,25 @@ function App() {
               {communityActiveTab === 'search' && (
                 <div className="mb-4">
                   <p className="text-muted small mb-3">Discover and connect with other matcha enthusiasts</p>
-                  <div className="row g-2 align-items-end">
-                    <div className="col-12 col-md-8">
-                      <label className="form-label fw-semibold">Search Users</label>
-                      <input
-                        type="text"
-                        className="form-control"
-                        value={friendQuery}
-                        placeholder="Enter username"
-                        onChange={(event) => void searchFriends(event.target.value)}
-                      />
-                    </div>
-                    <div className="col-12 col-md-4">
-                      <button
-                        type="button"
-                        className="btn btn-success w-100"
-                        onClick={() => void openFriendModal(friendQuery.trim())}
-                        disabled={!friendQuery.trim() || isLoadingFriendRatings}
-                      >
-                        View Ratings
-                      </button>
-                    </div>
+                  <div className="mb-3">
+                    <label className="form-label fw-semibold">Search Users</label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      value={friendQuery}
+                      placeholder="Enter username"
+                      onChange={(event) => void searchFriends(event.target.value)}
+                    />
                   </div>
 
+                  {friendQuery.trim() !== '' && friendSuggestions.length === 0 && (
+                    <div className="text-muted small mt-3">
+                      No user found matching “{friendQuery.trim()}”.
+                    </div>
+                  )}
+
                   {friendSuggestions.length > 0 && (
-                    <div className="mt-4">
-                      <h5 className="fw-semibold text-success mb-3">Search Results</h5>
+                    <div className="mt-3">
                       <div className="row g-3">
                         {friendSuggestions.map((friend) => (
                           <div key={friend.userName} className="col-12 col-sm-6 col-md-4">

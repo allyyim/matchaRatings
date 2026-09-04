@@ -1007,19 +1007,22 @@ textarea.form-control {
 /* Explore Section Styles */
 .explore-user-link {
   border: 0;
-  padding: 0;
+  padding: 0.15rem 0.4rem;
+  margin-left: -0.4rem;
   background: transparent;
   color: var(--primary-green);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  text-decoration: none;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  border-radius: 0.35rem;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-.explore-user-link:hover {
-  color: var(--light-green);
-  text-decoration-thickness: 2px;
+.explore-user-link:hover,
+.explore-user-link:focus-visible {
+  color: var(--primary-green);
+  background: rgba(25, 135, 84, 0.1);
+  outline: none;
 }
 
 .explore-place-card {
