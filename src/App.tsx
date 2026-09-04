@@ -679,7 +679,7 @@ function App() {
   const [verifiedAccountName, setVerifiedAccountName] = useState<string | null>(null)
 
   const [currentRating, setCurrentRating] = useState(0)
-  const [ratingFlavorPrefs, setRatingFlavorPrefs] = useState({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, mellow: 0 })
+  const [ratingFlavorPrefs, setRatingFlavorPrefs] = useState({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, mellow: 0, bitter: 0 })
   const [location, setLocation] = useState('')
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([])
   const [isLocationLookupPending, setIsLocationLookupPending] = useState(false)
@@ -1678,7 +1678,7 @@ function App() {
       // See git history for the previous count-based confetti/toast logic.
 
       setCurrentRating(0)
-      setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, mellow: 0 })
+      setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, mellow: 0, bitter: 0 })
       setLocation('')
       setThoughts('')
       setPhotoDataUrl('')
@@ -2956,7 +2956,7 @@ function App() {
             <div style={{ padding: '1rem', overflowY: 'auto', flex: 1 }}>
               <label className="form-label fw-semibold mb-2 text-success">Flavor Preferences</label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
-                {['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy', 'Chocolatey', 'mellow'].map((flavor) => (
+                {['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'creamy', 'floral', 'earthy', 'Chocolatey', 'mellow'].map((flavor) => (
                   <button
                     key={flavor}
                     type="button"
@@ -3368,9 +3368,12 @@ function App() {
                     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
                     <circle cx="12" cy="13" r="4"></circle>
                   </svg>
-                  <span>Add photo</span>
+                  <span>{photoDataUrl && photoDataUrl !== noPhotoPlaceholderUrl ? 'Change photo' : 'Add photo'}</span>
                   <span className="text-muted">›</span>
                 </button>
+                {photoDataUrl && photoDataUrl !== noPhotoPlaceholderUrl && (
+                  <div className="small text-muted mt-1">Only one photo per log. Choosing another will replace this one.</div>
+                )}
               </div>
 
               {photoDataUrl && photoDataUrl !== noPhotoPlaceholderUrl && (
@@ -3382,13 +3385,13 @@ function App() {
                     <button
                       type="button"
                       className="btn btn-sm btn-outline-secondary flex-grow-1"
-                      onClick={() => setIsUploadMenuOpen(true)}
+                      onClick={openPhotoLibrary}
                     >
                       Change photo
                     </button>
                     <button
                       type="button"
-                      className="btn btn-sm btn-outline-danger"
+                      className="btn btn-sm btn-outline-danger flex-grow-1"
                       onClick={() => setPhotoDataUrl(noPhotoPlaceholderUrl)}
                     >
                       Remove
@@ -3409,7 +3412,7 @@ function App() {
                 <label className="form-label fw-semibold d-block">Flavor Profile</label>
                 <div className="small text-muted mb-3">Click bubbles to toggle flavors</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', placeItems: 'center' }}>
-                  {(['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy', 'Chocolatey', 'mellow'] as const).map((flavor) => {
+                  {(['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy', 'Chocolatey', 'mellow', 'bitter'] as const).map((flavor) => {
                     const intensity = ratingFlavorPrefs[flavor]
                     const isActive = intensity > 0
 
