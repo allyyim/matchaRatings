@@ -1538,7 +1538,7 @@ app.get('/api/similar-users', async (req, res) => {
         WHERE LOWER(a.user_name) != LOWER($1)
           AND up.flavors IS NOT NULL
         ORDER BY rating_count DESC
-        LIMIT 20
+        LIMIT 100
       `,
       [userName]
     )
@@ -1599,7 +1599,7 @@ app.get('/api/similar-places', async (req, res) => {
             WHERE (f.value::text)::numeric >= 75
           )
         ORDER BY r.location, r.created_at DESC
-        LIMIT 50
+        LIMIT 200
       `
     )
 

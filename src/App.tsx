@@ -730,6 +730,12 @@ function App() {
   const [isLoadingSimilarUsers, setIsLoadingSimilarUsers] = useState(false)
   const [similarPlaces, setSimilarPlaces] = useState<Array<{ location: string; flavors: string[]; matchScore: number }>>([])
   const [isLoadingSimilarPlaces, setIsLoadingSimilarPlaces] = useState(false)
+  const [similarUsersVisible, setSimilarUsersVisible] = useState(9)
+  const [similarPlacesVisible, setSimilarPlacesVisible] = useState(9)
+  const [friendModalUser, setFriendModalUser] = useState('')
+  const [friendModalEntries, setFriendModalEntries] = useState<RatingEntry[]>([])
+  const [isFriendModalOpen, setIsFriendModalOpen] = useState(false)
+  const [isLoadingFriendModal, setIsLoadingFriendModal] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [currentOnboardingSlide, setCurrentOnboardingSlide] = useState(0)
   const [selectedExplorePlaceName, setSelectedExplorePlaceName] = useState('')
@@ -1784,6 +1790,22 @@ function App() {
         await new Promise((resolve) => window.setTimeout(resolve, minimumOverlayMs - elapsed))
       }
       setIsLoadingFriendRatings(false)
+    }
+  }
+
+  async function openFriendModal(friendName: string) {
+    if (!friendName.trim()) return
+    setFriendModalUser(friendName)
+    setFriendModalEntries([])
+    setIsFriendModalOpen(true)
+    setIsLoadingFriendModal(true)
+    try {
+      const response = await apiFetch<{ friendName: string; ratings: RatingEntry[] }>(`/friends/${encodeURIComponent(friendName)}/ratings`)
+      setFriendModalEntries(response.ratings)
+    } catch {
+      setFriendModalEntries([])
+    } finally {
+      setIsLoadingFriendModal(false)
     }
   }
 
@@ -3235,6 +3257,87 @@ function App() {
         document.body
       )}
 
+      {isFriendModalOpen && createPortal(
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${friendModalUser}'s ratings`}
+          onClick={() => setIsFriendModalOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1060, padding: '1rem' }}
+        >
+          <div
+            className="card shadow-lg border-0"
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: '100%', maxWidth: '640px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+          >
+            <div className="card-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between">
+              <h5 className="mb-0 text-success fw-bold">{friendModalUser}</h5>
+              <button
+                type="button"
+                className="btn-close"
+                aria-label="Close"
+                onClick={() => setIsFriendModalOpen(false)}
+              />
+            </div>
+            <div className="card-body p-3" style={{ overflowY: 'auto' }}>
+              {isLoadingFriendModal ? (
+                <div className="text-center text-muted py-4">Loading ratings...</div>
+              ) : friendModalEntries.length === 0 ? (
+                <div className="alert alert-light border mb-0">No ratings to show yet.</div>
+              ) : (
+                <div className="d-flex flex-column gap-2">
+                  {friendModalEntries.map((entry) => (
+                    <article key={`friend-modal-${entry.id}`} className="card border-0 shadow-sm">
+                      <div className="card-body d-flex gap-3 align-items-start py-2">
+                        <img
+                          src={entry.photo || noPhotoPlaceholderUrl}
+                          alt=""
+                          className="entry-thumb"
+                          loading="lazy"
+                          decoding="async"
+                          onError={(e) => { const img = e.currentTarget; if (img.src !== noPhotoPlaceholderUrl) img.src = noPhotoPlaceholderUrl }}
+                        />
+                        <div className="flex-grow-1">
+                          <div className="d-flex justify-content-between flex-wrap gap-2">
+                            <strong>{entry.location || 'Unknown location'}</strong>
+                            <span className="text-muted small">{entry.date}</span>
+                          </div>
+                          <div className="entry-metrics">
+                            <div className="fw-bold mb-1">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
+                            <div className="fw-bold mb-1">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
+                            <div style={{ color: '#6c757d', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
+                          </div>
+                          {entry.thoughts && (
+                            <div className="small text-muted mt-2" style={{ whiteSpace: 'pre-wrap' }}>{entry.thoughts}</div>
+                          )}
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </div>
+            <div className="card-footer bg-white border-top p-3 d-flex justify-content-between gap-2">
+              <button
+                type="button"
+                className="btn btn-outline-success btn-sm"
+                onClick={() => {
+                  setIsFriendModalOpen(false)
+                  void openFriendRatings(friendModalUser)
+                }}
+              >
+                View full profile →
+              </button>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => setIsFriendModalOpen(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       <nav className="navbar navbar-expand-lg navbar-light sticky-top soft-nav minimal-nav" aria-label="Main navigation" style={{ paddingLeft: 0, paddingRight: 0, marginRight: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingLeft: '1rem', paddingRight: 0, marginRight: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -3992,12 +4095,12 @@ function App() {
                               </div>
                             ) : (
                               <div className="row g-3">
-                                {similarUsers.map((user) => (
+                                {similarUsers.slice(0, similarUsersVisible).map((user) => (
                                   <div key={user.userName} className="col-12 col-sm-6 col-md-4">
                                     <div className="card border-0 shadow-sm h-100">
                                       <div className="card-body">
                                         <div className="d-flex justify-content-between align-items-start mb-2">
-                                          <h6 className="card-title fw-semibold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => void openFriendRatings(user.userName)}>
+                                          <h6 className="card-title fw-semibold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => void openFriendModal(user.userName)}>
                                             {user.userName}
                                           </h6>
                                           <span className="badge" style={{
@@ -4030,6 +4133,13 @@ function App() {
                                 ))}
                               </div>
                             )}
+                            {similarUsers.length > similarUsersVisible && (
+                              <div className="text-center mt-3">
+                                <button type="button" className="btn btn-outline-success btn-sm" onClick={() => setSimilarUsersVisible((n) => n + 9)}>
+                                  See more ({similarUsers.length - similarUsersVisible} more)
+                                </button>
+                              </div>
+                            )}
                           </>
                         )}
 
@@ -4045,7 +4155,7 @@ function App() {
                               </div>
                             ) : (
                               <div className="row g-3">
-                                {similarPlaces.map((place) => (
+                                {similarPlaces.slice(0, similarPlacesVisible).map((place) => (
                                   <div key={place.location} className="col-12 col-sm-6 col-md-4">
                                     <div className="card border-0 shadow-sm h-100">
                                       <div className="card-body">
@@ -4081,6 +4191,13 @@ function App() {
                                     </div>
                                   </div>
                                 ))}
+                              </div>
+                            )}
+                            {similarPlaces.length > similarPlacesVisible && (
+                              <div className="text-center mt-3">
+                                <button type="button" className="btn btn-outline-success btn-sm" onClick={() => setSimilarPlacesVisible((n) => n + 9)}>
+                                  See more ({similarPlaces.length - similarPlacesVisible} more)
+                                </button>
                               </div>
                             )}
                           </>
@@ -4331,7 +4448,7 @@ function App() {
                                 type="button"
                                 className="explore-user-link"
                                 onClick={() => {
-                                  void openFriendRatings(user.userName)
+                                  void openFriendModal(user.userName)
                                 }}
                               >
                                 {user.userName}
