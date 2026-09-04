@@ -676,6 +676,7 @@ function App() {
   const locationLookupInFlightRef = useRef<Map<string, Promise<string[]>>>(new Map())
   const [thoughts, setThoughts] = useState('')
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false)
+  const [isNewLogOpen, setIsNewLogOpen] = useState(false)
   const [milestoneMessage, setMilestoneMessage] = useState('')
   const [photoDataUrl, setPhotoDataUrl] = useState('')
   const [matchaGreenness, setMatchaGreenness] = useState<number | null>(null)
@@ -1627,8 +1628,8 @@ function App() {
       return
     }
 
-    if (currentRating <= 0 || currentRating > 5) {
-      alert('Please tap a star to rate before saving.')
+    if (currentRating < 0 || currentRating > 5) {
+      alert('Rating must be between 0 and 5 stars.')
       return
     }
 
@@ -1682,6 +1683,7 @@ function App() {
         photoInputRef.current.value = ''
       }
       setMatchaGreenness(null)
+      setIsNewLogOpen(false)
     } finally {
       const elapsed = Date.now() - overlayShownAt
       const minimumOverlayMs = 700
@@ -1813,8 +1815,8 @@ function App() {
       return
     }
 
-    if (editRating <= 0 || editRating > 5) {
-      alert('Please tap a star to rate before saving.')
+    if (editRating < 0 || editRating > 5) {
+      alert('Rating must be between 0 and 5 stars.')
       return
     }
 
@@ -2349,7 +2351,7 @@ function App() {
 
       {welcomeMessage && createPortal(
         <div className="welcome-toast">
-          <div>☕ Welcome back, {welcomeMessage}!</div>
+          <div>🍵 Welcome back, {welcomeMessage}!</div>
         </div>,
         document.body
       )}
@@ -2528,7 +2530,7 @@ function App() {
                           <div className="entry-metrics">
                             <div className="fw-bold mb-2">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
                             <div className="mb-2">Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
-                            <div className="fw-bold mb-2">Total score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(0)}%</div>
+                            <div className="fw-bold mb-2">Total score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
                             <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                             {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
@@ -3262,10 +3264,20 @@ function App() {
       </nav>
 
       {activePage === 'home' && (
-        <main id="main-content" className="container py-5 py-md-5 px-3 px-md-4" tabIndex={-1}>
-          <div className="card shadow-sm border-0 matcha-shell">
+        <main id="main-content" className="container py-5 py-md-5 px-3 px-md-4 d-flex flex-column" tabIndex={-1}>
+          <div className="card shadow-sm border-0 matcha-shell" style={{ order: 2, display: isNewLogOpen ? 'block' : 'none' }}>
             <div className="card-body p-3 p-md-4">
-              <h1 className="display-6 fw-bold mb-3 text-success">New Log</h1>
+              <div className="d-flex align-items-center justify-content-between mb-3">
+                <h1 className="display-6 fw-bold mb-0 text-success">New Log</h1>
+                <button
+                  type="button"
+                  className="close-btn"
+                  onClick={() => setIsNewLogOpen(false)}
+                  aria-label="Close new log"
+                >
+                  ✕
+                </button>
+              </div>
 
               <div className="mb-3">
                 <div className="form-label fw-semibold">Enter cafe or shop name</div>
@@ -3478,16 +3490,22 @@ function App() {
               <div className="mb-3">
                 <button
                   type="button"
-                  className="btn btn-link text-start text-muted p-0 d-flex align-items-center gap-2"
+                  className="btn btn-link text-start text-muted p-0 d-flex align-items-start gap-2 w-100"
                   onClick={() => setIsNotesModalOpen(true)}
-                  style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}
+                  style={{ textDecoration: 'none' }}
                 >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0 }}>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
                     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                   </svg>
-                  <span>Add notes</span>
-                  <span className="text-muted">›</span>
+                  {thoughts.trim() ? (
+                    <span className="flex-grow-1" style={{ whiteSpace: 'normal', textAlign: 'left', color: '#212529' }}>
+                      {thoughts.trim()}
+                    </span>
+                  ) : (
+                    <span className="flex-grow-1" style={{ whiteSpace: 'nowrap' }}>Add notes</span>
+                  )}
+                  <span className="text-muted" style={{ flexShrink: 0 }}>›</span>
                 </button>
               </div>
 
@@ -3497,7 +3515,7 @@ function App() {
             </div>
           </div>
 
-          <section className="mt-4 mb-5">
+          <section className="mb-5" style={{ order: 1 }}>
             <div className="d-flex flex-column gap-2 mb-3">
               <div className="d-flex align-items-center gap-2">
                 <div>
@@ -3571,7 +3589,7 @@ function App() {
                 </div>
               )}
 
-              {!isMyRatingsLoading && filteredMine.length === 0 && <div className="alert alert-light border">Your matcha journey starts here ☕</div>}
+              {!isMyRatingsLoading && filteredMine.length === 0 && <div className="alert alert-light border">Your matcha journey starts here 🍵</div>}
 
               {!isMyRatingsLoading && (isMyLogsExpanded ? filteredMine : filteredMine.slice(0, 3)).map((entry) => (
                 <article key={entry.id} data-entry-id={entry.id} className="card border-0 shadow-sm entry-card cursor-pointer" onClick={() => openEntryOverlay(entry)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openEntryOverlay(entry) }}>
@@ -3587,7 +3605,7 @@ function App() {
                           <span className="text-muted small">{entry.date}</span>
                         </div>
                         <div className="entry-metrics">
-                          <div className="fw-bold mb-2">Total score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(0)}%</div>
+                          <div className="fw-bold mb-2">Total score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
                           <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
@@ -3687,6 +3705,17 @@ function App() {
               )}
             </div>
           </section>
+          {!isNewLogOpen && (
+            <button
+              type="button"
+              className="new-log-fab"
+              onClick={() => setIsNewLogOpen(true)}
+              aria-label="Add new log"
+              style={{ order: 3 }}
+            >
+              +
+            </button>
+          )}
         </main>
       )}
 
@@ -4099,7 +4128,7 @@ function App() {
                           <span className="text-muted small">{entry.date}</span>
                         </div>
                         <div className="entry-metrics">
-                          <div className="fw-bold mb-2">Total score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(0)}%</div>
+                          <div className="fw-bold mb-2">Total score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
                           <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
@@ -4229,7 +4258,7 @@ function App() {
                               <div className="fw-semibold text-success">#{place.rank} {place.placeName}</div>
                               <div className="small text-muted">{place.entryCount} entries</div>
                             </div>
-                            <div className="fw-bold">Average score: {(place.averageScore / 2).toFixed(0)}%</div>
+                            <div className="fw-bold">Average score: {(place.averageScore / 2).toFixed(1)} / 100</div>
                           </div>
                         </button>
                       ))}

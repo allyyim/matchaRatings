@@ -2007,7 +2007,38 @@ main.login-page {
 
 /* Add padding to main content to account for bottom nav */
 main#main-content {
-  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)) !important;
+  padding-bottom: calc(7.5rem + env(safe-area-inset-bottom)) !important;
+}
+
+/* Floating action button for New Log */
+.new-log-fab {
+  position: fixed;
+  right: 1.25rem;
+  bottom: calc(5rem + env(safe-area-inset-bottom));
+  z-index: 1030;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--primary-green, #198754);
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.new-log-fab:hover,
+.new-log-fab:focus {
+  transform: scale(1.05);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+  outline: none;
+}
+.new-log-fab:active {
+  transform: scale(0.98);
 }
 
 .close-btn {
