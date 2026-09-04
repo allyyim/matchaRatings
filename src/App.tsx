@@ -1098,25 +1098,6 @@ function App() {
   }
 
   useEffect(() => {
-    if (!isUserReady || !currentUserName || currentUserName === 'Ali') return
-
-    const migrateAli = async () => {
-      try {
-        const result = await apiFetch<{ success: boolean; message: string; migratedCount: number }>('/migrate/ali', {
-          method: 'POST'
-        })
-        if (result.success) {
-          console.log(`✓ Migration successful: ${result.message}`)
-        }
-      } catch {
-        // Silent fail - Ali account might not exist or already migrated
-      }
-    }
-
-    void migrateAli()
-  }, [isUserReady, currentUserName])
-
-  useEffect(() => {
     if (!isUserReady || !currentUserName) return
 
     void apiFetch('/telemetry', {
