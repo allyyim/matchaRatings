@@ -68,9 +68,9 @@ function bodyProfileLabel(body: string) {
 // Per-flavor palette. Returns background + text + border color for a tag/bubble.
 function flavorColor(flavor: string): { bg: string; fg: string; border: string } {
   const key = String(flavor || '').toLowerCase()
-  if (key === 'chocolatey') return { bg: '#815355', fg: '#ffffff', border: '#5c3839' }
-  if (key === 'sugary' || key === 'sweet') return { bg: '#E0BAD7', fg: '#5a2a4b', border: '#c290b3' }
-  if (['earthy', 'vegetal', 'creamy', 'nutty', 'floral', 'umami'].includes(key)) return { bg: '#63a375', fg: '#ffffff', border: '#4a7d5a' }
+  if (key === 'chocolatey' || key === 'nutty') return { bg: '#815355', fg: '#ffffff', border: '#5c3839' }
+  if (key === 'sugary' || key === 'sweet' || key === 'creamy') return { bg: '#E0BAD7', fg: '#5a2a4b', border: '#c290b3' }
+  if (['earthy', 'vegetal', 'floral', 'umami'].includes(key)) return { bg: '#63a375', fg: '#ffffff', border: '#4a7d5a' }
   if (key === 'astringent' || key === 'bitter') return { bg: '#F8FA90', fg: '#5c5d1c', border: '#c9cb6d' }
   if (key === 'mellow') return { bg: '#A9DEF9', fg: '#1e4a5f', border: '#7fbbdc' }
   return { bg: '#82D99E', fg: '#0b6e4f', border: '#0b6e4f' }
