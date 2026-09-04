@@ -1118,30 +1118,12 @@ function App() {
     setPendingUserName('')
   }, [])
 
-  // Reset the My Log filter to the default (Overall score / highest) whenever
-  // the app is re-shown after being backgrounded, so the user always lands on
-  // the canonical ranking.
+  // Filter state resets naturally on a fresh cold start (module re-executes,
+  // useState('highest') runs again). We intentionally do NOT reset on
+  // visibilitychange/pageshow so briefly backgrounding the app preserves the
+  // user's current sort choice.
   useEffect(() => {
-    function resetFilterOnRestore() {
-      setMyRatingsSort('highest')
-      setIsMyRatingsFilterOpen(false)
-    }
-    function handleVisibility() {
-      if (document.visibilityState === 'visible') {
-        resetFilterOnRestore()
-      }
-    }
-    function handlePageShow(event: PageTransitionEvent) {
-      if (event.persisted || document.visibilityState === 'visible') {
-        resetFilterOnRestore()
-      }
-    }
-    document.addEventListener('visibilitychange', handleVisibility)
-    window.addEventListener('pageshow', handlePageShow)
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibility)
-      window.removeEventListener('pageshow', handlePageShow)
-    }
+    setIsMyRatingsFilterOpen(false)
   }, [])
 
   // Check for app updates from service worker
