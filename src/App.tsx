@@ -1144,6 +1144,15 @@ function App() {
     setIsMyRatingsFilterOpen(false)
   }, [])
 
+  // Reset My Log sort when the user navigates away from the home tab so that
+  // returning to it always shows the canonical default ranking.
+  useEffect(() => {
+    if (activePage !== 'home') {
+      setMyRatingsSort('highest')
+      setIsMyRatingsFilterOpen(false)
+    }
+  }, [activePage])
+
   // Check for app updates from service worker
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -4320,7 +4329,7 @@ function App() {
                             <button
                               type="button"
                               className="btn btn-sm btn-outline-success w-100 mb-2"
-                              onClick={() => void openFriendRatings(friend)}
+                              onClick={() => void openFriendModal(friend)}
                               disabled={isLoadingFriendRatings}
                             >
                               View Ratings
