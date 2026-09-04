@@ -1587,7 +1587,7 @@ app.get('/api/similar-users', async (req, res) => {
 app.get('/api/similar-places', async (req, res) => {
   const flavorsParam = String(req.query.flavors || '').trim()
   const userBody = String(req.query.body || '').trim()
-  if (!flavorsParam) {
+  if (!flavorsParam && !userBody) {
     return res.status(400).json({ error: 'flavors parameter is required' })
   }
 
@@ -1598,72 +1598,115 @@ app.get('/api/similar-places', async (req, res) => {
       return res.json({ similarPlaces: [] })
     }
 
-    // Find ratings with matching flavor profiles - group by location to get diverse places
+    // Pull EVERY rating that has flavor preferences, not just the most recent
+    // per location. Aggregating across all raters gives us a much more
+    // trustworthy signature for each place.
     const result = await pool.query(
       `
-        SELECT DISTINCT ON (r.location)
-          r.location,
-          r.flavor_preferences,
-          COUNT(*) OVER (PARTITION BY r.location) as rating_count
+        SELECT r.location, r.flavor_preferences, r.rating
         FROM ratings r
         WHERE r.location IS NOT NULL
           AND r.location != ''
           AND r.flavor_preferences IS NOT NULL
-          AND EXISTS (
-            SELECT 1 FROM jsonb_each(r.flavor_preferences) AS f(key, value)
-            WHERE (f.value::text)::numeric >= 75
-          )
-        ORDER BY r.location, r.created_at DESC
-        LIMIT 200
+        LIMIT 5000
       `
     )
 
-    // Score places based on flavor preference overlap + body profile match
-    const similarPlaces = result.rows
-      .map((row) => {
-        const placeFlavorPrefs = row.flavor_preferences || {}
-        // Extract place body (stored under reserved __body:<value> keys)
-        let placeBody = ''
-        for (const key of Object.keys(placeFlavorPrefs)) {
-          if (key.startsWith('__body:') && placeFlavorPrefs[key] >= 75) {
-            placeBody = key.slice('__body:'.length)
-            break
-          }
+    // Group ratings by location, then build a frequency profile of flavors
+    // and body-profile choices across all raters at that place.
+    const byLocation = new Map()
+    for (const row of result.rows) {
+      const key = row.location
+      let g = byLocation.get(key)
+      if (!g) {
+        g = { flavorCounts: {}, bodyCounts: {}, total: 0, ratingSum: 0 }
+        byLocation.set(key, g)
+      }
+      g.total += 1
+      g.ratingSum += Number(row.rating) || 0
+      const prefs = row.flavor_preferences || {}
+      for (const [k, v] of Object.entries(prefs)) {
+        if (Number(v) < 75) continue
+        if (k.startsWith('__body:')) {
+          const body = k.slice('__body:'.length)
+          g.bodyCounts[body] = (g.bodyCounts[body] || 0) + 1
+        } else if (!k.startsWith('__')) {
+          g.flavorCounts[k] = (g.flavorCounts[k] || 0) + 1
         }
-        // Extract only real flavors (exclude reserved keys) with intensity >= 75
-        const placeFlavorsList = Object.keys(placeFlavorPrefs)
-          .filter(f => !f.startsWith('__') && placeFlavorPrefs[f] >= 75)
+      }
+    }
 
-        const matchCount = userFlavors.filter(f => placeFlavorsList.includes(f)).length
-        const denom = Math.max(userFlavors.length, placeFlavorsList.length) || 1
-        const flavorScore = matchCount > 0 ? (matchCount / denom) : 0
-        const bodyMatch = userBody && placeBody && userBody === placeBody
-        // Weight: 70% flavor overlap, 30% body match bonus
-        let matchScore = userBody
-          ? (flavorScore * 0.7) + (bodyMatch ? 0.3 : 0)
-          : flavorScore
-        // Penalize places whose signature flavors include bitter or astringent
-        // unless the user explicitly likes those. Bitter/astringent are less
-        // universally desirable so we rank them lower in Recs.
-        const hasHarshFlavor = placeFlavorsList.some(f => f === 'bitter' || f === 'astringent')
-        const userLikesHarsh = userFlavors.some(f => f === 'bitter' || f === 'astringent')
-        if (hasHarshFlavor && !userLikesHarsh) {
-          matchScore = matchScore * 0.5
-        }
+    const similarPlaces = []
+    for (const [location, g] of byLocation) {
+      if (g.total === 0) continue
 
-        return {
-          location: row.location,
-          flavors: placeFlavorsList.slice(0, 5),
-          body: placeBody,
-          matchScore: matchScore,
-          ratingCount: row.rating_count || 0
-        }
+      // A flavor is "canonical" for a place if >= 40% of raters marked it,
+      // OR (if none reach that bar) fall back to the top 3 most-mentioned.
+      const threshold = Math.max(1, Math.ceil(g.total * 0.4))
+      const flavorEntries = Object.entries(g.flavorCounts).sort((a, b) => b[1] - a[1])
+      let canonicalFlavors = flavorEntries.filter(([, c]) => c >= threshold).map(([k]) => k)
+      if (canonicalFlavors.length === 0) {
+        canonicalFlavors = flavorEntries.slice(0, 3).map(([k]) => k)
+      }
+
+      // Place body: majority vote, must clear the same 40% threshold.
+      let placeBody = ''
+      const bodyEntries = Object.entries(g.bodyCounts).sort((a, b) => b[1] - a[1])
+      if (bodyEntries.length > 0 && bodyEntries[0][1] >= threshold) {
+        placeBody = bodyEntries[0][0]
+      }
+
+      // Weighted overlap: each user-liked flavor contributes the fraction of
+      // this place's raters that agreed on it (0..1). So a flavor 100% of
+      // raters called out is worth more than one only 40% mentioned.
+      let weightedMatches = 0
+      for (const uf of userFlavors) {
+        const c = g.flavorCounts[uf] || 0
+        if (c > 0) weightedMatches += c / g.total
+      }
+      const overlapDenom = Math.max(1, userFlavors.length)
+      const flavorScore = weightedMatches / overlapDenom // 0..1
+
+      const bodyMatch = userBody && placeBody && userBody === placeBody
+
+      // Quality factor from avg star rating: 0.5 (bad) .. 1.0 (5-star)
+      const avgRating = g.ratingSum / g.total
+      const qualityFactor = 0.5 + Math.max(0, Math.min(5, avgRating)) / 10
+
+      // Combine: flavor overlap is the primary signal, body match is a
+      // meaningful bonus when the user has a body pref, quality nudges ties.
+      let matchScore = userBody
+        ? (flavorScore * 0.60) + (bodyMatch ? 0.30 : 0) + (qualityFactor * 0.10)
+        : (flavorScore * 0.80) + (qualityFactor * 0.20)
+
+      // Confidence: places with more ratings get up to a 30% boost, single
+      // ratings get downweighted so one rater's opinion doesn't dominate.
+      // sqrt keeps it gentle. Cap at 1.3x.
+      const confidence = Math.min(1.3, 0.7 + 0.15 * Math.sqrt(g.total))
+      matchScore *= confidence
+
+      // Penalize harsh signature flavors unless user opted in.
+      const hasHarshFlavor = canonicalFlavors.some(f => f === 'bitter' || f === 'astringent')
+      const userLikesHarsh = userFlavors.some(f => f === 'bitter' || f === 'astringent')
+      if (hasHarshFlavor && !userLikesHarsh) {
+        matchScore *= 0.5
+      }
+
+      // Only surface places with at least one real signal.
+      if (matchScore <= 0 || (weightedMatches === 0 && !bodyMatch)) continue
+
+      similarPlaces.push({
+        location,
+        flavors: canonicalFlavors.slice(0, 5),
+        body: placeBody,
+        matchScore: Math.max(0, Math.min(1, matchScore)),
+        ratingCount: g.total
       })
-      .filter(p => p.matchScore > 0)
-      .sort((a, b) => b.matchScore - a.matchScore)
-      .slice(0, 20)
+    }
 
-    return res.json({ similarPlaces })
+    similarPlaces.sort((a, b) => b.matchScore - a.matchScore || b.ratingCount - a.ratingCount)
+
+    return res.json({ similarPlaces: similarPlaces.slice(0, 20) })
   } catch (error) {
     console.error('Similar places lookup failed:', error)
     return res.status(500).json({ error: 'Failed to find similar places' })
