@@ -3530,16 +3530,13 @@ function App() {
               </div>
 
               <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
-              {matchaGreenness !== null && (
+              {matchaGreenness !== null && mlCoveragePercent !== null && mlConfidencePercent !== null && (
                 <div className="mb-3 small detector-chip">
-                  <div>{mlStatus}</div>
-                  {mlCoveragePercent !== null && mlConfidencePercent !== null && (
-                    <div className="detector-metrics">
-                      Coverage: {mlCoveragePercent.toFixed(1)}%
-                      {' | '}
-                      Confidence: {mlConfidencePercent.toFixed(1)}%
-                    </div>
-                  )}
+                  <div className="detector-metrics">
+                    Coverage: {mlCoveragePercent.toFixed(1)}%
+                    {' | '}
+                    Confidence: {mlConfidencePercent.toFixed(1)}%
+                  </div>
                 </div>
               )}
 

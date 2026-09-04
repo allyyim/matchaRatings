@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sip-score-cache';
+const CACHE_NAME = 'sip-score-cache-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -26,6 +26,7 @@ self.addEventListener('activate', event => {
       return Promise.all(
         cacheNames.map(cacheName => {
           if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -44,19 +45,25 @@ self.addEventListener('message', event => {
 
 async function checkForUpdates() {
   try {
-    const response = await fetch(VERSION_URL);
+    const response = await fetch(VERSION_URL, { cache: 'no-store' });
+    if (!response.ok) return;
+
     const data = await response.json();
     const newVersion = data.version;
 
-    // Store current version
+    // Get cached version
     const cache = await caches.open(CACHE_NAME);
     const versionResponse = await cache.match(VERSION_URL);
     const currentVersionData = versionResponse ? await versionResponse.json() : { version: 'unknown' };
     const currentVersion = currentVersionData.version;
 
     if (newVersion !== currentVersion) {
-      // New version available - update cache
+      console.log('App version updated:', currentVersion, '->', newVersion);
+      // Update cache with new files
       await cache.addAll(urlsToCache);
+      // Also refresh the version.json in cache
+      await cache.delete(VERSION_URL);
+      await cache.add(VERSION_URL);
 
       // Notify all clients about the update
       const clients = await self.clients.matchAll();
@@ -74,10 +81,10 @@ async function checkForUpdates() {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', event => {
-  // Skip API calls - always go to network
+  // Skip API calls - always go to network for fresh data
   if (event.request.url.includes('/api/')) {
     event.respondWith(
-      fetch(event.request)
+      fetch(event.request, { cache: 'no-store' })
         .catch(() => {
           return new Response(
             JSON.stringify({ error: 'Offline - API unavailable' }),
@@ -88,11 +95,30 @@ self.addEventListener('fetch', event => {
     return;
   }
 
+  // For HTML files, always check network first for updates
+  if (event.request.method === 'GET' && (event.request.url.endsWith('/') || event.request.url.endsWith('/index.html'))) {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .then(response => {
+          if (response && response.status === 200) {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          return caches.match(event.request);
+        })
+    );
+    return;
+  }
+
   // For everything else, try cache first, then network
   event.respondWith(
     caches.match(event.request).then(response => {
       return response || fetch(event.request).then(response => {
-        // Cache successful responses for next time
         if (response && response.status === 200) {
           const responseToCache = response.clone();
           caches.open(CACHE_NAME).then(cache => {
@@ -101,7 +127,6 @@ self.addEventListener('fetch', event => {
         }
         return response;
       }).catch(() => {
-        // Return cached version if network fails
         return caches.match(event.request);
       });
     })
