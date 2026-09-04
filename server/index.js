@@ -1025,7 +1025,7 @@ app.post('/api/auth/link-email', authRateLimiter, async (req, res) => {
   return res.json({ ok: true, verificationLink: verificationLink || undefined })
 })
 
-app.post('/api/ratings', async (req, res) => {
+app.post('/api/ratings', requireSession, async (req, res) => {
   const userName = sanitizeUserName(String(req.body?.userName || '').trim())
   const photo = String(req.body?.photo || '').trim()
   const rating = Number(req.body?.rating)
@@ -1091,7 +1091,7 @@ app.post('/api/upload-image', async (req, res) => {
   }
 })
 
-app.put('/api/ratings/:id', async (req, res) => {
+app.put('/api/ratings/:id', requireSession, async (req, res) => {
   const id = Number(req.params.id)
   const userName = sanitizeUserName(String(req.body?.userName || '').trim())
   const rating = Number(req.body?.rating)
@@ -1142,7 +1142,7 @@ app.put('/api/ratings/:id', async (req, res) => {
   return res.json({ rating: mapRatingRow(updated.rows[0]) })
 })
 
-app.delete('/api/ratings/:id', async (req, res) => {
+app.delete('/api/ratings/:id', requireSession, async (req, res) => {
   const id = Number(req.params.id)
   const userName = sanitizeUserName(String(req.query.userName || '').trim())
 
@@ -1670,7 +1670,7 @@ app.get('/api/similar-places', async (req, res) => {
 })
 
 // Like/unlike rating endpoints
-app.post('/api/ratings/:ratingId/like', async (req, res) => {
+app.post('/api/ratings/:ratingId/like', requireSession, async (req, res) => {
   const ratingId = Number(req.params.ratingId)
   const email = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
   if (!email) return res.status(404).json({ error: 'Your account not found' })
@@ -1687,7 +1687,7 @@ app.post('/api/ratings/:ratingId/like', async (req, res) => {
   }
 })
 
-app.delete('/api/ratings/:ratingId/like', async (req, res) => {
+app.delete('/api/ratings/:ratingId/like', requireSession, async (req, res) => {
   const ratingId = Number(req.params.ratingId)
   const email = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
   if (!email) return res.status(404).json({ error: 'Your account not found' })
