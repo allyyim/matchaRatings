@@ -4391,11 +4391,11 @@ function App() {
                                             {(user.matchScore * 100).toFixed(0)}% match
                                           </span>
                                         </div>
-                                        {user.flavors.length > 0 && (
+                                        {user.flavors.filter((f) => !f.startsWith('__')).length > 0 && (
                                           <div className="small mt-2">
                                             <p className="text-muted mb-2">Shared flavors:</p>
                                             <div className="d-flex flex-wrap gap-1">
-                                              {user.flavors.map((flavor) => (
+                                              {user.flavors.filter((f) => !f.startsWith('__')).map((flavor) => (
                                                 <span key={flavor} className="badge bg-light text-dark" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>
                                                   {flavor}
                                                 </span>
@@ -4431,7 +4431,13 @@ function App() {
                               </div>
                             ) : (
                               <div className="row g-3">
-                                {similarPlaces.slice(0, similarPlacesVisible).map((place) => (
+                                {similarPlaces.slice(0, similarPlacesVisible).map((place) => {
+                                  // Defensive: filter out reserved __body:* keys and extract body if server hasn't provided it yet
+                                  const cleanFlavors = (place.flavors || []).filter((f) => !f.startsWith('__'))
+                                  const derivedBody = place.body || (
+                                    (place.flavors || []).find((f) => f.startsWith('__body:'))?.slice('__body:'.length) || ''
+                                  )
+                                  return (
                                   <div key={place.location} className="col-12 col-sm-6 col-md-4">
                                     <div className="card border-0 shadow-sm h-100">
                                       <div className="card-body">
@@ -4451,11 +4457,11 @@ function App() {
                                             {(place.matchScore * 100).toFixed(0)}% match
                                           </span>
                                         </div>
-                                        {place.flavors.length > 0 && (
+                                        {cleanFlavors.length > 0 && (
                                           <div className="small mt-2">
                                             <p className="text-muted mb-2">Featured flavors:</p>
                                             <div className="d-flex flex-wrap gap-1">
-                                              {place.flavors.map((flavor) => (
+                                              {cleanFlavors.map((flavor) => (
                                                 <span key={flavor} className="badge bg-light text-dark" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>
                                                   {flavor}
                                                 </span>
@@ -4463,18 +4469,19 @@ function App() {
                                             </div>
                                           </div>
                                         )}
-                                        {place.body && (
+                                        {derivedBody && (
                                           <div className="small mt-2">
                                             <p className="text-muted mb-2">Matcha body profile:</p>
                                             <span className="badge" style={{ background: '#c17a2f', border: '1px solid #a5661f', color: '#ffffff', fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }}>
-                                              {bodyProfileLabel(place.body)}
+                                              {bodyProfileLabel(derivedBody)}
                                             </span>
                                           </div>
                                         )}
                                       </div>
                                     </div>
                                   </div>
-                                ))}
+                                  )
+                                })}
                               </div>
                             )}
                             {similarPlaces.length > similarPlacesVisible && (
