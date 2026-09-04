@@ -43,7 +43,9 @@
     </script>
     <script>
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/service-worker.js').catch(err => {
+        const basePath = document.querySelector('meta[name="base"]')?.getAttribute('content') || '%BASE_URL%';
+        const swPath = basePath.endsWith('/') ? basePath + 'service-worker.js' : basePath + '/service-worker.js';
+        navigator.serviceWorker.register(swPath).catch(err => {
           console.log('Service Worker registration failed:', err);
         });
       }
