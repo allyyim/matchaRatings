@@ -108,11 +108,13 @@ body {
   border-bottom: 1px solid rgba(170, 204, 153, 0.7);
   box-shadow: none;
   padding: 0.5rem 0 !important;
+  padding-top: calc(0.5rem + env(safe-area-inset-top)) !important;
   min-height: auto;
 }
 
 .soft-nav.minimal-nav {
   padding: 0.75rem 0 !important;
+  padding-top: calc(0.75rem + env(safe-area-inset-top)) !important;
 }
 
 /* Navigation Styles */
@@ -1962,6 +1964,7 @@ main.login-page {
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
   z-index: 1000;
   padding: 0.5rem 0 1rem 0;
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   gap: 0;
 }
 
@@ -2004,7 +2007,7 @@ main.login-page {
 
 /* Add padding to main content to account for bottom nav */
 main#main-content {
-  padding-bottom: 5.5rem !important;
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)) !important;
 }
 
 .close-btn {
