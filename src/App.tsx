@@ -65,6 +65,25 @@ function bodyProfileLabel(body: string) {
   return opt ? opt.label : ''
 }
 
+// Per-flavor palette. Returns background + text + border color for a tag/bubble.
+function flavorColor(flavor: string): { bg: string; fg: string; border: string } {
+  const key = String(flavor || '').toLowerCase()
+  if (key === 'chocolatey') return { bg: '#815355', fg: '#ffffff', border: '#5c3839' }
+  if (key === 'sugary' || key === 'sweet') return { bg: '#E0BAD7', fg: '#5a2a4b', border: '#c290b3' }
+  if (['earthy', 'vegetal', 'creamy', 'nutty', 'floral', 'umami'].includes(key)) return { bg: '#63a375', fg: '#ffffff', border: '#4a7d5a' }
+  if (key === 'astringent' || key === 'bitter') return { bg: '#F8FA90', fg: '#5c5d1c', border: '#c9cb6d' }
+  if (key === 'mellow') return { bg: '#A9DEF9', fg: '#1e4a5f', border: '#7fbbdc' }
+  return { bg: '#82D99E', fg: '#0b6e4f', border: '#0b6e4f' }
+}
+
+// Body palette: varying shades of #3AAFB9.
+function bodyColor(body: string): { bg: string; fg: string; border: string } {
+  if (body === 'full-bodied') return { bg: '#26808a', fg: '#ffffff', border: '#1a5f66' }
+  if (body === 'medium') return { bg: '#3AAFB9', fg: '#ffffff', border: '#26808a' }
+  if (body === 'milky') return { bg: '#8ed5db', fg: '#0e3d43', border: '#5aa9b1' }
+  return { bg: '#3AAFB9', fg: '#ffffff', border: '#26808a' }
+}
+
 function BodyInfoIcon() {
   const [open, setOpen] = useState(false)
   useEffect(() => {
@@ -837,7 +856,6 @@ function App() {
   const [isLoadingSimilarPlaces, setIsLoadingSimilarPlaces] = useState(false)
   const [recsRefreshKey, setRecsRefreshKey] = useState(0)
   const [similarUsersVisible, setSimilarUsersVisible] = useState(10)
-  const [similarPlacesVisible, setSimilarPlacesVisible] = useState(10)
   const [friendModalUser, setFriendModalUser] = useState('')
   const [friendModalEntries, setFriendModalEntries] = useState<RatingEntry[]>([])
   const [isFriendModalOpen, setIsFriendModalOpen] = useState(false)
@@ -2709,9 +2727,9 @@ function App() {
                                       className="badge"
                                       style={{
                                         fontSize: '0.65rem',
-                                        background: '#20c997',
-                                        border: '1px solid #17a589',
-                                        color: '#ffffff',
+                                        background: flavorColor(flavor).bg,
+                                        border: '1px solid ' + flavorColor(flavor).border,
+                                        color: flavorColor(flavor).fg,
                                         fontWeight: '600',
                                         textTransform: 'capitalize',
                                         padding: '0.2rem 0.4rem',
@@ -2726,7 +2744,7 @@ function App() {
                               </div>
                             )}
                             {getBodyProfile(entry.flavorPreferences) && (
-                              <div className="mt-2"><span className="badge" style={{ background: '#c17a2f', border: '1px solid #a5661f', color: '#ffffff', fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
+                              <div className="mt-2"><span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
                             )}
                           </div>
                           {entry.thoughts && <p className="mt-1 mb-0">{entry.thoughts}</p>}
@@ -3136,7 +3154,10 @@ function App() {
               <label className="form-label fw-semibold mb-2 text-success">Your Matcha preferences</label>
               <div className="text-muted small mb-2" style={{ fontSize: '0.75rem' }}>Flavors</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
-                {['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'creamy', 'floral', 'earthy', 'Chocolatey', 'mellow'].map((flavor) => (
+                {['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'creamy', 'floral', 'earthy', 'Chocolatey', 'mellow'].map((flavor) => {
+                  const isSelected = userFlavors.includes(flavor)
+                  const c = flavorColor(flavor)
+                  return (
                   <button
                     key={flavor}
                     type="button"
@@ -3145,12 +3166,10 @@ function App() {
                       fontSize: '0.8rem',
                       padding: '0.375rem 0.75rem',
                       borderRadius: '0.5rem',
-                      border: '1px solid ' + (userFlavors.includes(flavor) ? 'rgba(0, 150, 136, 0.5)' : 'rgba(176, 222, 214, 0.3)'),
-                      background: userFlavors.includes(flavor)
-                        ? '#0d4f4a'
-                        : 'linear-gradient(135deg, #d4ede9 0%, #e0f3f0 100%)',
-                      color: userFlavors.includes(flavor) ? '#ffffff' : '#6b9e95',
-                      fontWeight: userFlavors.includes(flavor) ? '600' : '500',
+                      border: '1px solid ' + (isSelected ? c.border : 'rgba(176, 222, 214, 0.3)'),
+                      background: isSelected ? c.bg : 'linear-gradient(135deg, #d4ede9 0%, #e0f3f0 100%)',
+                      color: isSelected ? c.fg : '#6b9e95',
+                      fontWeight: isSelected ? '600' : '500',
                       cursor: 'pointer'
                     }}
                     onClick={() => setUserFlavors(userFlavors.includes(flavor)
@@ -3160,7 +3179,8 @@ function App() {
                   >
                     {flavor}
                   </button>
-                ))}
+                  )
+                })}
               </div>
 
               <div className="text-muted small mb-2 d-inline-flex align-items-center gap-2" style={{ fontSize: '0.75rem' }}>
@@ -3170,6 +3190,7 @@ function App() {
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 {BODY_PROFILE_OPTIONS.map((opt) => {
                   const active = userBodyPref === opt.value
+                  const c = bodyColor(opt.value)
                   return (
                     <button
                       key={`pref-body-${opt.value}`}
@@ -3179,9 +3200,9 @@ function App() {
                         fontSize: '0.8rem',
                         padding: '0.375rem 0.5rem',
                         borderRadius: '0.5rem',
-                        border: '1px solid ' + (active ? 'rgba(0, 150, 136, 0.5)' : 'rgba(176, 222, 214, 0.3)'),
-                        background: active ? '#0d4f4a' : 'linear-gradient(135deg, #d4ede9 0%, #e0f3f0 100%)',
-                        color: active ? '#ffffff' : '#6b9e95',
+                        border: '1px solid ' + (active ? c.border : 'rgba(176, 222, 214, 0.3)'),
+                        background: active ? c.bg : 'linear-gradient(135deg, #d4ede9 0%, #e0f3f0 100%)',
+                        color: active ? c.fg : '#6b9e95',
                         fontWeight: active ? '600' : '500',
                         cursor: 'pointer'
                       }}
@@ -3426,6 +3447,7 @@ function App() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', placeItems: 'center' }}>
                   {FLAVOR_LIST.map((flavor) => {
                     const active = (editFlavorPrefs[flavor] || 0) > 0
+                    const c = flavorColor(flavor)
                     return (
                       <button
                         type="button"
@@ -3443,12 +3465,13 @@ function App() {
                           })
                         }}
                         style={{
-                          border: 'none',
-                          background: active ? 'var(--primary-green, #1f5f34)' : '#f1f3f5',
-                          color: active ? 'white' : '#495057',
+                          border: active ? '1px solid ' + c.border : 'none',
+                          background: active ? c.bg : '#f1f3f5',
+                          color: active ? c.fg : '#495057',
                           borderRadius: '999px',
                           padding: '0.35rem 0.75rem',
                           fontSize: '0.8rem',
+                          fontWeight: active ? 600 : 500,
                           textTransform: 'capitalize',
                           minWidth: '70px'
                         }}
@@ -3465,6 +3488,7 @@ function App() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', placeItems: 'center' }}>
                   {BODY_PROFILE_OPTIONS.map((opt) => {
                     const active = getBodyProfile(editFlavorPrefs) === opt.value
+                    const c = bodyColor(opt.value)
                     return (
                       <button
                         type="button"
@@ -3472,12 +3496,13 @@ function App() {
                         onClick={() => setEditFlavorPrefs((prev) => setBodyProfile(prev, active ? '' : opt.value))}
                         title={opt.desc}
                         style={{
-                          border: 'none',
-                          background: active ? 'var(--primary-green, #1f5f34)' : '#f1f3f5',
-                          color: active ? 'white' : '#495057',
+                          border: active ? '1px solid ' + c.border : 'none',
+                          background: active ? c.bg : '#f1f3f5',
+                          color: active ? c.fg : '#495057',
                           borderRadius: '999px',
                           padding: '0.35rem 0.75rem',
                           fontSize: '0.8rem',
+                          fontWeight: active ? 600 : 500,
                           minWidth: '90px'
                         }}
                       >
@@ -3789,6 +3814,7 @@ function App() {
                   {FLAVOR_LIST.map((flavor) => {
                     const intensity = ratingFlavorPrefs[flavor]
                     const isActive = intensity > 0
+                    const c = flavorColor(flavor)
 
                     return (
                       <button
@@ -3796,14 +3822,15 @@ function App() {
                         type="button"
                         className="btn"
                         style={{
-                          backgroundColor: isActive ? '#20c997' : '#e9ecef',
-                          color: isActive ? 'white' : '#666',
-                          border: 'none',
+                          backgroundColor: isActive ? c.bg : '#e9ecef',
+                          color: isActive ? c.fg : '#666',
+                          border: isActive ? '1px solid ' + c.border : 'none',
                           borderRadius: '20px',
                           padding: '0.3rem 0.7rem',
                           transition: 'all 0.2s ease',
                           textTransform: 'capitalize',
                           fontSize: '0.75rem',
+                          fontWeight: isActive ? 600 : 500,
                           cursor: 'pointer'
                         }}
                         onClick={() => {
@@ -3828,6 +3855,7 @@ function App() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', placeItems: 'center', marginTop: '0.5rem' }}>
                   {BODY_PROFILE_OPTIONS.map((opt) => {
                     const active = getBodyProfile(ratingFlavorPrefs) === opt.value
+                    const c = bodyColor(opt.value)
                     return (
                       <button
                         type="button"
@@ -3836,12 +3864,13 @@ function App() {
                         onClick={() => setRatingFlavorPrefs((prev) => setBodyProfile(prev, active ? '' : opt.value))}
                         title={opt.desc}
                         style={{
-                          backgroundColor: active ? '#20c997' : '#e9ecef',
-                          color: active ? 'white' : '#666',
-                          border: 'none',
+                          backgroundColor: active ? c.bg : '#e9ecef',
+                          color: active ? c.fg : '#666',
+                          border: active ? '1px solid ' + c.border : 'none',
                           borderRadius: '20px',
                           padding: '0.3rem 0.7rem',
                           fontSize: '0.75rem',
+                          fontWeight: active ? 600 : 500,
                           minWidth: '95px'
                         }}
                       >
@@ -4045,9 +4074,9 @@ function App() {
                                     className="badge"
                                     style={{
                                       fontSize: '0.7rem',
-                                      background: '#20c997',
-                                      border: '1px solid #17a589',
-                                      color: '#ffffff',
+                                      background: flavorColor(flavor).bg,
+                                      border: '1px solid ' + flavorColor(flavor).border,
+                                      color: flavorColor(flavor).fg,
                                       fontWeight: '600',
                                       textTransform: 'capitalize',
                                       padding: '0.25rem 0.5rem',
@@ -4061,7 +4090,7 @@ function App() {
                             </div>
                           )}
                           {getBodyProfile(entry.flavorPreferences) && (
-                            <div className="mt-2"><span className="badge" style={{ background: '#c17a2f', border: '1px solid #a5661f', color: '#ffffff', fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
+                            <div className="mt-2"><span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
                           )}
                         </div>
                         {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
@@ -4411,11 +4440,14 @@ function App() {
                                           <div className="small mt-2">
                                             <p className="text-muted mb-2">Shared flavors:</p>
                                             <div className="d-flex flex-wrap gap-1">
-                                              {user.flavors.filter((f) => !f.startsWith('__')).map((flavor) => (
-                                                <span key={flavor} className="badge bg-light text-dark" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>
+                                              {user.flavors.filter((f) => !f.startsWith('__')).map((flavor) => {
+                                                const _c = flavorColor(flavor)
+                                                return (
+                                                <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.25rem 0.55rem' }}>
                                                   {flavor}
                                                 </span>
-                                              ))}
+                                                )
+                                              })}
                                             </div>
                                           </div>
                                         )}
@@ -4447,7 +4479,7 @@ function App() {
                               </div>
                             ) : (
                               <div className="row g-3">
-                                {similarPlaces.slice(0, similarPlacesVisible).map((place) => {
+                                {similarPlaces.slice(0, 10).map((place) => {
                                   // Defensive: filter out reserved __body:* keys and extract body if server hasn't provided it yet
                                   const cleanFlavors = (place.flavors || []).filter((f) => !f.startsWith('__'))
                                   const derivedBody = place.body || (
@@ -4477,18 +4509,21 @@ function App() {
                                           <div className="small mt-2">
                                             <p className="text-muted mb-2">Featured flavors:</p>
                                             <div className="d-flex flex-wrap gap-1">
-                                              {cleanFlavors.map((flavor) => (
-                                                <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: '#20c997', color: '#ffffff', fontWeight: 700, padding: '0.3rem 0.55rem' }}>
+                                              {cleanFlavors.map((flavor) => {
+                                                const _c = flavorColor(flavor)
+                                                return (
+                                                <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 700, padding: '0.3rem 0.55rem' }}>
                                                   {flavor}
                                                 </span>
-                                              ))}
+                                                )
+                                              })}
                                             </div>
                                           </div>
                                         )}
                                         {derivedBody && (
                                           <div className="small mt-2">
                                             <p className="text-muted mb-2">Matcha body profile:</p>
-                                            <span className="badge" style={{ background: '#c17a2f', border: '1px solid #a5661f', color: '#ffffff', fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }}>
+                                            <span className="badge" style={{ ...(function(){ const _c = bodyColor(derivedBody); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>
                                               {bodyProfileLabel(derivedBody)}
                                             </span>
                                           </div>
@@ -4500,11 +4535,9 @@ function App() {
                                 })}
                               </div>
                             )}
-                            {similarPlaces.length > similarPlacesVisible && (
+                            {similarPlaces.length > 10 && (
                               <div className="text-center mt-3">
-                                <button type="button" className="btn btn-outline-success btn-sm" onClick={() => setSimilarPlacesVisible((n) => n + 10)}>
-                                  See more ({similarPlaces.length - similarPlacesVisible} more)
-                                </button>
+                                <p className="text-muted small mb-0">Showing top 10 matches</p>
                               </div>
                             )}
                           </>
@@ -4610,9 +4643,9 @@ function App() {
                                     className="badge"
                                     style={{
                                       fontSize: '0.7rem',
-                                      background: '#20c997',
-                                      border: '1px solid #17a589',
-                                      color: '#ffffff',
+                                      background: flavorColor(flavor).bg,
+                                      border: '1px solid ' + flavorColor(flavor).border,
+                                      color: flavorColor(flavor).fg,
                                       fontWeight: '600',
                                       textTransform: 'capitalize',
                                       padding: '0.25rem 0.5rem',
@@ -4626,7 +4659,7 @@ function App() {
                             </div>
                           )}
                           {getBodyProfile(entry.flavorPreferences) && (
-                            <div className="mt-2"><span className="badge" style={{ background: '#c17a2f', border: '1px solid #a5661f', color: '#ffffff', fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
+                            <div className="mt-2"><span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
                           )}
                         </div>
                         {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
