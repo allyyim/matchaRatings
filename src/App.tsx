@@ -731,6 +731,7 @@ function App() {
   const [isLoadingSimilarUsers, setIsLoadingSimilarUsers] = useState(false)
   const [similarPlaces, setSimilarPlaces] = useState<Array<{ location: string; flavors: string[]; matchScore: number }>>([])
   const [isLoadingSimilarPlaces, setIsLoadingSimilarPlaces] = useState(false)
+  const [recsRefreshKey, setRecsRefreshKey] = useState(0)
   const [similarUsersVisible, setSimilarUsersVisible] = useState(9)
   const [similarPlacesVisible, setSimilarPlacesVisible] = useState(9)
   const [friendModalUser, setFriendModalUser] = useState('')
@@ -1457,7 +1458,7 @@ function App() {
         setIsLoadingSimilarUsers(false)
         setIsLoadingSimilarPlaces(false)
       })
-  }, [communityActiveTab, currentUserName, userFlavors])
+  }, [communityActiveTab, currentUserName, userFlavors, recsRefreshKey])
 
   useEffect(() => {
     let mounted = true
@@ -1725,6 +1726,7 @@ function App() {
       }
       setMatchaGreenness(null)
       setIsNewLogOpen(false)
+      setRecsRefreshKey((k) => k + 1)
     } finally {
       const elapsed = Date.now() - overlayShownAt
       const minimumOverlayMs = 700
@@ -1905,6 +1907,7 @@ function App() {
       setIsEditingEntry(false)
       setSelectedEntryId(null)
       setEditEntryPhoto('')
+      setRecsRefreshKey((k) => k + 1)
     } catch (error) {
       console.error('Save rating failed:', error)
       const status = error instanceof ApiError ? error.status : 500

@@ -258,7 +258,8 @@ function mapRatingRow(row) {
     thoughts: row.thoughts || '',
     date: new Date(row.created_at).toLocaleDateString(),
     createdAt: row.created_at,
-    comboScore: Number(getWeightedScore(rating, greenness).toFixed(2))
+    comboScore: Number(getWeightedScore(rating, greenness).toFixed(2)),
+    flavorPreferences: row.flavor_preferences || {}
   }
 }
 
