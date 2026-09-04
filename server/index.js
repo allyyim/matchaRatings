@@ -115,7 +115,7 @@ function decryptField(value) {
 }
 
 function generateToken(userName, browserId) {
-  return jwt.sign({ userName, browserId: browserId || '' }, JWT_SECRET, { expiresIn: '7d' })
+  return jwt.sign({ userName, browserId: browserId || '' }, JWT_SECRET, { expiresIn: '365d' })
 }
 
 function normalizeEmail(value) {
