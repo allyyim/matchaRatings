@@ -645,7 +645,6 @@ function App() {
   const [milestoneMessage, setMilestoneMessage] = useState('')
   const [photoDataUrl, setPhotoDataUrl] = useState('')
   const [matchaGreenness, setMatchaGreenness] = useState<number | null>(null)
-  const [mlStatus, setMlStatus] = useState('ML drink-area detector will load when you analyze a photo.')
   const [mlCoveragePercent, setMlCoveragePercent] = useState<number | null>(null)
   const [mlConfidencePercent, setMlConfidencePercent] = useState<number | null>(null)
   const [cameraReady, setCameraReady] = useState(false)
@@ -1544,7 +1543,6 @@ function App() {
   }
 
   async function processImage(dataUrl: string) {
-    setMlStatus('Preparing image...')
     setMlCoveragePercent(null)
     setMlConfidencePercent(null)
 
@@ -1559,25 +1557,21 @@ function App() {
       }
 
       try {
-        setMlStatus('Analyzing drink area...')
-        const { score, statusMessage, coveragePercent, confidencePercent } = await Promise.race([
+        const { score, coveragePercent, confidencePercent } = await Promise.race([
           analyzeGreennessFromDataUrl(optimizedDataUrl),
           new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Greenness analysis timed out.')), IMAGE_PROCESS_TIMEOUT_MS))
         ])
         setMatchaGreenness(score)
-        setMlStatus(statusMessage)
         setMlCoveragePercent(coveragePercent)
         setMlConfidencePercent(confidencePercent)
       } catch {
         setMatchaGreenness(0)
-        setMlStatus('Image analysis timed out. You can still save and edit manually.')
         setMlCoveragePercent(null)
         setMlConfidencePercent(null)
       }
     } catch {
       setMatchaGreenness(0)
       setPhotoDataUrl('')
-      setMlStatus('Image processing timed out. You can still save without a photo.')
       setMlCoveragePercent(null)
       setMlConfidencePercent(null)
     }
@@ -1607,7 +1601,6 @@ function App() {
     setMatchaGreenness(null)
     setMlCoveragePercent(null)
     setMlConfidencePercent(null)
-    setMlStatus('ML drink-area detector will load when you analyze a photo.')
   }
 
   function openPhotoLibrary() {
