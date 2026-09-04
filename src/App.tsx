@@ -950,11 +950,8 @@ function App() {
 
   useEffect(() => {
     sessionStorage.clear()
-    localStorage.removeItem('matchaUserName')
-    localStorage.removeItem('matchaAuthToken')
     setRequiresManualName(false)
     setPendingUserName('')
-    setCurrentUserName('')
   }, [])
 
   // Check for app updates from service worker
