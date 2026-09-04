@@ -762,7 +762,7 @@ function App() {
   const [communityActiveTab, setCommunityActiveTab] = useState<'search' | 'following' | 'recommendations'>('search')
   const [similarUsers, setSimilarUsers] = useState<Array<{ userName: string; flavors: string[]; matchScore: number }>>([])
   const [isLoadingSimilarUsers, setIsLoadingSimilarUsers] = useState(false)
-  const [similarPlaces, setSimilarPlaces] = useState<Array<{ location: string; flavors: string[]; matchScore: number }>>([])
+  const [similarPlaces, setSimilarPlaces] = useState<Array<{ location: string; flavors: string[]; body?: string; matchScore: number }>>([])
   const [isLoadingSimilarPlaces, setIsLoadingSimilarPlaces] = useState(false)
   const [recsRefreshKey, setRecsRefreshKey] = useState(0)
   const [similarUsersVisible, setSimilarUsersVisible] = useState(9)
@@ -1483,7 +1483,7 @@ function App() {
 
     Promise.all([
       apiFetch<{ similarUsers: Array<{ userName: string; flavors: string[]; matchScore: number }> }>(`/similar-users?userName=${encodeURIComponent(currentUserName)}`),
-      apiFetch<{ similarPlaces: Array<{ location: string; flavors: string[]; matchScore: number }> }>(`/similar-places?flavors=${encodeURIComponent(userFlavors.join(','))}`)
+      apiFetch<{ similarPlaces: Array<{ location: string; flavors: string[]; body?: string; matchScore: number }> }>(`/similar-places?flavors=${encodeURIComponent(userFlavors.join(','))}&body=${encodeURIComponent(userBodyPref)}`)
     ])
       .then(([usersData, placesData]) => {
         setSimilarUsers(usersData.similarUsers)
@@ -1498,7 +1498,7 @@ function App() {
         setIsLoadingSimilarUsers(false)
         setIsLoadingSimilarPlaces(false)
       })
-  }, [communityActiveTab, currentUserName, userFlavors, recsRefreshKey])
+  }, [communityActiveTab, currentUserName, userFlavors, userBodyPref, recsRefreshKey])
 
   useEffect(() => {
     let mounted = true
@@ -4461,6 +4461,14 @@ function App() {
                                                 </span>
                                               ))}
                                             </div>
+                                          </div>
+                                        )}
+                                        {place.body && (
+                                          <div className="small mt-2">
+                                            <p className="text-muted mb-2">Matcha body profile:</p>
+                                            <span className="badge" style={{ background: '#c17a2f', border: '1px solid #a5661f', color: '#ffffff', fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }}>
+                                              {bodyProfileLabel(place.body)}
+                                            </span>
                                           </div>
                                         )}
                                       </div>

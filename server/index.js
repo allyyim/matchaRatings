@@ -1586,6 +1586,7 @@ app.get('/api/similar-users', async (req, res) => {
 // Find places with similar flavor profiles
 app.get('/api/similar-places', async (req, res) => {
   const flavorsParam = String(req.query.flavors || '').trim()
+  const userBody = String(req.query.body || '').trim()
   if (!flavorsParam) {
     return res.status(400).json({ error: 'flavors parameter is required' })
   }
@@ -1593,7 +1594,7 @@ app.get('/api/similar-places', async (req, res) => {
   try {
     const userFlavors = flavorsParam.split(',').map(f => f.trim()).filter(f => f)
 
-    if (userFlavors.length === 0) {
+    if (userFlavors.length === 0 && !userBody) {
       return res.json({ similarPlaces: [] })
     }
 
@@ -1617,20 +1618,35 @@ app.get('/api/similar-places', async (req, res) => {
       `
     )
 
-    // Score places based on flavor preference overlap
+    // Score places based on flavor preference overlap + body profile match
     const similarPlaces = result.rows
       .map((row) => {
         const placeFlavorPrefs = row.flavor_preferences || {}
-        // Extract only flavors with intensity >= 75 (selected)
+        // Extract place body (stored under reserved __body:<value> keys)
+        let placeBody = ''
+        for (const key of Object.keys(placeFlavorPrefs)) {
+          if (key.startsWith('__body:') && placeFlavorPrefs[key] >= 75) {
+            placeBody = key.slice('__body:'.length)
+            break
+          }
+        }
+        // Extract only real flavors (exclude reserved keys) with intensity >= 75
         const placeFlavorsList = Object.keys(placeFlavorPrefs)
-          .filter(f => placeFlavorPrefs[f] >= 75)
+          .filter(f => !f.startsWith('__') && placeFlavorPrefs[f] >= 75)
 
         const matchCount = userFlavors.filter(f => placeFlavorsList.includes(f)).length
-        const matchScore = matchCount > 0 ? (matchCount / Math.max(userFlavors.length, placeFlavorsList.length)) : 0
+        const denom = Math.max(userFlavors.length, placeFlavorsList.length) || 1
+        const flavorScore = matchCount > 0 ? (matchCount / denom) : 0
+        const bodyMatch = userBody && placeBody && userBody === placeBody
+        // Weight: 70% flavor overlap, 30% body match bonus
+        const matchScore = userBody
+          ? (flavorScore * 0.7) + (bodyMatch ? 0.3 : 0)
+          : flavorScore
 
         return {
           location: row.location,
           flavors: placeFlavorsList.slice(0, 5),
+          body: placeBody,
           matchScore: matchScore,
           ratingCount: row.rating_count || 0
         }
