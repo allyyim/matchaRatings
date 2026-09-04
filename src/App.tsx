@@ -1095,7 +1095,7 @@ function App() {
       setRequiresManualName(false)
       setIsUserReady(true)
       sessionStorage.removeItem('googleAccessToken')
-      void loadDrinkAreaModel().catch(() => undefined)
+      void loadRandomForest().catch(() => undefined)
     } catch (error) {
       setAuthError(error instanceof Error ? error.message : 'Failed to create account.')
     } finally {
