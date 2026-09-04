@@ -714,6 +714,7 @@ function App() {
   const [editLocation, setEditLocation] = useState('')
   const [editThoughts, setEditThoughts] = useState('')
   const [editEntryPhoto, setEditEntryPhoto] = useState<string>('')
+  const [editFlavorPrefs, setEditFlavorPrefs] = useState<Record<string, number>>({})
   const [friendQuery, setFriendQuery] = useState('')
   const [friendSuggestions, setFriendSuggestions] = useState<Array<{ userName: string; placeCount: number }>>([])
   const [selectedFriend, setSelectedFriend] = useState('')
@@ -1848,6 +1849,14 @@ function App() {
     setEditLocation(entry.location)
     setEditThoughts(entry.thoughts)
     setEditEntryPhoto(entry.photo)
+    const prefs: Record<string, number> = {}
+    if (entry.flavorPreferences && typeof entry.flavorPreferences === 'object') {
+      for (const [k, v] of Object.entries(entry.flavorPreferences)) {
+        const num = Number(v)
+        if (!Number.isNaN(num)) prefs[k] = num
+      }
+    }
+    setEditFlavorPrefs(prefs)
   }
 
   async function saveEntryEdit(entryId: number) {
@@ -1886,7 +1895,8 @@ function App() {
           rating: editRating,
           location: editLocation.trim(),
           thoughts: editThoughts.trim(),
-          photo: photoUrl
+          photo: photoUrl,
+          flavorPreferences: editFlavorPrefs
         })
       })
 
@@ -3254,6 +3264,46 @@ function App() {
                 >
                   Change Photo
                 </button>
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label className="form-label fw-semibold mb-2 text-success">Flavor Profile</label>
+                <div className="small text-muted mb-3">Click bubbles to toggle flavors</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', placeItems: 'center' }}>
+                  {(['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy', 'Chocolatey', 'mellow', 'bitter'] as const).map((flavor) => {
+                    const active = (editFlavorPrefs[flavor] || 0) > 0
+                    return (
+                      <button
+                        type="button"
+                        key={`edit-flavor-${flavor}`}
+                        className={`flavor-bubble${active ? ' active' : ''}`}
+                        onClick={() => {
+                          setEditFlavorPrefs((prev) => {
+                            const next = { ...prev }
+                            if ((next[flavor] || 0) > 0) {
+                              next[flavor] = 0
+                            } else {
+                              next[flavor] = 100
+                            }
+                            return next
+                          })
+                        }}
+                        style={{
+                          border: 'none',
+                          background: active ? 'var(--primary-green, #1f5f34)' : '#f1f3f5',
+                          color: active ? 'white' : '#495057',
+                          borderRadius: '999px',
+                          padding: '0.35rem 0.75rem',
+                          fontSize: '0.8rem',
+                          textTransform: 'capitalize',
+                          minWidth: '70px'
+                        }}
+                      >
+                        {flavor}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
               <div style={{ marginBottom: '1.5rem' }}>

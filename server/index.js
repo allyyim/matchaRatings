@@ -1063,6 +1063,18 @@ app.put('/api/ratings/:id', requireSession, async (req, res) => {
   const location = normalizeLocationText(req.body?.location || '')
   const thoughts = sanitizeText(req.body?.thoughts || '', 800)
   const photo = req.body?.photo || null
+  const rawFlavorPrefs = req.body?.flavorPreferences
+  let flavorPreferencesJson = null
+  if (rawFlavorPrefs && typeof rawFlavorPrefs === 'object') {
+    const cleaned = {}
+    for (const [k, v] of Object.entries(rawFlavorPrefs)) {
+      const num = Number(v)
+      if (!Number.isNaN(num) && num >= 0 && num <= 100) {
+        cleaned[String(k)] = num
+      }
+    }
+    flavorPreferencesJson = JSON.stringify(cleaned)
+  }
 
   if (!Number.isInteger(id) || id <= 0) {
     return res.status(400).json({ error: 'Valid rating id is required' })
@@ -1091,11 +1103,12 @@ app.put('/api/ratings/:id', requireSession, async (req, res) => {
           greenness = COALESCE($4, greenness),
           location = $5,
           thoughts = $6,
-          photo = COALESCE($7, photo)
+          photo = COALESCE($7, photo),
+          flavor_preferences = COALESCE($8::jsonb, flavor_preferences)
       WHERE id = $1 AND user_name = $2
       RETURNING *
     `,
-    [id, userName, rating, greenness, location, thoughts, photo]
+    [id, userName, rating, greenness, location, thoughts, photo, flavorPreferencesJson]
   )
 
   if (updated.rowCount === 0) {
