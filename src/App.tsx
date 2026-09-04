@@ -548,6 +548,26 @@ function setSessionToken(token: string) {
   window.localStorage.removeItem('matchaAuthToken')
 }
 
+class ApiError extends Error {
+  status: number
+  data: Record<string, unknown>
+
+  constructor(status: number, data: Record<string, unknown>, message: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.data = data
+  }
+}
+
+function friendlyErrorMessage(status: number): string {
+  if (status === 401 || status === 403) return 'Please sign in again to continue.'
+  if (status === 404) return 'We couldn\'t find what you were looking for.'
+  if (status === 409) return 'That name is already taken. Please choose another.'
+  if (status >= 500) return 'Something went wrong on our end. Please try again.'
+  return 'Something went wrong. Please try again.'
+}
+
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   if (typeof window !== 'undefined' && window.location.protocol === 'http:' && !window.location.hostname.match(/^(localhost|127\.0\.0\.1)$/)) {
     console.warn('Warning: Using HTTP in production. Consider using HTTPS.')
@@ -590,12 +610,27 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
     if (!response.ok) {
       const text = await response.text()
+      let data: Record<string, unknown> = {}
+      let serverMessage = ''
       try {
-        const errorJson = JSON.parse(text)
-        throw new Error(errorJson.error || `Request failed with status ${response.status}`)
-      } catch (parseErr) {
-        throw new Error(text || `Request failed with status ${response.status}`)
+        const parsed = JSON.parse(text)
+        if (parsed && typeof parsed === 'object') {
+          data = parsed as Record<string, unknown>
+          if (typeof data.error === 'string') {
+            serverMessage = data.error
+          }
+        }
+      } catch {
+        // Non-JSON body — ignore it; never surface raw HTML/text to the user.
       }
+
+      const isSafeServerMessage =
+        !!serverMessage &&
+        serverMessage.length <= 200 &&
+        !serverMessage.includes('{') &&
+        !serverMessage.includes('<')
+      const userMessage = isSafeServerMessage ? serverMessage : friendlyErrorMessage(response.status)
+      throw new ApiError(response.status, data, userMessage)
     }
 
     return response.json() as Promise<T>
@@ -914,27 +949,24 @@ function App() {
           setTimeout(() => setWelcomeMessage(''), 1500)
           void loadRandomForest().catch(() => undefined)
         } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : String(error)
-          try {
-            const errorData = JSON.parse(errorMsg)
-            if (errorData.potentialAccounts && errorData.potentialAccounts.length > 0) {
-              // Show account linking confirmation
+          if (error instanceof ApiError) {
+            const potentialAccounts = Array.isArray(error.data.potentialAccounts)
+              ? (error.data.potentialAccounts as string[])
+              : []
+            if (potentialAccounts.length > 0) {
               sessionStorage.setItem('googleAccessToken', codeResponse.access_token)
-              setPotentialAccounts(errorData.potentialAccounts)
+              setPotentialAccounts(potentialAccounts)
               setAuthMode('confirm-account')
               return
             }
-            if (errorData.isNewUser) {
+            if (error.data.isNewUser === true) {
               sessionStorage.setItem('googleAccessToken', codeResponse.access_token)
               setRequiresManualName(true)
               setPendingUserName('')
               return
             }
-            throw new Error(errorData.error || errorMsg)
-          } catch (parseError) {
-            if (parseError instanceof Error) throw parseError
-            throw error
           }
+          throw error
         }
       } catch (error) {
         setAuthError(error instanceof Error ? error.message : 'Google sign-in failed')
