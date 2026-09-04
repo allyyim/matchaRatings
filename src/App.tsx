@@ -2530,7 +2530,7 @@ function App() {
                           <div className="entry-metrics">
                             <div className="fw-bold mb-2">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
                             <div className="mb-2">Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
-                            <div className="fw-bold mb-2">Total score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
+                            <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
                             <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                             {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
@@ -2615,7 +2615,7 @@ function App() {
                     setIsMyRatingsFilterOpen(false)
                   }}
                 >
-                  Total Score
+                  Overall score
                 </button>
                 <button
                   type="button"
@@ -2669,7 +2669,7 @@ function App() {
                     setIsFriendFilterOpen(false)
                   }}
                 >
-                  Total Score
+                  Overall score
                 </button>
                 <button
                   type="button"
@@ -3264,20 +3264,22 @@ function App() {
       </nav>
 
       {activePage === 'home' && (
-        <main id="main-content" className="container py-5 py-md-5 px-3 px-md-4 d-flex flex-column" tabIndex={-1}>
-          <div className="card shadow-sm border-0 matcha-shell" style={{ order: 2, display: isNewLogOpen ? 'block' : 'none' }}>
-            <div className="card-body p-3 p-md-4">
-              <div className="d-flex align-items-center justify-content-between mb-3">
-                <h1 className="display-6 fw-bold mb-0 text-success">New Log</h1>
-                <button
-                  type="button"
-                  className="close-btn"
-                  onClick={() => setIsNewLogOpen(false)}
-                  aria-label="Close new log"
-                >
-                  ✕
-                </button>
-              </div>
+        <main id="main-content" className="container py-5 py-md-5 px-3 px-md-4" tabIndex={-1}>
+          {isNewLogOpen && createPortal(
+            <div className="modal-overlay new-log-modal-overlay" role="dialog" aria-modal="true" aria-label="New Log">
+              <div className="new-log-modal card shadow-lg border-0 matcha-shell" onClick={(e) => e.stopPropagation()}>
+                <div className="card-body p-3 p-md-4">
+                  <div className="d-flex align-items-center justify-content-between mb-3">
+                    <h1 className="h3 fw-bold mb-0 text-success">New Log</h1>
+                    <button
+                      type="button"
+                      className="close-btn"
+                      onClick={() => setIsNewLogOpen(false)}
+                      aria-label="Close new log"
+                    >
+                      ✕
+                    </button>
+                  </div>
 
               <div className="mb-3">
                 <div className="form-label fw-semibold">Enter cafe or shop name</div>
@@ -3512,18 +3514,30 @@ function App() {
               <button type="button" className="btn btn-success w-100" onClick={() => void saveEntry()} disabled={isSavingEntry}>
                 {isSavingEntry ? 'Saving...' : 'Save Rating'}
               </button>
-            </div>
-          </div>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
 
-          <section className="mb-5" style={{ order: 1 }}>
+          <section className="mb-5">
             <div className="d-flex flex-column gap-2 mb-3">
-              <div className="d-flex align-items-center gap-2">
+              <div className="d-flex align-items-center justify-content-between gap-2 flex-wrap">
                 <div>
                   <h2 className="h4 fw-bold text-success mb-0">
                     My Ratings
                   </h2>
                   <small className="text-muted">Tap to edit</small>
                 </div>
+                <button
+                  type="button"
+                  className="btn new-log-inline-btn"
+                  onClick={() => setIsNewLogOpen(true)}
+                  aria-label="Add new log"
+                >
+                  <span className="new-log-inline-plus" aria-hidden="true">+</span>
+                  <span>New Log</span>
+                </button>
               </div>
 
               <div className="my-ratings-controls">
@@ -3605,7 +3619,7 @@ function App() {
                           <span className="text-muted small">{entry.date}</span>
                         </div>
                         <div className="entry-metrics">
-                          <div className="fw-bold mb-2">Total score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
+                          <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
                           <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
@@ -3705,17 +3719,6 @@ function App() {
               )}
             </div>
           </section>
-          {!isNewLogOpen && (
-            <button
-              type="button"
-              className="new-log-fab"
-              onClick={() => setIsNewLogOpen(true)}
-              aria-label="Add new log"
-              style={{ order: 3 }}
-            >
-              +
-            </button>
-          )}
         </main>
       )}
 
@@ -4128,7 +4131,7 @@ function App() {
                           <span className="text-muted small">{entry.date}</span>
                         </div>
                         <div className="entry-metrics">
-                          <div className="fw-bold mb-2">Total score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
+                          <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
                           <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
@@ -4258,7 +4261,7 @@ function App() {
                               <div className="fw-semibold text-success">#{place.rank} {place.placeName}</div>
                               <div className="small text-muted">{place.entryCount} entries</div>
                             </div>
-                            <div className="fw-bold">Average score: {(place.averageScore / 2).toFixed(1)} / 100</div>
+                            <div className="fw-bold">Overall score: {(place.averageScore / 2).toFixed(1)} / 100</div>
                           </div>
                         </button>
                       ))}
