@@ -695,6 +695,7 @@ function App() {
   const [milestoneMessage, setMilestoneMessage] = useState('')
   const [photoDataUrl, setPhotoDataUrl] = useState('')
   const [matchaGreenness, setMatchaGreenness] = useState<number | null>(null)
+  const [isAnalyzingGreenness, setIsAnalyzingGreenness] = useState(false)
   const [cameraReady, setCameraReady] = useState(false)
   const [cameraError, setCameraError] = useState('')
   const [isCameraModalOpen, setIsCameraModalOpen] = useState(false)
@@ -1555,6 +1556,7 @@ function App() {
       }
 
       try {
+        setIsAnalyzingGreenness(true)
         const { score } = await Promise.race([
           analyzeGreennessFromDataUrl(optimizedDataUrl),
           new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Greenness analysis timed out.')), IMAGE_PROCESS_TIMEOUT_MS))
@@ -1562,10 +1564,13 @@ function App() {
         setMatchaGreenness(score)
       } catch {
         setMatchaGreenness(0)
+      } finally {
+        setIsAnalyzingGreenness(false)
       }
     } catch {
       setMatchaGreenness(0)
       setPhotoDataUrl('')
+      setIsAnalyzingGreenness(false)
     }
   }
 
@@ -2512,7 +2517,7 @@ function App() {
                   {selectedExplorePlaceEntries.map((entry, index) => (
                     <article key={`place-rating-${entry.id}-${index}`} className="card border-0 shadow-sm">
                       <div className="card-body d-flex gap-3 align-items-start py-2">
-                        <img src={entry.photo} alt="Matcha" className="entry-thumb" loading="lazy" decoding="async" />
+                        <img src={entry.photo || noPhotoPlaceholderUrl} alt="" className="entry-thumb" loading="lazy" decoding="async" onError={(e) => { const img = e.currentTarget; if (img.src !== noPhotoPlaceholderUrl) img.src = noPhotoPlaceholderUrl }} />
                         <div className="flex-grow-1">
                           <div className="d-flex justify-content-between flex-wrap gap-2">
                             <strong>{entry.userName}</strong>
@@ -3401,9 +3406,13 @@ function App() {
               )}
               
               <center> 
-              <div className="mb-3 text-success fw-semibold">
-                {matchaGreenness !== null ? `Matcha Greenness: ${matchaGreenness.toFixed(0)}%` : 'How green is your matcha?'}
-              </div>
+              {(isAnalyzingGreenness || matchaGreenness !== null) && (
+                <div className="mb-3 text-success fw-semibold">
+                  {isAnalyzingGreenness
+                    ? 'How green is your matcha?'
+                    : `Matcha Greenness: ${matchaGreenness!.toFixed(0)}%`}
+                </div>
+              )}
               </center>
 
               <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
@@ -3613,7 +3622,7 @@ function App() {
                   <div className="card-body d-flex gap-3 align-items-start justify-content-between">
                     <div className="d-flex gap-3 flex-grow-1 align-items-start">
                       <div className="entry-media-col">
-                        <img src={entry.photo} alt="Matcha" className="entry-thumb" loading="lazy" decoding="async" />
+                        <img src={entry.photo || noPhotoPlaceholderUrl} alt="" className="entry-thumb" loading="lazy" decoding="async" onError={(e) => { const img = e.currentTarget; if (img.src !== noPhotoPlaceholderUrl) img.src = noPhotoPlaceholderUrl }} />
                         <div className="entry-rank-circle">#{myRankById.get(entry.id) || 0}</div>
                       </div>
                       <div className="flex-grow-1">
@@ -4158,7 +4167,7 @@ function App() {
                   <div className="card-body d-flex gap-3 align-items-start justify-content-between">
                     <div className="d-flex gap-3 flex-grow-1 align-items-start">
                       <div className="entry-media-col">
-                        <img src={entry.photo} alt="Friend's matcha" className="entry-thumb" loading="lazy" decoding="async" />
+                        <img src={entry.photo || noPhotoPlaceholderUrl} alt="" className="entry-thumb" loading="lazy" decoding="async" onError={(e) => { const img = e.currentTarget; if (img.src !== noPhotoPlaceholderUrl) img.src = noPhotoPlaceholderUrl }} />
                         <div className="entry-rank-circle">#{friendRankById.get(entry.id) || 0}</div>
                       </div>
                       <div className="flex-grow-1">
