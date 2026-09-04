@@ -65,6 +65,77 @@ function bodyProfileLabel(body: string) {
   return opt ? opt.label : ''
 }
 
+function BodyInfoIcon() {
+  const [open, setOpen] = useState(false)
+  useEffect(() => {
+    if (!open) return
+    const onDoc = (e: Event) => {
+      const target = e.target as HTMLElement | null
+      if (target && target.closest('[data-body-info-root]')) return
+      setOpen(false)
+    }
+    document.addEventListener('click', onDoc)
+    return () => document.removeEventListener('click', onDoc)
+  }, [open])
+  return (
+    <span data-body-info-root style={{ position: 'relative', display: 'inline-flex' }}>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); setOpen((v) => !v) }}
+        aria-label="What is matcha body?"
+        aria-expanded={open}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '1.15rem',
+          height: '1.15rem',
+          borderRadius: '50%',
+          background: '#e9ecef',
+          color: '#495057',
+          fontSize: '0.75rem',
+          fontWeight: 700,
+          border: '1px solid #ced4da',
+          padding: 0,
+          lineHeight: 1,
+          cursor: 'pointer',
+          fontStyle: 'italic',
+          fontFamily: 'Georgia, serif'
+        }}
+      >
+        i
+      </button>
+      {open && (
+        <span
+          role="tooltip"
+          style={{
+            position: 'absolute',
+            top: 'calc(100% + 6px)',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: '#212529',
+            color: '#fff',
+            padding: '0.5rem 0.65rem',
+            borderRadius: '0.4rem',
+            fontSize: '0.75rem',
+            fontWeight: 400,
+            lineHeight: 1.35,
+            width: 'max-content',
+            maxWidth: 'min(240px, 80vw)',
+            whiteSpace: 'normal',
+            textAlign: 'left',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            zIndex: 2000,
+            pointerEvents: 'none'
+          }}
+        >
+          The body of a matcha is how thick and heavy it feels on the tongue.
+        </span>
+      )}
+    </span>
+  )
+}
+
 type Page = 'home' | 'friends' | 'explore'
 type ExplorePlace = {
   rank: number
@@ -3111,26 +3182,7 @@ function App() {
 
               <label className="form-label fw-semibold mb-2 text-success d-inline-flex align-items-center gap-2">
                 Matcha body preference
-                <span
-                  title="The body of a matcha is how thick and heavy it feels on the tongue. Pick the mouthfeel you gravitate toward."
-                  aria-label="What is matcha body?"
-                  role="img"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '1.1rem',
-                    height: '1.1rem',
-                    borderRadius: '50%',
-                    background: '#e9ecef',
-                    color: '#495057',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    cursor: 'help'
-                  }}
-                >
-                  i
-                </span>
+                <BodyInfoIcon />
               </label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 {BODY_PROFILE_OPTIONS.map((opt) => {
@@ -3788,26 +3840,7 @@ function App() {
               <div className="mb-3">
                 <label className="form-label fw-semibold d-inline-flex align-items-center gap-2">
                   Matcha body profile
-                  <span
-                    title="The body of a matcha is how thick and heavy it feels on the tongue. Pick the one that best matches this cup."
-                    aria-label="What is matcha body?"
-                    role="img"
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '1.1rem',
-                      height: '1.1rem',
-                      borderRadius: '50%',
-                      background: '#e9ecef',
-                      color: '#495057',
-                      fontSize: '0.75rem',
-                      fontWeight: 700,
-                      cursor: 'help'
-                    }}
-                  >
-                    i
-                  </span>
+                  <BodyInfoIcon />
                 </label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', placeItems: 'center', marginTop: '0.5rem' }}>
                   {BODY_PROFILE_OPTIONS.map((opt) => {
