@@ -3,7 +3,6 @@ import type { ChangeEvent, MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useGoogleLogin } from '@react-oauth/google'
 import * as Sentry from '@sentry/react'
-import * as tf from '@tensorflow/tfjs'
 import confetti from 'canvas-confetti'
 import './App.css'
 
@@ -99,11 +98,6 @@ const noPhotoPlaceholderUrl = `data:image/svg+xml;charset=UTF-8,${encodeURICompo
   </svg>
 `)}`
 
-const drinkAreaModelConfig = {
-  modelUrl: `${import.meta.env.BASE_URL}ml/drink-area/model.json`,
-  inputSize: 224,
-  maskThreshold: 0.1
-}
 const FULL_GREENNESS_WEIGHT = 1
 const LOW_RATING_GREENNESS_WEIGHT = 0.8
 const API_REQUEST_TIMEOUT_MS = 20000
@@ -148,7 +142,7 @@ function compareEntriesForRank(a: RatingEntry, b: RatingEntry) {
 }
 
 let randomForestModel: any = null
-let randomForestPromise: Promise<any> = null
+let randomForestPromise: Promise<any> | null = null
 
 async function loadRandomForest() {
   if (randomForestModel) return randomForestModel
@@ -185,7 +179,7 @@ function predictTreeNode(node: any, features: number[]): number {
 function predictRandomForest(features: number[], forest: any): number {
   const predictions = forest.trees.map((tree: any) => predictTreeNode(tree, features))
   const votes = [0, 0]
-  predictions.forEach(p => votes[p]++)
+  predictions.forEach((p: number) => votes[p]++)
   return votes[1] > votes[0] ? 1 : 0
 }
 
@@ -287,7 +281,7 @@ async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResul
 
   return {
     region: {
-      source: 'ml-forest',
+      source: 'ml-mask',
       contains(x: number, y: number) {
         const idx = y * img.width + x
         return maskPixels[idx] > 128
@@ -922,7 +916,7 @@ function App() {
           setWelcomeMessage(response.userName)
           setVerifiedAccountName(null)
           setTimeout(() => setWelcomeMessage(''), 1500)
-          void loadDrinkAreaModel().catch(() => undefined)
+          void loadRandomForest().catch(() => undefined)
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error)
           try {
@@ -1004,7 +998,7 @@ function App() {
             setRequiresManualName(false)
             setIsUserReady(true)
           }
-          void loadDrinkAreaModel().catch(() => undefined)
+          void loadRandomForest().catch(() => undefined)
           return
         }
 
@@ -1058,7 +1052,7 @@ function App() {
           sessionStorage.setItem('justSignedUp', 'true')
           setIsUserReady(true)
           window.history.replaceState({}, document.title, window.location.pathname)
-          void loadDrinkAreaModel().catch(() => undefined)
+          void loadRandomForest().catch(() => undefined)
         } catch (error) {
           setAuthError(error instanceof Error ? error.message : 'Magic link verification failed')
           window.history.replaceState({}, document.title, window.location.pathname)
@@ -2105,7 +2099,7 @@ function App() {
                     setIsUserReady(true)
                     setWelcomeMessage(response.userName)
                     setTimeout(() => setWelcomeMessage(''), 1500)
-                    void loadDrinkAreaModel().catch(() => undefined)
+                    void loadRandomForest().catch(() => undefined)
                   } catch (error) {
                     setAuthError(error instanceof Error ? error.message : 'Account linking failed')
                   } finally {
@@ -2325,7 +2319,7 @@ function App() {
                   setWelcomeMessage(response.userName)
                   setPendingUserName('')
                   setTimeout(() => setWelcomeMessage(''), 1500)
-                  void loadDrinkAreaModel().catch(() => undefined)
+                  void loadRandomForest().catch(() => undefined)
                 } catch (error) {
                   setAuthError(error instanceof Error ? error.message : 'Failed to create account')
                 } finally {
