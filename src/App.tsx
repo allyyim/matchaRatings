@@ -1703,6 +1703,7 @@ function App() {
   const hasAutoPromptedPrefsRef = useRef(false)
   useEffect(() => {
     if (
+      activePage === 'explore' &&
       communityActiveTab === 'recommendations' &&
       isUserReady &&
       userFlavors.length === 0 &&
@@ -1712,7 +1713,7 @@ function App() {
       setIsProfileDrawerOpen(true)
       setIsPreferencesModalOpen(true)
     }
-  }, [communityActiveTab, isUserReady, userFlavors.length])
+  }, [activePage, communityActiveTab, isUserReady, userFlavors.length])
 
   function updateRatingFromClick(starIndex: number, event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
