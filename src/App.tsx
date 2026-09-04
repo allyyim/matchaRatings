@@ -152,18 +152,29 @@ let drinkAreaModelPromise: Promise<tf.GraphModel | tf.LayersModel | null> | null
 
 async function loadDrinkAreaModel(): Promise<tf.GraphModel | tf.LayersModel | null> {
   if (drinkAreaModelPromise) {
+    console.log('DEBUG: Returning cached model promise')
     return drinkAreaModelPromise
   }
 
+  console.log(`DEBUG: Loading model from ${drinkAreaModelConfig.modelUrl}`)
+
   drinkAreaModelPromise = (async () => {
     try {
+      console.log('DEBUG: Trying tf.loadGraphModel...')
+      const model = await tf.loadGraphModel(drinkAreaModelConfig.modelUrl)
+      console.log('DEBUG: GraphModel loaded successfully!', model)
+      return model
+    } catch (graphError) {
+      console.log('DEBUG: GraphModel failed:', graphError)
       try {
-        return await tf.loadGraphModel(drinkAreaModelConfig.modelUrl)
-      } catch {
-        return await tf.loadLayersModel(drinkAreaModelConfig.modelUrl)
+        console.log('DEBUG: Trying tf.loadLayersModel...')
+        const model = await tf.loadLayersModel(drinkAreaModelConfig.modelUrl)
+        console.log('DEBUG: LayersModel loaded successfully!', model)
+        return model
+      } catch (layersError) {
+        console.log('DEBUG: LayersModel also failed:', layersError)
+        return null
       }
-    } catch {
-      return null
     }
   })()
 
@@ -199,10 +210,12 @@ function normalizeMaskTensor(rawPrediction: tf.Tensor | tf.Tensor[]): tf.Tensor2
 
 async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResult> {
   const fallbackRegion = createFallbackRegion(img.width, img.height)
+  console.log('DEBUG: detectDrinkAreaRegion called, img size:', img.width, 'x', img.height)
+
   const model = await loadDrinkAreaModel()
 
   if (!model) {
-    console.log('ML: Model not found')
+    console.log('DEBUG: Model load failed - returning fallback')
     return {
       region: fallbackRegion,
       statusMessage: 'ML model not found. Using heuristic drink area.',
@@ -211,24 +224,34 @@ async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResul
     }
   }
 
-  console.log('ML: Model loaded, running inference...')
+  console.log('DEBUG: Model loaded, running inference...')
   const inputTensor = tf.tidy(() => {
+    console.log('DEBUG: Creating input tensor...')
     const pixels = tf.browser.fromPixels(img)
+    console.log('DEBUG: pixels shape:', pixels.shape)
     const resized = tf.image.resizeBilinear(pixels, [drinkAreaModelConfig.inputSize, drinkAreaModelConfig.inputSize])
-    return resized.toFloat().div(255).expandDims(0)
+    console.log('DEBUG: resized shape:', resized.shape)
+    const normalized = resized.toFloat().div(255)
+    console.log('DEBUG: normalized shape:', normalized.shape)
+    return normalized.expandDims(0)
   })
+
+  console.log('DEBUG: inputTensor shape:', inputTensor.shape)
 
   let maskTensor: tf.Tensor2D | null = null
   try {
+    console.log('DEBUG: Running model.predict...')
     const rawPrediction = model.predict(inputTensor) as tf.Tensor | tf.Tensor[]
+    console.log('DEBUG: Raw prediction:', rawPrediction)
     maskTensor = normalizeMaskTensor(rawPrediction)
+    console.log('DEBUG: Mask tensor shape:', maskTensor?.shape)
     if (Array.isArray(rawPrediction)) {
       rawPrediction.forEach((tensor) => tensor.dispose())
     } else {
       rawPrediction.dispose()
     }
   } catch (e) {
-    console.log('ML: Inference error', e)
+    console.log('DEBUG: Inference error:', e)
     inputTensor.dispose()
     return {
       region: fallbackRegion,
@@ -241,7 +264,7 @@ async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResul
   inputTensor.dispose()
 
   if (!maskTensor) {
-    console.log('ML: maskTensor is null after normalization')
+    console.log('DEBUG: maskTensor is null')
     return {
       region: fallbackRegion,
       statusMessage: 'ML output was incompatible. Using heuristic drink area.',
@@ -256,6 +279,8 @@ async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResul
     return resized.squeeze() as tf.Tensor2D
   })
   const maskValues = await resizedMask.data()
+  console.log('DEBUG: maskValues length:', maskValues.length)
+
   maskTensor.dispose()
   resizedMask.dispose()
 
@@ -272,7 +297,7 @@ async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResul
     }
   }
 
-  console.log(`ML: maskValues range [${minVal.toFixed(4)}, ${maxVal.toFixed(4)}], activePixels=${activePixels}/${maskValues.length}`)
+  console.log(`DEBUG: maskValues range [${minVal.toFixed(4)}, ${maxVal.toFixed(4)}], threshold=${drinkAreaModelConfig.maskThreshold}, activePixels=${activePixels}/${maskValues.length}`)
 
   if (!activePixels) {
     return {
@@ -285,6 +310,8 @@ async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResul
 
   const coveragePercent = (activePixels / maskValues.length) * 100
   const confidencePercent = (activeConfidenceSum / activePixels) * 100
+
+  console.log(`DEBUG: ML detected drink area! Coverage: ${coveragePercent.toFixed(1)}%, Confidence: ${confidencePercent.toFixed(1)}%`)
 
   return {
     region: {
