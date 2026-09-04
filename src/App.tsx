@@ -104,8 +104,6 @@ const drinkAreaModelConfig = {
   inputSize: 224,
   maskThreshold: 0.1
 }
-
-const LOW_RATING_GREENNESS_WEIGHT = 0.8
 const FULL_GREENNESS_WEIGHT = 1
 const API_REQUEST_TIMEOUT_MS = 20000
 const IMAGE_PROCESS_TIMEOUT_MS = 15000
@@ -204,17 +202,6 @@ function createFallbackRegion(width: number, height: number): DrinkRegion {
       return dx * dx + dy * dy <= radiusSquared
     }
   }
-}
-
-function normalizeMaskTensor(rawPrediction: tf.Tensor | tf.Tensor[]): tf.Tensor2D | null {
-  const prediction = Array.isArray(rawPrediction) ? rawPrediction[0] : rawPrediction
-  const squeezed = prediction.squeeze()
-  if (squeezed.rank !== 2) {
-    squeezed.dispose()
-    return null
-  }
-
-  return squeezed as tf.Tensor2D
 }
 
 async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResult> {
