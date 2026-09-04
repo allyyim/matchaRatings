@@ -30,13 +30,11 @@
   100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
 }
 
-@keyframes floatBounce {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-8px); }
-}
-
-.matcha-logo {
-  animation: floatBounce 3s ease-in-out infinite;
+.auth-logo {
+  width: 5rem;
+  height: 5rem;
+  object-fit: contain;
+  margin-bottom: 1rem;
 }
 
 .welcome-toast {

@@ -1938,7 +1938,11 @@ function App() {
           <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
             <div className="card-body p-3 p-md-4">
               <div className="text-center mb-4">
-                <div className="matcha-logo" style={{ fontSize: '4rem', marginBottom: '1rem', display: 'inline-block' }}>🍵</div>
+                <img
+                  className="auth-logo"
+                  src={`${import.meta.env.BASE_URL}icon-192.png`}
+                  alt="Matcha tea"
+                />
                 <h1 className="h3 fw-bold text-success mb-2">Sip &amp; Score</h1>
                 <p className="text-muted small">Track your matcha journey, one sip at a time</p>
               </div>
