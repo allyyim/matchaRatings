@@ -1517,17 +1517,12 @@ function App() {
   }, [isUserReady, currentUserName])
 
   function updateRatingFromClick(starIndex: number, event: MouseEvent<HTMLButtonElement>) {
-    const bounds = event.currentTarget.getBoundingClientRect()
-    const clickX = event.clientX - bounds.left
-    const step = clickX < bounds.width / 2 ? 0.5 : 1
-    setCurrentRating((starIndex - 1) + step)
+    event.preventDefault()
+    setCurrentRating((prev) => (Math.round(prev) === starIndex ? 0 : starIndex))
   }
 
-  function getRatingFromPointer(starIndex: number, clientX: number, target: HTMLButtonElement) {
-    const bounds = target.getBoundingClientRect()
-    const pointerX = clientX - bounds.left
-    const step = pointerX < bounds.width / 2 ? 0.5 : 1
-    return (starIndex - 1) + step
+  function getRatingFromPointer(starIndex: number, _clientX: number, _target: HTMLButtonElement) {
+    return starIndex
   }
 
   function handleCurrentRatingPointer(starIndex: number, event: React.PointerEvent<HTMLButtonElement>) {
@@ -1632,8 +1627,8 @@ function App() {
       return
     }
 
-    if (currentRating < 0 || currentRating > 5) {
-      alert('Rating must be between 0 and 5 stars.')
+    if (currentRating <= 0 || currentRating > 5) {
+      alert('Please tap a star to rate before saving.')
       return
     }
 
@@ -1815,6 +1810,11 @@ function App() {
   async function saveEntryEdit(entryId: number) {
     if (!currentUserName) {
       alert('Unable to save without a user session.')
+      return
+    }
+
+    if (editRating <= 0 || editRating > 5) {
+      alert('Please tap a star to rate before saving.')
       return
     }
 
@@ -2403,7 +2403,7 @@ function App() {
                 <div className="onboarding-slide">
                   <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📊</div>
                   <h2 className="fw-bold text-success mb-3">Track Your Metrics</h2>
-                  <p className="text-muted mb-4">See quality scores, ratings, and total scores. Watch your personal statistics grow as you explore.</p>
+                  <p className="text-muted mb-4">See greenness scores, ratings, and total scores. Watch your personal statistics grow as you explore.</p>
                 </div>
               )}
               {currentOnboardingSlide === 3 && (
@@ -2527,9 +2527,9 @@ function App() {
                           <div className="small text-muted mb-1">{entry.location || selectedExplorePlaceName}</div>
                           <div className="entry-metrics">
                             <div className="fw-bold mb-2">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
-                            <div className="mb-2">Quality: {entry.greenness.toFixed(1)} / 100.0</div>
-                            <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
-                            <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha quality: {entry.greenness.toFixed(1)} / 100.0</div>
+                            <div className="mb-2">Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                            <div className="fw-bold mb-2">Total score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(0)}%</div>
+                            <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                             {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
                                 {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
@@ -2623,7 +2623,7 @@ function App() {
                     setIsMyRatingsFilterOpen(false)
                   }}
                 >
-                  Matcha quality
+                  Greenness score
                 </button>
                 <button
                   type="button"
@@ -2677,7 +2677,7 @@ function App() {
                     setIsFriendFilterOpen(false)
                   }}
                 >
-                  Matcha quality
+                  Greenness score
                 </button>
                 <button
                   type="button"
@@ -3075,7 +3075,7 @@ function App() {
                 <strong>Account Information:</strong> Email address, username, and password (encrypted).
               </p>
               <p className="text-muted mb-2">
-                <strong>Rating Data:</strong> Matcha ratings, taste scores (1-5), quality ratings (1-100), photos, location data, and tasting notes.
+                <strong>Rating Data:</strong> Matcha ratings, taste scores (1-5), greenness ratings (1-100), photos, location data, and tasting notes.
               </p>
               <p className="text-muted mb-3">
                 <strong>Preferences:</strong> Flavor preferences and matcha profile selections.
@@ -3159,10 +3159,8 @@ function App() {
                         className="star"
                         onClick={(event) => {
                           event.stopPropagation()
-                          const bounds = event.currentTarget.getBoundingClientRect()
-                          const clickX = event.clientX - bounds.left
-                          const step = clickX < bounds.width / 2 ? 0.5 : 1
-                          setEditRating((starIndex - 1) + step)
+                          event.preventDefault()
+                          setEditRating((prev) => (Math.round(prev) === starIndex ? 0 : starIndex))
                         }}
                         onPointerDown={(event) => {
                           event.stopPropagation()
@@ -3188,16 +3186,7 @@ function App() {
                     )
                   })}
                 </div>
-                <button
-                  type="button"
-                  className="btn btn-outline-secondary btn-sm"
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    setEditRating(0)
-                  }}
-                >
-                  Clear rating
-                </button>
+                <div className="text-center small text-muted mt-2">Tap a star to rate. Tap the same star again to clear.</div>
               </div>
 
               <div style={{ marginBottom: '1.5rem' }}>
@@ -3405,7 +3394,7 @@ function App() {
               
               <center> 
               <div className="mb-3 text-success fw-semibold">
-                {matchaGreenness !== null ? `Matcha quality: ${matchaGreenness.toFixed(1)}/100` : 'Matcha quality score pending'}
+                {matchaGreenness !== null ? `Matcha Greenness: ${matchaGreenness.toFixed(1)}/100` : 'How green is your matcha?'}
               </div>
               </center>
 
@@ -3598,8 +3587,8 @@ function App() {
                           <span className="text-muted small">{entry.date}</span>
                         </div>
                         <div className="entry-metrics">
-                          <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
-                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha quality: {entry.greenness.toFixed(1)} / 100.0</div>
+                          <div className="fw-bold mb-2">Total score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(0)}%</div>
+                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
                               {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
@@ -4110,8 +4099,8 @@ function App() {
                           <span className="text-muted small">{entry.date}</span>
                         </div>
                         <div className="entry-metrics">
-                          <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
-                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha quality: {entry.greenness.toFixed(1)} / 100.0</div>
+                          <div className="fw-bold mb-2">Total score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(0)}%</div>
+                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
                               {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
@@ -4240,7 +4229,7 @@ function App() {
                               <div className="fw-semibold text-success">#{place.rank} {place.placeName}</div>
                               <div className="small text-muted">{place.entryCount} entries</div>
                             </div>
-                            <div className="fw-bold">Average score: {place.averageScore.toFixed(1)} / 200</div>
+                            <div className="fw-bold">Average score: {(place.averageScore / 2).toFixed(0)}%</div>
                           </div>
                         </button>
                       ))}
