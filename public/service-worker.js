@@ -59,20 +59,18 @@ async function checkForUpdates() {
 
     if (newVersion !== currentVersion) {
       console.log('App version updated:', currentVersion, '->', newVersion);
-      // Update cache with new files
-      await cache.addAll(urlsToCache);
-      // Also refresh the version.json in cache
-      await cache.delete(VERSION_URL);
-      await cache.add(VERSION_URL);
+      // Silently update cache in background - do NOT notify or reload
+      // This allows users to stay logged in until they manually refresh
+      try {
+        await cache.addAll(urlsToCache);
+        await cache.delete(VERSION_URL);
+        await cache.add(VERSION_URL);
+      } catch (error) {
+        console.log('Cache update failed:', error);
+      }
 
-      // Notify all clients about the update
-      const clients = await self.clients.matchAll();
-      clients.forEach(client => {
-        client.postMessage({
-          type: 'APP_UPDATED',
-          version: newVersion
-        });
-      });
+      // Optional: Log that update is ready, but don't force reload
+      // This gives users time to save work before they refresh manually
     }
   } catch (error) {
     console.log('Update check failed:', error);
