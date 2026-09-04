@@ -1968,7 +1968,11 @@ function App() {
           <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
             <div className="card-body p-3 p-md-4">
               <div className="text-center mb-4">
-                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🍵</div>
+                <img
+                  className="auth-logo"
+                  src={`${import.meta.env.BASE_URL}icon-192.png`}
+                  alt="Matcha tea"
+                />
                 <h1 className="h4 fw-bold text-success mb-1">Welcome back</h1>
               </div>
               <p className="text-muted mb-4 text-center small">
@@ -2003,7 +2007,11 @@ function App() {
           <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
             <div className="card-body p-3 p-md-4">
               <div className="text-center mb-4">
-                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🍵</div>
+                <img
+                  className="auth-logo"
+                  src={`${import.meta.env.BASE_URL}icon-192.png`}
+                  alt="Matcha tea"
+                />
                 <h1 className="h4 fw-bold text-success mb-1">Let's begin</h1>
               </div>
               <p className="text-muted mb-4 text-center small">
