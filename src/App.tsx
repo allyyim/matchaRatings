@@ -148,7 +148,7 @@ function BodyInfoIcon() {
             pointerEvents: 'none'
           }}
         >
-          The Body Of A Matcha Is How Thick And Heavy It Feels On The Tongue.
+          The “body” of matcha refers to the perceived weight, fullness, and texture of the tea in your mouth.
         </span>
       )}
     </span>
