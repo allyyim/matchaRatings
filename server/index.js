@@ -531,7 +531,18 @@ app.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
       )
 
       if (emailExists.rowCount > 0) {
-        // Link existing email account to this Google ID
+        // Email already exists - only allow if user explicitly confirms via confirmedUserName
+        // Do NOT auto-link new users to existing accounts
+        if (!confirmedUserName) {
+          const existingUserName = emailExists.rows[0].user_name
+          return res.status(400).json({
+            error: 'Email already linked to existing account',
+            potentialAccounts: [existingUserName],
+            isExistingEmail: true
+          })
+        }
+
+        // If confirmed, link to existing account
         const existingUserName = emailExists.rows[0].user_name
         await pool.query(
           'UPDATE accounts SET google_id = $1 WHERE email = $2',
