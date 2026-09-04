@@ -2638,10 +2638,10 @@ function App() {
                                       className="badge"
                                       style={{
                                         fontSize: '0.65rem',
-                                        background: 'linear-gradient(135deg, rgba(32, 201, 151, 0.3) 0%, rgba(0, 0, 0, 0.3) 100%)',
-                                        backdropFilter: 'blur(10px)',
-                                        border: '1px solid rgba(32, 201, 151, 0.5)',
-                                        color: '#20c997',
+                                        background: '#20c997',
+                                        border: '1px solid #17a589',
+                                        color: '#ffffff',
+                                        fontWeight: '600',
                                         textTransform: 'capitalize',
                                         padding: '0.2rem 0.4rem',
                                         textAlign: 'center',
@@ -2655,7 +2655,7 @@ function App() {
                               </div>
                             )}
                             {getBodyProfile(entry.flavorPreferences) && (
-                              <div className="small text-muted mt-2">Body: <span style={{ textTransform: 'capitalize' }}>{bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
+                              <div className="mt-2"><span className="badge" style={{ background: '#c17a2f', border: '1px solid #a5661f', color: '#ffffff', fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
                             )}
                           </div>
                           {entry.thoughts && <p className="mt-1 mb-0">{entry.thoughts}</p>}
@@ -3354,7 +3354,6 @@ function App() {
 
               <div style={{ marginBottom: '1.5rem' }}>
                 <label className="form-label fw-semibold mb-2 text-success">Flavor profile</label>
-                <div className="small text-muted mb-3">Click bubbles to toggle flavors</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', placeItems: 'center' }}>
                   {FLAVOR_LIST.map((flavor) => {
                     const active = (editFlavorPrefs[flavor] || 0) > 0
@@ -3394,7 +3393,6 @@ function App() {
 
               <div style={{ marginBottom: '1.5rem' }}>
                 <label className="form-label fw-semibold mb-2 text-success">Matcha body profile</label>
-                <div className="small text-muted mb-3">The "body" of a matcha is how thick and heavy it feels on the tongue. Pick the one that best matches this cup.</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', placeItems: 'center' }}>
                   {BODY_PROFILE_OPTIONS.map((opt) => {
                     const active = getBodyProfile(editFlavorPrefs) === opt.value
@@ -3975,10 +3973,10 @@ function App() {
                                     className="badge"
                                     style={{
                                       fontSize: '0.7rem',
-                                      background: 'linear-gradient(135deg, rgba(32, 201, 151, 0.3) 0%, rgba(0, 0, 0, 0.3) 100%)',
-                                      backdropFilter: 'blur(10px)',
-                                      border: '1px solid rgba(32, 201, 151, 0.5)',
-                                      color: '#20c997',
+                                      background: '#20c997',
+                                      border: '1px solid #17a589',
+                                      color: '#ffffff',
+                                      fontWeight: '600',
                                       textTransform: 'capitalize',
                                       padding: '0.25rem 0.5rem',
                                       textAlign: 'center'
@@ -3991,7 +3989,7 @@ function App() {
                             </div>
                           )}
                           {getBodyProfile(entry.flavorPreferences) && (
-                            <div className="small text-muted mt-2">Body: <span style={{ textTransform: 'capitalize' }}>{bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
+                            <div className="mt-2"><span className="badge" style={{ background: '#c17a2f', border: '1px solid #a5661f', color: '#ffffff', fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
                           )}
                         </div>
                         {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
@@ -4522,10 +4520,10 @@ function App() {
                                     className="badge"
                                     style={{
                                       fontSize: '0.7rem',
-                                      background: 'linear-gradient(135deg, rgba(32, 201, 151, 0.3) 0%, rgba(0, 0, 0, 0.3) 100%)',
-                                      backdropFilter: 'blur(10px)',
-                                      border: '1px solid rgba(32, 201, 151, 0.5)',
-                                      color: '#20c997',
+                                      background: '#20c997',
+                                      border: '1px solid #17a589',
+                                      color: '#ffffff',
+                                      fontWeight: '600',
                                       textTransform: 'capitalize',
                                       padding: '0.25rem 0.5rem',
                                       textAlign: 'center'
@@ -4538,7 +4536,7 @@ function App() {
                             </div>
                           )}
                           {getBodyProfile(entry.flavorPreferences) && (
-                            <div className="small text-muted mt-2">Body: <span style={{ textTransform: 'capitalize' }}>{bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
+                            <div className="mt-2"><span className="badge" style={{ background: '#c17a2f', border: '1px solid #a5661f', color: '#ffffff', fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
                           )}
                         </div>
                         {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
