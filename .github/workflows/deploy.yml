@@ -21,6 +21,20 @@ jobs:
 
       - run: npm install
 
+      - name: Stamp service worker and version.json with commit SHA
+        shell: bash
+        run: |
+          SHA="${GITHUB_SHA::12}"
+          echo "Stamping cache version: $SHA"
+          # Rewrite the CACHE_NAME line in the service worker
+          sed -i "s|const CACHE_NAME = 'sip-score-cache-[^']*';|const CACHE_NAME = 'sip-score-cache-${SHA}';|" public/service-worker.js
+          # Rewrite version.json so the SW's checkForUpdates() sees a new version
+          printf '{\n  "version": "%s"\n}\n' "$SHA" > public/version.json
+          echo "--- service-worker.js CACHE_NAME line ---"
+          grep "CACHE_NAME =" public/service-worker.js | head -n 1
+          echo "--- version.json ---"
+          cat public/version.json
+
       - run: npm run build
 
       - uses: actions/upload-pages-artifact@v3

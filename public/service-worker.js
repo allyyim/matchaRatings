@@ -1,4 +1,7 @@
-const CACHE_NAME = 'sip-score-cache-v6';
+// CACHE_NAME is rewritten at deploy time by .github/workflows/deploy.yml
+// to the current git commit SHA so every push invalidates the cache and
+// triggers an auto-reload in the PWA.
+const CACHE_NAME = 'sip-score-cache-dev';
 const urlsToCache = [
   '/',
   '/index.html',
