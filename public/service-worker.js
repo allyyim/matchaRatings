@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sip-score-cache-v4';
+const CACHE_NAME = 'sip-score-cache-v5';
 const urlsToCache = [
   '/',
   '/index.html',
