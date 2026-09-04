@@ -32,7 +32,7 @@ type RatingEntry = {
   flavorPreferences?: Record<string, number>
 }
 
-const FLAVOR_LIST = ['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy', 'Chocolatey', 'mellow', 'bitter'] as const
+const FLAVOR_LIST = ['Chocolatey', 'nutty', 'sweet', 'sugary', 'creamy', 'umami', 'earthy', 'vegetal', 'floral', 'astringent', 'bitter', 'mellow'] as const
 const BODY_PROFILE_OPTIONS: Array<{ value: 'full-bodied' | 'medium' | 'milky'; label: string; desc: string }> = [
   { value: 'full-bodied', label: 'Full-bodied', desc: 'Rich, thick, and coats the tongue — a bold matcha-forward mouthfeel.' },
   { value: 'medium', label: 'Medium', desc: 'Balanced weight and creaminess — not too heavy, not too light.' },
@@ -814,6 +814,7 @@ function App() {
   const locationLookupInFlightRef = useRef<Map<string, Promise<string[]>>>(new Map())
   const [thoughts, setThoughts] = useState('')
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false)
+  const [isEditNotesModalOpen, setIsEditNotesModalOpen] = useState(false)
   const [isNewLogOpen, setIsNewLogOpen] = useState(false)
   const [milestoneMessage, setMilestoneMessage] = useState('')
   const [photoDataUrl, setPhotoDataUrl] = useState('')
@@ -3035,6 +3036,45 @@ function App() {
         document.body
       )}
 
+      {isEditNotesModalOpen && createPortal(
+        <div className="notes-modal-overlay" role="dialog" aria-modal="true" aria-label="Edit notes">
+          <div className="notes-modal card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
+            <div className="notes-modal-header d-flex align-items-center p-4 border-bottom" style={{ flexWrap: 'nowrap' }}>
+              <h3 className="h5 fw-bold text-success mb-0" style={{ flexShrink: 0 }}>Your thoughts...</h3>
+              <button
+                type="button"
+                className="close-btn"
+                onClick={() => setIsEditNotesModalOpen(false)}
+                aria-label="Close notes"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="notes-modal-body p-4">
+              <p className="small text-muted mb-3">What stood out about this matcha? Flavor, texture, experience...</p>
+              <textarea
+                className="form-control"
+                rows={10}
+                placeholder="Share your thoughts..."
+                value={editThoughts}
+                onChange={(event) => setEditThoughts(event.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className="notes-modal-footer p-4 border-top d-flex gap-2">
+              <button
+                type="button"
+                className="btn btn-success flex-grow-1"
+                onClick={() => setIsEditNotesModalOpen(false)}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
       {isProfileDrawerOpen && createPortal(
         <>
           <div
@@ -3547,13 +3587,25 @@ function App() {
 
               <div style={{ marginBottom: '1.5rem' }}>
                 <label className="form-label fw-semibold mb-2 text-success">Notes</label>
-                <textarea
-                  className="form-control"
-                  rows={5}
-                  value={editThoughts}
-                  onChange={(event) => setEditThoughts(event.target.value)}
-                  placeholder="Your thoughts..."
-                />
+                <button
+                  type="button"
+                  className="btn btn-link text-start text-muted p-0 d-flex align-items-start gap-2 w-100"
+                  onClick={() => setIsEditNotesModalOpen(true)}
+                  style={{ textDecoration: 'none' }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                  </svg>
+                  {editThoughts.trim() ? (
+                    <span className="flex-grow-1" style={{ whiteSpace: 'normal', textAlign: 'left', color: '#212529' }}>
+                      {editThoughts.trim()}
+                    </span>
+                  ) : (
+                    <span className="flex-grow-1" style={{ whiteSpace: 'nowrap' }}>Edit notes</span>
+                  )}
+                  <span className="text-muted" style={{ flexShrink: 0 }}>›</span>
+                </button>
               </div>
             </div>
             <div className="card-footer bg-white border-top p-4 d-flex gap-2">
@@ -4787,19 +4839,26 @@ function App() {
                   {exploreUsers.length > 0 && (
                     <div className="d-flex flex-column gap-2">
                       {exploreUsers.map((user, index) => (
-                        <article key={`${user.userName}-${index}`} className="card border-0 shadow-sm">
+                        <article
+                          key={`${user.userName}-${index}`}
+                          className="card border-0 shadow-sm"
+                          role="button"
+                          tabIndex={0}
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => void openFriendModal(user.userName)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault()
+                              void openFriendModal(user.userName)
+                            }
+                          }}
+                        >
                           <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
                             <div className="fw-semibold">
                               #{index + 1}{' '}
-                              <button
-                                type="button"
-                                className="explore-user-link"
-                                onClick={() => {
-                                  void openFriendModal(user.userName)
-                                }}
-                              >
+                              <span className="explore-user-link">
                                 {user.userName}
-                              </button>
+                              </span>
                             </div>
                             <div className="d-flex gap-3 align-items-center">
                               <div className="text-success fw-bold">{user.placeCount}</div>
@@ -4807,7 +4866,8 @@ function App() {
                                 type="button"
                                 className="btn btn-link btn-sm text-muted p-0"
                                 style={{ textDecoration: 'none' }}
-                                onClick={async () => {
+                                onClick={async (event) => {
+                                  event.stopPropagation()
                                   const isFollowing = followingSet.has(user.userName)
                                   try {
                                     if (isFollowing) {
