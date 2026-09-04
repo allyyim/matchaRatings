@@ -3151,7 +3151,8 @@ function App() {
             </div>
 
             <div style={{ padding: '1rem', overflowY: 'auto', flex: 1 }}>
-              <label className="form-label fw-semibold mb-2 text-success">Flavor preferences</label>
+              <label className="form-label fw-semibold mb-2 text-success">Your Matcha preferences</label>
+              <div className="text-muted small mb-2" style={{ fontSize: '0.75rem' }}>Flavors</div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
                 {['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'creamy', 'floral', 'earthy', 'Chocolatey', 'mellow'].map((flavor) => (
                   <button
@@ -3166,7 +3167,7 @@ function App() {
                       background: userFlavors.includes(flavor)
                         ? '#0d4f4a'
                         : 'linear-gradient(135deg, #d4ede9 0%, #e0f3f0 100%)',
-                      color: userFlavors.includes(flavor) ? '#4dd0c1' : '#6b9e95',
+                      color: userFlavors.includes(flavor) ? '#ffffff' : '#6b9e95',
                       fontWeight: userFlavors.includes(flavor) ? '600' : '500',
                       cursor: 'pointer'
                     }}
@@ -3180,10 +3181,10 @@ function App() {
                 ))}
               </div>
 
-              <label className="form-label fw-semibold mb-2 text-success d-inline-flex align-items-center gap-2">
-                Matcha body preference
+              <div className="text-muted small mb-2 d-inline-flex align-items-center gap-2" style={{ fontSize: '0.75rem' }}>
+                Body
                 <BodyInfoIcon />
-              </label>
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginBottom: '0.75rem' }}>
                 {BODY_PROFILE_OPTIONS.map((opt) => {
                   const active = userBodyPref === opt.value
@@ -3198,7 +3199,7 @@ function App() {
                         borderRadius: '0.5rem',
                         border: '1px solid ' + (active ? 'rgba(0, 150, 136, 0.5)' : 'rgba(176, 222, 214, 0.3)'),
                         background: active ? '#0d4f4a' : 'linear-gradient(135deg, #d4ede9 0%, #e0f3f0 100%)',
-                        color: active ? '#4dd0c1' : '#6b9e95',
+                        color: active ? '#ffffff' : '#6b9e95',
                         fontWeight: active ? '600' : '500',
                         cursor: 'pointer'
                       }}
@@ -4495,7 +4496,7 @@ function App() {
                                             <p className="text-muted mb-2">Featured flavors:</p>
                                             <div className="d-flex flex-wrap gap-1">
                                               {cleanFlavors.map((flavor) => (
-                                                <span key={flavor} className="badge bg-light text-dark" style={{ fontSize: '0.7rem', textTransform: 'capitalize' }}>
+                                                <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: '#20c997', color: '#ffffff', fontWeight: 700, padding: '0.3rem 0.55rem' }}>
                                                   {flavor}
                                                 </span>
                                               ))}
