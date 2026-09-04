@@ -735,9 +735,9 @@ function App() {
   const [isMagicLinkSent, setIsMagicLinkSent] = useState(false)
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false)
   const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false)
-  const [isChangeEmailDrawerOpen, setIsChangeEmailDrawerOpen] = useState(false)
+
   const [isPrivacyPolicyModalOpen, setIsPrivacyPolicyModalOpen] = useState(false)
-  const [newEmail, setNewEmail] = useState('')
+
   const [userFlavors, setUserFlavors] = useState<string[]>([])
   const [likedRatingsSet, setLikedRatingsSet] = useState<Set<number>>(new Set())
   const [followingSet, setFollowingSet] = useState<Set<string>>(new Set())
@@ -1936,7 +1936,7 @@ function App() {
                 <p className="text-muted small">Track your matcha journey, one sip at a time</p>
               </div>
               <p className="text-muted mb-4 text-center small">
-                Whether you're a matcha enthusiant or just starting, let's rate every tea experience together.
+                Whether you're a matcha enthusiast or just starting, let's rate every tea experience together.
               </p>
               <button
                 type="button"
@@ -2403,7 +2403,7 @@ function App() {
                 <div className="onboarding-slide">
                   <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📊</div>
                   <h2 className="fw-bold text-success mb-3">Track Your Metrics</h2>
-                  <p className="text-muted mb-4">See greenness scores, ratings, and total scores. Watch your personal statistics grow as you explore.</p>
+                  <p className="text-muted mb-4">See quality scores, ratings, and total scores. Watch your personal statistics grow as you explore.</p>
                 </div>
               )}
               {currentOnboardingSlide === 3 && (
@@ -2527,9 +2527,9 @@ function App() {
                           <div className="small text-muted mb-1">{entry.location || selectedExplorePlaceName}</div>
                           <div className="entry-metrics">
                             <div className="fw-bold mb-2">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
-                            <div className="mb-2">Greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                            <div className="mb-2">Quality: {entry.greenness.toFixed(1)} / 100.0</div>
                             <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
-                            <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                            <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha quality: {entry.greenness.toFixed(1)} / 100.0</div>
                             {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
                                 {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
@@ -2623,7 +2623,7 @@ function App() {
                     setIsMyRatingsFilterOpen(false)
                   }}
                 >
-                  Greenness score
+                  Matcha quality
                 </button>
                 <button
                   type="button"
@@ -2677,7 +2677,7 @@ function App() {
                     setIsFriendFilterOpen(false)
                   }}
                 >
-                  Greenness score
+                  Matcha quality
                 </button>
                 <button
                   type="button"
@@ -2815,82 +2815,6 @@ function App() {
         document.body
       )}
 
-      {isChangeEmailDrawerOpen && createPortal(
-        <>
-          <div
-            className="modal-overlay"
-            onClick={() => setIsChangeEmailDrawerOpen(false)}
-            style={{ zIndex: 1040 }}
-          />
-          <div
-            className="profile-drawer"
-            style={{
-              position: 'fixed',
-              right: 0,
-              top: 0,
-              height: '100vh',
-              width: '280px',
-              maxWidth: '100vw',
-              backgroundColor: 'white',
-              boxShadow: '-2px 0 8px rgba(0,0,0,0.1)',
-              zIndex: 1050,
-              display: 'flex',
-              flexDirection: 'column'
-            }}
-          >
-            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef' }}>
-              <button
-                type="button"
-                className="close-btn"
-                onClick={() => setIsChangeEmailDrawerOpen(false)}
-                style={{ float: 'right' }}
-              >
-                ✕
-              </button>
-              <h6 className="fw-bold text-success mb-0">Change Email</h6>
-            </div>
-
-            <div style={{ padding: '1rem' }}>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Email Address</label>
-                <input
-                  type="email"
-                  className="form-control"
-                  placeholder="Enter new email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                />
-              </div>
-
-              <button
-                type="button"
-                className="btn btn-success w-100"
-                onClick={async () => {
-                  if (!newEmail.trim()) {
-                    alert('Please enter an email')
-                    return
-                  }
-                  try {
-                    await apiFetch('/account/email', {
-                      method: 'POST',
-                      body: JSON.stringify({ newEmail })
-                    })
-                    setNewEmail('')
-                    setIsChangeEmailDrawerOpen(false)
-                    alert('Email updated!')
-                  } catch (error) {
-                    alert(error instanceof Error ? error.message : 'Failed to update email')
-                  }
-                }}
-              >
-                Save
-              </button>
-            </div>
-          </div>
-        </>,
-        document.body
-      )}
-
       {isProfileDrawerOpen && createPortal(
         <>
           <div
@@ -2924,17 +2848,6 @@ function App() {
                 ✕
               </button>
               <h6 className="fw-bold text-success mb-0">{currentUserName}</h6>
-            </div>
-
-            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
-              <button
-                type="button"
-                className="btn btn-link btn-sm text-start p-0 w-100"
-                onClick={() => setIsChangeEmailDrawerOpen(true)}
-                style={{ textDecoration: 'none', color: '#198754' }}
-              >
-                Change Email
-              </button>
             </div>
 
             <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
@@ -3162,7 +3075,7 @@ function App() {
                 <strong>Account Information:</strong> Email address, username, and password (encrypted).
               </p>
               <p className="text-muted mb-2">
-                <strong>Rating Data:</strong> Matcha ratings, taste scores (1-5), greenness ratings (1-100), photos, location data, and tasting notes.
+                <strong>Rating Data:</strong> Matcha ratings, taste scores (1-5), quality ratings (1-100), photos, location data, and tasting notes.
               </p>
               <p className="text-muted mb-3">
                 <strong>Preferences:</strong> Flavor preferences and matcha profile selections.
@@ -3492,7 +3405,7 @@ function App() {
               
               <center> 
               <div className="mb-3 text-success fw-semibold">
-                {matchaGreenness !== null ? `Matcha Greenness: ${matchaGreenness.toFixed(1)}/100` : 'Matcha Greenness score pending'}
+                {matchaGreenness !== null ? `Matcha quality: ${matchaGreenness.toFixed(1)}/100` : 'Matcha quality score pending'}
               </div>
               </center>
 
@@ -3568,12 +3481,7 @@ function App() {
                     )
                   })}
                 </div>
-                <div className="text-center">
-                  <button type="button" className="btn btn-outline-secondary btn-sm mt-2" onClick={() => setCurrentRating(0)}>
-                    Set 0 stars
-                  </button>
-                  <div className="rating-badge mt-2 text-center">Selected: <span className="rating-value">{currentRating.toFixed(1)}</span> / 5.0</div>
-                </div>
+                <div className="text-center small text-muted mt-2">Tap a star to rate. Tap again to clear.</div>
               </div>
 
               <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
@@ -3691,7 +3599,7 @@ function App() {
                         </div>
                         <div className="entry-metrics">
                           <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
-                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha quality: {entry.greenness.toFixed(1)} / 100.0</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
                               {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
@@ -4203,7 +4111,7 @@ function App() {
                         </div>
                         <div className="entry-metrics">
                           <div className="fw-bold mb-2">Total score: {getWeightedScore(entry.rating, entry.greenness).toFixed(1)} / 200.0</div>
-                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha greenness: {entry.greenness.toFixed(1)} / 100.0</div>
+                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha quality: {entry.greenness.toFixed(1)} / 100.0</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
                               {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
