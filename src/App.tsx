@@ -3840,21 +3840,6 @@ function App() {
                           )}
                         </div>
                         {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
-                        {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
-                          <div className="d-flex flex-wrap gap-1 mt-2">
-                            {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
-                              intensity > 0 ? (
-                                <span
-                                  key={flavor}
-                                  className="badge bg-success"
-                                  style={{ fontSize: '0.75rem', opacity: Math.min(1, intensity / 100 + 0.5), textTransform: 'capitalize' }}
-                                >
-                                  {flavor}
-                                </span>
-                              ) : null
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
                     <div className="entry-actions" onClick={(e) => e.stopPropagation()}>
@@ -4399,21 +4384,6 @@ function App() {
                           )}
                         </div>
                         {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
-                        {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
-                          <div className="d-flex flex-wrap gap-1 mt-2">
-                            {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
-                              intensity > 0 ? (
-                                <span
-                                  key={flavor}
-                                  className="badge bg-success"
-                                  style={{ fontSize: '0.75rem', opacity: Math.min(1, intensity / 100 + 0.5), textTransform: 'capitalize' }}
-                                >
-                                  {flavor}
-                                </span>
-                              ) : null
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
                     <button
