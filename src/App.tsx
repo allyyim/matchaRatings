@@ -32,6 +32,39 @@ type RatingEntry = {
   flavorPreferences?: Record<string, number>
 }
 
+const FLAVOR_LIST = ['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy', 'Chocolatey', 'mellow', 'bitter'] as const
+const BODY_PROFILE_OPTIONS: Array<{ value: 'full-bodied' | 'medium' | 'milky'; label: string; desc: string }> = [
+  { value: 'full-bodied', label: 'Full-bodied', desc: 'Rich, thick, and coats the tongue — a bold matcha-forward mouthfeel.' },
+  { value: 'medium', label: 'Medium', desc: 'Balanced weight and creaminess — not too heavy, not too light.' },
+  { value: 'milky', label: 'Milky', desc: 'Lighter and creamier — milk or foam takes the lead over the matcha.' }
+]
+
+function isKnownFlavor(key: string) {
+  return FLAVOR_LIST.some((f) => f === key)
+}
+
+function getBodyProfile(prefs?: Record<string, number>): '' | 'full-bodied' | 'medium' | 'milky' {
+  if (!prefs) return ''
+  for (const opt of BODY_PROFILE_OPTIONS) {
+    if (Number(prefs[`__body:${opt.value}`]) > 0) return opt.value
+  }
+  return ''
+}
+
+function setBodyProfile(prefs: Record<string, number>, body: '' | 'full-bodied' | 'medium' | 'milky'): Record<string, number> {
+  const next = { ...prefs }
+  for (const opt of BODY_PROFILE_OPTIONS) {
+    delete next[`__body:${opt.value}`]
+  }
+  if (body) next[`__body:${body}`] = 100
+  return next
+}
+
+function bodyProfileLabel(body: string) {
+  const opt = BODY_PROFILE_OPTIONS.find((o) => o.value === body)
+  return opt ? opt.label : ''
+}
+
 type Page = 'home' | 'friends' | 'explore'
 type ExplorePlace = {
   rank: number
@@ -679,7 +712,7 @@ function App() {
   const [verifiedAccountName, setVerifiedAccountName] = useState<string | null>(null)
 
   const [currentRating, setCurrentRating] = useState(0)
-  const [ratingFlavorPrefs, setRatingFlavorPrefs] = useState({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, mellow: 0, bitter: 0 })
+  const [ratingFlavorPrefs, setRatingFlavorPrefs] = useState<Record<string, number>>({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, mellow: 0, bitter: 0 })
   const [location, setLocation] = useState('')
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([])
   const [isLocationLookupPending, setIsLocationLookupPending] = useState(false)
@@ -761,6 +794,13 @@ function App() {
   const [isPrivacyPolicyModalOpen, setIsPrivacyPolicyModalOpen] = useState(false)
 
   const [userFlavors, setUserFlavors] = useState<string[]>([])
+  const [userBodyPref, setUserBodyPref] = useState<'' | 'full-bodied' | 'medium' | 'milky'>(() => {
+    try {
+      const v = localStorage.getItem('matchaBodyPref')
+      if (v === 'full-bodied' || v === 'medium' || v === 'milky') return v
+    } catch { /* ignore */ }
+    return ''
+  })
   const [likedRatingsSet, setLikedRatingsSet] = useState<Set<number>>(new Set())
   const [followingSet, setFollowingSet] = useState<Set<string>>(new Set())
 
@@ -2589,10 +2629,10 @@ function App() {
                             <div className="fw-bold mb-2">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
                             <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
                             <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
-                            {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
+                            {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
                                 {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
-                                  intensity > 0 ? (
+                                  intensity > 0 && isKnownFlavor(flavor) ? (
                                     <span
                                       key={flavor}
                                       className="badge"
@@ -2613,6 +2653,9 @@ function App() {
                                   ) : null
                                 )}
                               </div>
+                            )}
+                            {getBodyProfile(entry.flavorPreferences) && (
+                              <div className="small text-muted mt-2">Body: <span style={{ textTransform: 'capitalize' }}>{bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
                             )}
                           </div>
                           {entry.thoughts && <p className="mt-1 mb-0">{entry.thoughts}</p>}
@@ -3019,7 +3062,7 @@ function App() {
             </div>
 
             <div style={{ padding: '1rem', overflowY: 'auto', flex: 1 }}>
-              <label className="form-label fw-semibold mb-2 text-success">Flavor Preferences</label>
+              <label className="form-label fw-semibold mb-2 text-success">Flavor preferences</label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
                 {['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'creamy', 'floral', 'earthy', 'Chocolatey', 'mellow'].map((flavor) => (
                   <button
@@ -3048,6 +3091,39 @@ function App() {
                 ))}
               </div>
 
+              <label className="form-label fw-semibold mb-2 text-success">Matcha body preference</label>
+              <div className="small text-muted mb-2">The body of a matcha is how thick and heavy it feels on the tongue. Pick the mouthfeel you gravitate toward.</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                {BODY_PROFILE_OPTIONS.map((opt) => {
+                  const active = userBodyPref === opt.value
+                  return (
+                    <button
+                      key={`pref-body-${opt.value}`}
+                      type="button"
+                      title={opt.desc}
+                      style={{
+                        fontSize: '0.8rem',
+                        padding: '0.375rem 0.5rem',
+                        borderRadius: '0.5rem',
+                        border: '1px solid ' + (active ? 'rgba(0, 150, 136, 0.5)' : 'rgba(176, 222, 214, 0.3)'),
+                        background: active ? '#0d4f4a' : 'linear-gradient(135deg, #d4ede9 0%, #e0f3f0 100%)',
+                        color: active ? '#4dd0c1' : '#6b9e95',
+                        fontWeight: active ? '600' : '500',
+                        cursor: 'pointer'
+                      }}
+                      onClick={() => setUserBodyPref(active ? '' : opt.value)}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
+              </div>
+              {userBodyPref && (
+                <div className="small text-muted mb-3" style={{ fontStyle: 'italic' }}>
+                  * {BODY_PROFILE_OPTIONS.find((o) => o.value === userBodyPref)?.desc}
+                </div>
+              )}
+
               <button
                 type="button"
                 className="btn w-100"
@@ -3055,6 +3131,13 @@ function App() {
                   try {
                     setIsPreferencesModalOpen(false)
                     setIsProfileDrawerOpen(false)
+                    try {
+                      if (userBodyPref) {
+                        localStorage.setItem('matchaBodyPref', userBodyPref)
+                      } else {
+                        localStorage.removeItem('matchaBodyPref')
+                      }
+                    } catch { /* ignore */ }
                     const response = await apiFetch('/preferences', {
                       method: 'POST',
                       body: JSON.stringify({
@@ -3270,10 +3353,10 @@ function App() {
               </div>
 
               <div style={{ marginBottom: '1.5rem' }}>
-                <label className="form-label fw-semibold mb-2 text-success">Flavor Profile</label>
+                <label className="form-label fw-semibold mb-2 text-success">Flavor profile</label>
                 <div className="small text-muted mb-3">Click bubbles to toggle flavors</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', placeItems: 'center' }}>
-                  {(['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy', 'Chocolatey', 'mellow', 'bitter'] as const).map((flavor) => {
+                  {FLAVOR_LIST.map((flavor) => {
                     const active = (editFlavorPrefs[flavor] || 0) > 0
                     return (
                       <button
@@ -3307,6 +3390,40 @@ function App() {
                     )
                   })}
                 </div>
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <label className="form-label fw-semibold mb-2 text-success">Matcha body profile</label>
+                <div className="small text-muted mb-3">The "body" of a matcha is how thick and heavy it feels on the tongue. Pick the one that best matches this cup.</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', placeItems: 'center' }}>
+                  {BODY_PROFILE_OPTIONS.map((opt) => {
+                    const active = getBodyProfile(editFlavorPrefs) === opt.value
+                    return (
+                      <button
+                        type="button"
+                        key={`edit-body-${opt.value}`}
+                        onClick={() => setEditFlavorPrefs((prev) => setBodyProfile(prev, active ? '' : opt.value))}
+                        title={opt.desc}
+                        style={{
+                          border: 'none',
+                          background: active ? 'var(--primary-green, #1f5f34)' : '#f1f3f5',
+                          color: active ? 'white' : '#495057',
+                          borderRadius: '999px',
+                          padding: '0.35rem 0.75rem',
+                          fontSize: '0.8rem',
+                          minWidth: '90px'
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    )
+                  })}
+                </div>
+                {getBodyProfile(editFlavorPrefs) && (
+                  <div className="small text-muted mt-2">
+                    {BODY_PROFILE_OPTIONS.find((o) => o.value === getBodyProfile(editFlavorPrefs))?.desc}
+                  </div>
+                )}
               </div>
 
               <div style={{ marginBottom: '1.5rem' }}>
@@ -3599,10 +3716,10 @@ function App() {
               <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
 
               <div className="mb-3">
-                <label className="form-label fw-semibold d-block">Flavor Profile</label>
+                <label className="form-label fw-semibold d-block">Flavor profile</label>
                 <div className="small text-muted mb-3">Click bubbles to toggle flavors</div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', placeItems: 'center' }}>
-                  {(['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent', 'creamy', 'floral', 'earthy', 'Chocolatey', 'mellow', 'bitter'] as const).map((flavor) => {
+                  {FLAVOR_LIST.map((flavor) => {
                     const intensity = ratingFlavorPrefs[flavor]
                     const isActive = intensity > 0
 
@@ -3634,6 +3751,41 @@ function App() {
                     )
                   })}
                 </div>
+              </div>
+
+              <div className="mb-3">
+                <label className="form-label fw-semibold d-block">Matcha body profile</label>
+                <div className="small text-muted mb-3">The "body" of a matcha is how thick and heavy it feels on the tongue. Pick the one that best matches this cup.</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', placeItems: 'center' }}>
+                  {BODY_PROFILE_OPTIONS.map((opt) => {
+                    const active = getBodyProfile(ratingFlavorPrefs) === opt.value
+                    return (
+                      <button
+                        type="button"
+                        key={`new-body-${opt.value}`}
+                        className="btn"
+                        onClick={() => setRatingFlavorPrefs((prev) => setBodyProfile(prev, active ? '' : opt.value))}
+                        title={opt.desc}
+                        style={{
+                          backgroundColor: active ? '#20c997' : '#e9ecef',
+                          color: active ? 'white' : '#666',
+                          border: 'none',
+                          borderRadius: '20px',
+                          padding: '0.3rem 0.7rem',
+                          fontSize: '0.75rem',
+                          minWidth: '95px'
+                        }}
+                      >
+                        {opt.label}
+                      </button>
+                    )
+                  })}
+                </div>
+                {getBodyProfile(ratingFlavorPrefs) && (
+                  <div className="small text-muted mt-2">
+                    {BODY_PROFILE_OPTIONS.find((o) => o.value === getBodyProfile(ratingFlavorPrefs))?.desc}
+                  </div>
+                )}
               </div>
 
               <div className="mb-3">
@@ -3814,10 +3966,10 @@ function App() {
                         <div className="entry-metrics">
                           <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
                           <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
-                          {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
+                          {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
                               {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
-                                intensity > 0 ? (
+                                intensity > 0 && isKnownFlavor(flavor) ? (
                                   <span
                                     key={flavor}
                                     className="badge"
@@ -3837,6 +3989,9 @@ function App() {
                                 ) : null
                               )}
                             </div>
+                          )}
+                          {getBodyProfile(entry.flavorPreferences) && (
+                            <div className="small text-muted mt-2">Body: <span style={{ textTransform: 'capitalize' }}>{bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
                           )}
                         </div>
                         {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
@@ -4358,10 +4513,10 @@ function App() {
                         <div className="entry-metrics">
                           <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
                           <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
-                          {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([_, v]) => v > 0) && (
+                          {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
                               {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
-                                intensity > 0 ? (
+                                intensity > 0 && isKnownFlavor(flavor) ? (
                                   <span
                                     key={flavor}
                                     className="badge"
@@ -4381,6 +4536,9 @@ function App() {
                                 ) : null
                               )}
                             </div>
+                          )}
+                          {getBodyProfile(entry.flavorPreferences) && (
+                            <div className="small text-muted mt-2">Body: <span style={{ textTransform: 'capitalize' }}>{bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
                           )}
                         </div>
                         {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
