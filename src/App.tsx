@@ -3969,8 +3969,9 @@ function App() {
                       <div className="filter-dropdown-menu" role="menu">
                         <div className="filter-dropdown-label">Sort by</div>
                         {[
-                          { value: 'highest' as const, label: 'Overall score' },
-                          { value: 'greenest' as const, label: 'Greenness score' },
+                          { value: 'highest' as const, label: 'Highest to lowest score' },
+                          { value: 'lowest' as const, label: 'Lowest to highest score' },
+                          { value: 'greenest' as const, label: 'Greenness' },
                           { value: 'newest' as const, label: 'Date added' },
                         ].map((opt) => (
                           <button
