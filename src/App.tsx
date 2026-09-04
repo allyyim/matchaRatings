@@ -3,7 +3,6 @@ import type { ChangeEvent, MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useGoogleLogin } from '@react-oauth/google'
 import * as Sentry from '@sentry/react'
-import confetti from 'canvas-confetti'
 import './App.css'
 
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN || ''
@@ -1644,28 +1643,8 @@ function App() {
       const updated = await apiFetch<{ ratings: RatingEntry[] }>(`/ratings?userName=${encodeURIComponent(currentUserName)}`)
       setMyEntries(updated.ratings)
 
-      // Check for milestones
-      const count = updated.ratings.length
-      if (count === 1) {
-        setMilestoneMessage('🎉 Your matcha journey starts here!')
-        confetti({ duration: 1000, spread: 100 } as any)
-      } else if (count === 10) {
-        setMilestoneMessage('🏆 10 ratings! You\'re a true matcha enthusiast!')
-        confetti({ duration: 1000, spread: 100 } as any)
-      } else if (count === 25) {
-        setMilestoneMessage('✨ 25 ratings! You\'re building an incredible collection!')
-        confetti({ duration: 1000, spread: 100 } as any)
-      } else if (count === 50) {
-        setMilestoneMessage('🌟 50 ratings! You\'re a matcha connoisseur!')
-        confetti({ duration: 1000, spread: 100 } as any)
-      } else if (count === 100) {
-        setMilestoneMessage('👑 100 ratings! You\'re a matcha legend!')
-        confetti({ duration: 1000, spread: 100 } as any)
-      }
-
-      if (milestoneMessage) {
-        setTimeout(() => setMilestoneMessage(''), 1000)
-      }
+      // Milestone popups intentionally disabled — saved for a future feature.
+      // See git history for the previous count-based confetti/toast logic.
 
       setCurrentRating(0)
       setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, mellow: 0 })
