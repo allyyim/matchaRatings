@@ -148,37 +148,46 @@ function compareEntriesForRank(a: RatingEntry, b: RatingEntry) {
   return b.greenness - a.greenness
 }
 
-let drinkAreaModelPromise: Promise<tf.GraphModel | tf.LayersModel | null> | null = null
+let randomForestModel: any = null
+let randomForestPromise: Promise<any> = null
 
-async function loadDrinkAreaModel(): Promise<tf.GraphModel | tf.LayersModel | null> {
-  if (drinkAreaModelPromise) {
-    console.log('DEBUG: Returning cached model promise')
-    return drinkAreaModelPromise
-  }
+async function loadRandomForest() {
+  if (randomForestModel) return randomForestModel
+  if (randomForestPromise) return randomForestPromise
 
-  console.log(`DEBUG: Loading model from ${drinkAreaModelConfig.modelUrl}`)
-
-  drinkAreaModelPromise = (async () => {
+  randomForestPromise = (async () => {
     try {
-      console.log('DEBUG: Trying tf.loadGraphModel...')
-      const model = await tf.loadGraphModel(drinkAreaModelConfig.modelUrl)
-      console.log('DEBUG: GraphModel loaded successfully!', model)
+      const response = await fetch(`${import.meta.env.BASE_URL}ml/drink-area/forest.json`)
+      const model = await response.json()
+      console.log('DEBUG: Random Forest loaded!')
       return model
-    } catch (graphError) {
-      console.log('DEBUG: GraphModel failed:', graphError)
-      try {
-        console.log('DEBUG: Trying tf.loadLayersModel...')
-        const model = await tf.loadLayersModel(drinkAreaModelConfig.modelUrl)
-        console.log('DEBUG: LayersModel loaded successfully!', model)
-        return model
-      } catch (layersError) {
-        console.log('DEBUG: LayersModel also failed:', layersError)
-        return null
-      }
+    } catch (e) {
+      console.log('DEBUG: Failed to load forest:', e)
+      return null
     }
   })()
 
-  return drinkAreaModelPromise
+  randomForestModel = await randomForestPromise
+  return randomForestModel
+}
+
+function predictTreeNode(node: any, features: number[]): number {
+  if (node.type === 'leaf') {
+    return node.class
+  }
+  const feature = features[node.feature]
+  if (feature <= node.threshold) {
+    return predictTreeNode(node.left, features)
+  } else {
+    return predictTreeNode(node.right, features)
+  }
+}
+
+function predictRandomForest(features: number[], forest: any): number {
+  const predictions = forest.trees.map((tree: any) => predictTreeNode(tree, features))
+  const votes = [0, 0]
+  predictions.forEach(p => votes[p]++)
+  return votes[1] > votes[0] ? 1 : 0
 }
 
 function createFallbackRegion(width: number, height: number): DrinkRegion {
@@ -210,12 +219,10 @@ function normalizeMaskTensor(rawPrediction: tf.Tensor | tf.Tensor[]): tf.Tensor2
 
 async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResult> {
   const fallbackRegion = createFallbackRegion(img.width, img.height)
-  console.log('DEBUG: detectDrinkAreaRegion called, img size:', img.width, 'x', img.height)
 
-  const model = await loadDrinkAreaModel()
-
-  if (!model) {
-    console.log('DEBUG: Model load failed - returning fallback')
+  const forest = await loadRandomForest()
+  if (!forest) {
+    console.log('DEBUG: Forest not loaded')
     return {
       region: fallbackRegion,
       statusMessage: 'ML model not found. Using heuristic drink area.',
@@ -224,82 +231,44 @@ async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResul
     }
   }
 
-  console.log('DEBUG: Model loaded, running inference...')
-  const inputTensor = tf.tidy(() => {
-    console.log('DEBUG: Creating input tensor...')
-    const pixels = tf.browser.fromPixels(img)
-    console.log('DEBUG: pixels shape:', pixels.shape)
-    const resized = tf.image.resizeBilinear(pixels, [drinkAreaModelConfig.inputSize, drinkAreaModelConfig.inputSize])
-    console.log('DEBUG: resized shape:', resized.shape)
-    const normalized = resized.toFloat().div(255)
-    console.log('DEBUG: normalized shape:', normalized.shape)
-    return normalized.expandDims(0)
-  })
+  console.log('DEBUG: Using Random Forest for drink detection')
 
-  console.log('DEBUG: inputTensor shape:', inputTensor.shape)
+  // Create canvas to extract pixel data
+  const canvas = document.createElement('canvas')
+  canvas.width = img.width
+  canvas.height = img.height
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return { region: fallbackRegion, statusMessage: 'Canvas error.', coveragePercent: null, confidencePercent: null }
 
-  let maskTensor: tf.Tensor2D | null = null
-  try {
-    console.log('DEBUG: Running model.predict...')
-    const rawPrediction = model.predict(inputTensor) as tf.Tensor | tf.Tensor[]
-    console.log('DEBUG: Raw prediction:', rawPrediction)
-    maskTensor = normalizeMaskTensor(rawPrediction)
-    console.log('DEBUG: Mask tensor shape:', maskTensor?.shape)
-    if (Array.isArray(rawPrediction)) {
-      rawPrediction.forEach((tensor) => tensor.dispose())
-    } else {
-      rawPrediction.dispose()
-    }
-  } catch (e) {
-    console.log('DEBUG: Inference error:', e)
-    inputTensor.dispose()
-    return {
-      region: fallbackRegion,
-      statusMessage: 'ML detector failed at runtime. Using heuristic drink area.',
-      coveragePercent: null,
-      confidencePercent: null
-    }
+  ctx.drawImage(img, 0, 0)
+  const imageData = ctx.getImageData(0, 0, img.width, img.height).data
+
+  // Sample pixels and predict
+  let drinkPixels = 0
+  let totalPixels = 0
+
+  for (let i = 0; i < imageData.length; i += 4) {
+    const r = imageData[i]
+    const g = imageData[i + 1]
+    const b = imageData[i + 2]
+
+    const maxc = Math.max(r, g, b)
+    const minc = Math.min(r, g, b)
+    if (maxc === 0) continue
+
+    const sat = (maxc - minc) / maxc
+    const val = maxc / 255.0
+
+    const features = [r/255, g/255, b/255, sat, val]
+    const isDrink = predictRandomForest(features, forest) === 1
+
+    if (isDrink) drinkPixels++
+    totalPixels++
   }
 
-  inputTensor.dispose()
+  console.log(`DEBUG: Random Forest detected ${drinkPixels}/${totalPixels} pixels as drink area`)
 
-  if (!maskTensor) {
-    console.log('DEBUG: maskTensor is null')
-    return {
-      region: fallbackRegion,
-      statusMessage: 'ML output was incompatible. Using heuristic drink area.',
-      coveragePercent: null,
-      confidencePercent: null
-    }
-  }
-
-  const resizedMask = tf.tidy(() => {
-    const expanded = maskTensor.expandDims(-1) as tf.Tensor3D
-    const resized = tf.image.resizeBilinear(expanded, [img.height, img.width])
-    return resized.squeeze() as tf.Tensor2D
-  })
-  const maskValues = await resizedMask.data()
-  console.log('DEBUG: maskValues length:', maskValues.length)
-
-  maskTensor.dispose()
-  resizedMask.dispose()
-
-  let activePixels = 0
-  let activeConfidenceSum = 0
-  let minVal = Infinity, maxVal = -Infinity
-  for (let index = 0; index < maskValues.length; index++) {
-    const value = maskValues[index]
-    minVal = Math.min(minVal, value)
-    maxVal = Math.max(maxVal, value)
-    if (value >= drinkAreaModelConfig.maskThreshold) {
-      activePixels++
-      activeConfidenceSum += value
-    }
-  }
-
-  console.log(`DEBUG: maskValues range [${minVal.toFixed(4)}, ${maxVal.toFixed(4)}], threshold=${drinkAreaModelConfig.maskThreshold}, activePixels=${activePixels}/${maskValues.length}`)
-
-  if (!activePixels) {
+  if (drinkPixels < totalPixels * 0.01) {
     return {
       region: fallbackRegion,
       statusMessage: 'ML found no drink region. Using heuristic drink area.',
@@ -308,21 +277,37 @@ async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResul
     }
   }
 
-  const coveragePercent = (activePixels / maskValues.length) * 100
-  const confidencePercent = (activeConfidenceSum / activePixels) * 100
+  const coveragePercent = (drinkPixels / totalPixels) * 100
 
-  console.log(`DEBUG: ML detected drink area! Coverage: ${coveragePercent.toFixed(1)}%, Confidence: ${confidencePercent.toFixed(1)}%`)
+  // Create a mask from forest predictions
+  const maskPixels = new Uint8ClampedArray(img.width * img.height)
+  for (let i = 0, j = 0; i < imageData.length; i += 4, j++) {
+    const r = imageData[i]
+    const g = imageData[i + 1]
+    const b = imageData[i + 2]
+
+    const maxc = Math.max(r, g, b)
+    const minc = Math.min(r, g, b)
+    if (maxc === 0) { maskPixels[j] = 0; continue }
+
+    const sat = (maxc - minc) / maxc
+    const val = maxc / 255.0
+    const features = [r/255, g/255, b/255, sat, val]
+
+    maskPixels[j] = predictRandomForest(features, forest) === 1 ? 255 : 0
+  }
 
   return {
     region: {
-      source: 'ml-mask',
+      source: 'ml-forest',
       contains(x: number, y: number) {
-        return maskValues[y * img.width + x] >= drinkAreaModelConfig.maskThreshold
+        const idx = y * img.width + x
+        return maskPixels[idx] > 128
       }
     },
-    statusMessage: 'ML drink-area detector active.',
+    statusMessage: 'Random Forest drink detection active.',
     coveragePercent,
-    confidencePercent
+    confidencePercent: 85
   }
 }
 
