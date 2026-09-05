@@ -1347,10 +1347,8 @@ function App() {
 
   useEffect(() => {
     if (!isUserReady || !canShowIosInstall) return
-    if (localStorage.getItem('iosInstallPromptSeen') === '1') return
     const timer = setTimeout(() => {
       setIsIosInstallModalOpen(true)
-      localStorage.setItem('iosInstallPromptSeen', '1')
     }, 600)
     return () => clearTimeout(timer)
   }, [isUserReady, canShowIosInstall])
@@ -3354,7 +3352,7 @@ function App() {
                   onClick={() => setIsIosInstallModalOpen(true)}
                   style={{ textDecoration: 'none', color: '#198754' }}
                 >
-                  Install App
+                  How to Install App
                 </button>
               </div>
             )}
@@ -3653,7 +3651,7 @@ function App() {
 
             <div style={{ padding: '0.5rem 1.25rem 1rem 1.25rem' }}>
               <p style={{ color: '#495057', fontSize: '0.875rem', margin: '0 0 1rem 0', lineHeight: 1.5 }}>
-                Get one-tap access from your Home Screen — works offline and feels like a native app.
+                Get one-tap access from your Home Screen.
               </p>
 
               <ol style={{ margin: 0, padding: 0, listStyle: 'none' }}>
@@ -3815,7 +3813,27 @@ function App() {
 
               <div>
                 <div className="fw-semibold mb-1" style={{ color: '#212529' }}>Need more help?</div>
-                <div className="text-muted">Reach out via <strong>Contact Support</strong>.</div>
+                <div className="text-muted">
+                  Reach out via{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsFaqModalOpen(false)
+                      setIsContactSupportModalOpen(true)
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      color: '#198754',
+                      fontWeight: 600,
+                      textDecoration: 'underline',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Contact Support
+                  </button>.
+                </div>
               </div>
             </div>
           </div>
