@@ -5634,30 +5634,44 @@ function App() {
 
               {exploreActiveTab === 'places' && (
                 <section>
-                  <p className="text-muted mb-3">Top ranked matchas</p>
+                  <p className="text-muted mb-3 text-center fst-italic">Top ranked matchas — whisked, sipped, scored 🍵</p>
 
                   {explorePlaces.length === 0 && (
-                    <div className="alert alert-light border mb-0">No place data yet. Add ratings to build rankings.</div>
+                    <div className="alert alert-light border mb-0 text-center">No place data yet. Add ratings to build rankings.</div>
                   )}
 
                   {explorePlaces.length > 0 && (
                     <div className="d-flex flex-column gap-2">
-                      {explorePlaces.map((place) => (
-                        <button
-                          type="button"
-                          key={place.placeName}
-                          className="card border-0 shadow-sm explore-place-card"
-                          onClick={() => void openExplorePlaceRatings(place.placeName)}
-                        >
-                          <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-2 text-start">
-                            <div>
-                              <div className="fw-semibold text-success">#{place.rank} {place.placeName}</div>
-                              <div className="small text-muted">{place.entryCount} entries</div>
+                      {explorePlaces.map((place) => {
+                        const medal = place.rank === 1 ? '🥇' : place.rank === 2 ? '🥈' : place.rank === 3 ? '🥉' : null
+                        const scoreOutOf100 = (place.averageScore / 2).toFixed(1)
+                        return (
+                          <button
+                            type="button"
+                            key={place.placeName}
+                            className="explore-place-card"
+                            onClick={() => void openExplorePlaceRatings(place.placeName)}
+                          >
+                            <div className="explore-place-rank" aria-hidden="true">
+                              {medal ? (
+                                <span className="explore-place-medal">{medal}</span>
+                              ) : (
+                                <span className="explore-place-rank-num">#{place.rank}</span>
+                              )}
                             </div>
-                            <div className="fw-bold">Overall score: {(place.averageScore / 2).toFixed(1)} / 100</div>
-                          </div>
-                        </button>
-                      ))}
+                            <div className="explore-place-main">
+                              <div className="explore-place-name">{place.placeName}</div>
+                              <div className="explore-place-meta">
+                                {place.entryCount} {place.entryCount === 1 ? 'sip logged' : 'sips logged'}
+                              </div>
+                            </div>
+                            <div className="explore-place-score">
+                              <span className="explore-place-score-value">{scoreOutOf100}</span>
+                              <span className="explore-place-score-suffix">/100</span>
+                            </div>
+                          </button>
+                        )
+                      })}
                     </div>
                   )}
                 </section>

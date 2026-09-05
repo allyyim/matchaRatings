@@ -1063,18 +1063,98 @@ textarea.form-control {
   width: 100%;
   border: 1px solid var(--border-light);
   background: white;
-  padding: 0;
+  padding: 0.85rem 1rem;
   cursor: pointer;
   text-align: left;
   border-radius: 1rem;
-  transition: all 0.2s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, background 0.18s ease;
   overflow: hidden;
+  display: grid;
+  grid-template-columns: 3rem 1fr auto;
+  align-items: center;
+  gap: 0.85rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
-.explore-place-card:hover {
+.explore-place-card:hover,
+.explore-place-card:focus-visible {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 10px 24px rgba(25, 135, 84, 0.12), 0 2px 6px rgba(15, 23, 42, 0.06);
   border-color: var(--primary-green);
+  background: linear-gradient(180deg, #ffffff 0%, #f6fff4 100%);
+  outline: none;
+}
+
+.explore-place-rank {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f0faf1 0%, #e6f6e9 100%);
+  border: 1px solid rgba(25, 135, 84, 0.15);
+  flex-shrink: 0;
+}
+
+.explore-place-medal {
+  font-size: 1.5rem;
+  line-height: 1;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.15));
+}
+
+.explore-place-rank-num {
+  font-weight: 700;
+  color: var(--primary-green);
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+.explore-place-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.explore-place-name {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 0.98rem;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.explore-place-meta {
+  font-size: 0.78rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.explore-place-score {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.15rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary-green) 0%, #14a05a 100%);
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(25, 135, 84, 0.25);
+  flex-shrink: 0;
+}
+
+.explore-place-score-value {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.explore-place-score-suffix {
+  font-size: 0.7rem;
+  opacity: 0.85;
+  font-weight: 500;
 }
 
 .explore-place-modal-overlay {
