@@ -3628,7 +3628,6 @@ function App() {
                 />
                 <div>
                   <div style={{ fontWeight: 700, color: '#212529', fontSize: '0.9375rem', lineHeight: 1.2 }}>Install Sip &amp; Score</div>
-                  <div style={{ color: '#6c757d', fontSize: '0.75rem' }}>Add to your Home Screen</div>
                 </div>
               </div>
               <button
