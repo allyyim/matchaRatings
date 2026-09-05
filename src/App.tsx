@@ -5254,41 +5254,44 @@ function App() {
               <h2 className="h3 fw-bold text-success mb-4">Explore</h2>
 
               {/* Navigation Tabs */}
-              <div className="d-flex gap-3 mb-4" style={{ borderBottom: '1px solid #e9ecef' }}>
+              <div className="segmented-tabs segmented-tabs-full mb-4" role="tablist" aria-label="Community sections">
                 <button
                   type="button"
-                  className={`btn btn-link p-0 fw-semibold ${communityActiveTab === 'recommendations' ? 'text-success' : 'text-muted'}`}
+                  role="tab"
+                  aria-selected={communityActiveTab === 'recommendations'}
+                  className={`segmented-tab ${communityActiveTab === 'recommendations' ? 'is-active' : ''}`}
                   onClick={() => {
                     setCommunityActiveTab('recommendations')
                     setSelectedFriend('')
                     setFriendSuggestions([])
                     setFriendQuery('')
                   }}
-                  style={{ textDecoration: 'none', borderBottom: communityActiveTab === 'recommendations' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
                 >
                   Recs
                 </button>
                 <button
                   type="button"
-                  className={`btn btn-link p-0 fw-semibold ${communityActiveTab === 'following' ? 'text-success' : 'text-muted'}`}
+                  role="tab"
+                  aria-selected={communityActiveTab === 'following'}
+                  className={`segmented-tab ${communityActiveTab === 'following' ? 'is-active' : ''}`}
                   onClick={() => {
                     setCommunityActiveTab('following')
                     setSelectedFriend('')
                     setFriendSuggestions([])
                     setFriendQuery('')
                   }}
-                  style={{ textDecoration: 'none', borderBottom: communityActiveTab === 'following' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
                 >
                   Following ({followingSet.size})
                 </button>
                 <button
                   type="button"
-                  className={`btn btn-link p-0 fw-semibold ${communityActiveTab === 'search' ? 'text-success' : 'text-muted'}`}
+                  role="tab"
+                  aria-selected={communityActiveTab === 'search'}
+                  className={`segmented-tab ${communityActiveTab === 'search' ? 'is-active' : ''}`}
                   onClick={() => {
                     setCommunityActiveTab('search')
                     setSelectedFriend('')
                   }}
-                  style={{ textDecoration: 'none', borderBottom: communityActiveTab === 'search' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
                 >
                   Search Users
                 </button>
@@ -5433,20 +5436,22 @@ function App() {
                       </div>
 
                       <div className="mb-5">
-                        <div className="d-flex gap-2 mb-4" style={{ borderBottom: '1px solid #e9ecef' }}>
+                        <div className="segmented-tabs segmented-tabs-full mb-4" role="tablist" aria-label="Similar recommendations">
                           <button
                             type="button"
-                            className={`btn btn-link p-0 fw-semibold ${similarActiveTab === 'users' ? 'text-success' : 'text-muted'}`}
+                            role="tab"
+                            aria-selected={similarActiveTab === 'users'}
+                            className={`segmented-tab ${similarActiveTab === 'users' ? 'is-active' : ''}`}
                             onClick={() => setSimilarActiveTab('users')}
-                            style={{ textDecoration: 'none', borderBottom: similarActiveTab === 'users' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
                           >
                             Similar Users
                           </button>
                           <button
                             type="button"
-                            className={`btn btn-link p-0 fw-semibold ${similarActiveTab === 'places' ? 'text-success' : 'text-muted'}`}
+                            role="tab"
+                            aria-selected={similarActiveTab === 'places'}
+                            className={`segmented-tab ${similarActiveTab === 'places' ? 'is-active' : ''}`}
                             onClick={() => setSimilarActiveTab('places')}
-                            style={{ textDecoration: 'none', borderBottom: similarActiveTab === 'places' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
                           >
                             Similar Places
                           </button>
@@ -5800,20 +5805,22 @@ function App() {
             <div className="card-body p-3 p-md-4">
               <h2 className="h3 fw-bold text-success mb-4">Community Leaderboard</h2>
 
-              <div className="d-flex gap-2 mb-4" style={{ borderBottom: '1px solid #e9ecef' }}>
+              <div className="segmented-tabs segmented-tabs-full mb-4" role="tablist" aria-label="Leaderboard sections">
                 <button
                   type="button"
-                  className={`btn btn-link p-0 fw-semibold ${exploreActiveTab === 'places' ? 'text-success' : 'text-muted'}`}
+                  role="tab"
+                  aria-selected={exploreActiveTab === 'places'}
+                  className={`segmented-tab ${exploreActiveTab === 'places' ? 'is-active' : ''}`}
                   onClick={() => setExploreActiveTab('places')}
-                  style={{ textDecoration: 'none', borderBottom: exploreActiveTab === 'places' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
                 >
                   Places
                 </button>
                 <button
                   type="button"
-                  className={`btn btn-link p-0 fw-semibold ${exploreActiveTab === 'users' ? 'text-success' : 'text-muted'}`}
+                  role="tab"
+                  aria-selected={exploreActiveTab === 'users'}
+                  className={`segmented-tab ${exploreActiveTab === 'users' ? 'is-active' : ''}`}
                   onClick={() => setExploreActiveTab('users')}
-                  style={{ textDecoration: 'none', borderBottom: exploreActiveTab === 'users' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
                 >
                   Users
                 </button>
