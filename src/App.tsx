@@ -4921,7 +4921,7 @@ function App() {
               {!isMyRatingsLoading && filteredMine.length === 0 && <div className="alert alert-light border">Your matcha journey starts here 🍵</div>}
 
               {filteredMine.slice(0, myLogsVisibleCount).map((entry) => (
-                <article key={entry.id} data-entry-id={entry.id} className="card border-0 shadow-sm entry-card" onClick={() => startEntryEdit(entry)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') startEntryEdit(entry) }}>
+                <article key={entry.id} data-entry-id={entry.id} className="card border-0 shadow-sm entry-card">
                   <div className="card-body">
                     <div className="d-flex gap-2 align-items-start justify-content-between mb-2">
                       <div className="d-flex align-items-center gap-2 flex-grow-1">
