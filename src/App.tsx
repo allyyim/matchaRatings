@@ -4802,7 +4802,10 @@ function App() {
                     <button
                       type="button"
                       className="btn btn-sm btn-outline-danger flex-grow-1"
-                      onClick={() => setPhotoDataUrl(noPhotoPlaceholderUrl)}
+                      onClick={() => {
+                        setPhotoDataUrl(noPhotoPlaceholderUrl)
+                        setMatchaGreenness(null)
+                      }}
                     >
                       Remove
                     </button>
@@ -5069,7 +5072,18 @@ function App() {
                 </div>
               )}
 
-              {!isMyRatingsLoading && filteredMine.length === 0 && <div className="alert alert-light border">Your matcha journey starts here 🍵</div>}
+              {!isMyRatingsLoading && filteredMine.length === 0 && (
+                myEntries.length === 0
+                  ? <div className="alert alert-light border">Your matcha journey starts here 🍵</div>
+                  : (
+                    <div className="alert alert-light border text-center" role="status">
+                      <div className="fw-semibold mb-1" style={{ color: '#198754' }}>No sips match that search 🍵</div>
+                      <div className="text-muted small">
+                        We couldn't find <em>&ldquo;{myLogsSearchTerm.trim()}&rdquo;</em> in your log. Try a shorter name, check the spelling, or clear the search to see everything you've whisked so far.
+                      </div>
+                    </div>
+                  )
+              )}
 
               {filteredMine.slice(0, myLogsVisibleCount).map((entry) => (
                 <article key={entry.id} data-entry-id={entry.id} className="card border-0 shadow-sm entry-card">
