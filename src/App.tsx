@@ -948,6 +948,8 @@ function App() {
   const [isContactSupportModalOpen, setIsContactSupportModalOpen] = useState(false)
   const [isIosInstallModalOpen, setIsIosInstallModalOpen] = useState(false)
   const [canShowIosInstall, setCanShowIosInstall] = useState(false)
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<{ prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> } | null>(null)
+  const [isIosDevice, setIsIosDevice] = useState(false)
 
   const [userFlavors, setUserFlavors] = useState<string[]>([])
   const [userBodyPref, setUserBodyPref] = useState<'' | 'full-bodied' | 'medium' | 'milky'>(() => {
@@ -1340,18 +1342,27 @@ function App() {
     const isIphoneIpodIpad = /iPhone|iPod|iPad/.test(ua)
     const isIpadOs = navigator.platform === 'MacIntel' && (navigator as unknown as { maxTouchPoints?: number }).maxTouchPoints ? ((navigator as unknown as { maxTouchPoints: number }).maxTouchPoints > 1) : false
     const isIos = isIphoneIpodIpad || isIpadOs
-    const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua)
     const isStandalone = window.matchMedia?.('(display-mode: standalone)').matches || (navigator as unknown as { standalone?: boolean }).standalone === true
-    setCanShowIosInstall(isIos && isSafari && !isStandalone)
+    setIsIosDevice(isIos)
+    setCanShowIosInstall(isIos && !isStandalone)
+
+    const handleBeforeInstall = (event: Event) => {
+      event.preventDefault()
+      setDeferredInstallPrompt(event as unknown as { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> })
+    }
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall)
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
   }, [])
 
   useEffect(() => {
-    if (!isUserReady || !canShowIosInstall) return
+    if (!isUserReady) return
+    const eligible = canShowIosInstall || deferredInstallPrompt !== null
+    if (!eligible) return
     const timer = setTimeout(() => {
       setIsIosInstallModalOpen(true)
     }, 600)
     return () => clearTimeout(timer)
-  }, [isUserReady, canShowIosInstall])
+  }, [isUserReady, canShowIosInstall, deferredInstallPrompt])
 
   useEffect(() => {
     // Handle magic link verification from URL
@@ -3344,7 +3355,7 @@ function App() {
               </button>
             </div>
 
-            {canShowIosInstall && (
+            {(canShowIosInstall || deferredInstallPrompt !== null) && (
               <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
                 <button
                   type="button"
@@ -3352,7 +3363,7 @@ function App() {
                   onClick={() => setIsIosInstallModalOpen(true)}
                   style={{ textDecoration: 'none', color: '#198754' }}
                 >
-                  How to Install App
+                  {deferredInstallPrompt !== null ? 'Install App' : 'How to Install App'}
                 </button>
               </div>
             )}
@@ -3653,95 +3664,144 @@ function App() {
                 Get one-tap access from your Home Screen.
               </p>
 
-              <ol style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 0', borderBottom: '1px solid #f1f3f5' }}>
-                  <div style={{
-                    flexShrink: 0,
-                    width: 26,
-                    height: 26,
-                    borderRadius: '50%',
-                    background: '#20c997',
-                    color: 'white',
-                    fontWeight: 700,
-                    fontSize: '0.8125rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>1</div>
-                  <div style={{ flex: 1, fontSize: '0.875rem', color: '#212529' }}>
-                    Tap the Share icon
-                    <svg
-                      aria-hidden="true"
-                      width="18"
-                      height="22"
-                      viewBox="0 0 20 26"
-                      style={{ verticalAlign: 'middle', margin: '0 0.25rem', color: '#0d6efd' }}
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.75"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M10 2v14" />
-                      <path d="M5.5 6.5L10 2l4.5 4.5" />
-                      <path d="M4 11v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V11" />
-                    </svg>
-                    in the Safari toolbar.
-                  </div>
-                </li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 0', borderBottom: '1px solid #f1f3f5' }}>
-                  <div style={{
-                    flexShrink: 0,
-                    width: 26,
-                    height: 26,
-                    borderRadius: '50%',
-                    background: '#20c997',
-                    color: 'white',
-                    fontWeight: 700,
-                    fontSize: '0.8125rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>2</div>
-                  <div style={{ flex: 1, fontSize: '0.875rem', color: '#212529' }}>
-                    Choose <strong>Add to Home Screen</strong>.
-                  </div>
-                </li>
-                <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 0' }}>
-                  <div style={{
-                    flexShrink: 0,
-                    width: 26,
-                    height: 26,
-                    borderRadius: '50%',
-                    background: '#20c997',
-                    color: 'white',
-                    fontWeight: 700,
-                    fontSize: '0.8125rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}>3</div>
-                  <div style={{ flex: 1, fontSize: '0.875rem', color: '#212529' }}>
-                    Tap <strong>Add</strong> in the top-right corner.
-                  </div>
-                </li>
-              </ol>
+              {deferredInstallPrompt !== null ? (
+                <>
+                  <p style={{ color: '#6c757d', fontSize: '0.8125rem', margin: '0 0 0.75rem 0' }}>
+                    Tap the button below and confirm the install prompt.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await deferredInstallPrompt.prompt()
+                        await deferredInstallPrompt.userChoice
+                      } catch {
+                        /* user dismissed */
+                      } finally {
+                        setDeferredInstallPrompt(null)
+                        setIsIosInstallModalOpen(false)
+                      }
+                    }}
+                    className="btn w-100"
+                    style={{
+                      background: '#20c997',
+                      color: 'white',
+                      fontWeight: 600,
+                      border: 'none',
+                      borderRadius: '10px',
+                      padding: '0.625rem'
+                    }}
+                  >
+                    Install App
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsIosInstallModalOpen(false)}
+                    className="btn btn-link w-100 mt-1"
+                    style={{ color: '#6c757d', fontSize: '0.8125rem', textDecoration: 'none' }}
+                  >
+                    Not now
+                  </button>
+                </>
+              ) : (
+                <>
+                  <ol style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 0', borderBottom: '1px solid #f1f3f5' }}>
+                      <div style={{
+                        flexShrink: 0,
+                        width: 26,
+                        height: 26,
+                        borderRadius: '50%',
+                        background: '#20c997',
+                        color: 'white',
+                        fontWeight: 700,
+                        fontSize: '0.8125rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>1</div>
+                      <div style={{ flex: 1, fontSize: '0.875rem', color: '#212529' }}>
+                        Tap the Share icon
+                        <svg
+                          aria-hidden="true"
+                          width="18"
+                          height="22"
+                          viewBox="0 0 20 26"
+                          style={{ verticalAlign: 'middle', margin: '0 0.25rem', color: '#0d6efd' }}
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.75"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M10 2v14" />
+                          <path d="M5.5 6.5L10 2l4.5 4.5" />
+                          <path d="M4 11v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V11" />
+                        </svg>
+                        in your browser toolbar.
+                      </div>
+                    </li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 0', borderBottom: '1px solid #f1f3f5' }}>
+                      <div style={{
+                        flexShrink: 0,
+                        width: 26,
+                        height: 26,
+                        borderRadius: '50%',
+                        background: '#20c997',
+                        color: 'white',
+                        fontWeight: 700,
+                        fontSize: '0.8125rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>2</div>
+                      <div style={{ flex: 1, fontSize: '0.875rem', color: '#212529' }}>
+                        Choose <strong>Add to Home Screen</strong>.
+                      </div>
+                    </li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 0' }}>
+                      <div style={{
+                        flexShrink: 0,
+                        width: 26,
+                        height: 26,
+                        borderRadius: '50%',
+                        background: '#20c997',
+                        color: 'white',
+                        fontWeight: 700,
+                        fontSize: '0.8125rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>3</div>
+                      <div style={{ flex: 1, fontSize: '0.875rem', color: '#212529' }}>
+                        Tap <strong>Add</strong> in the top-right corner.
+                      </div>
+                    </li>
+                  </ol>
 
-              <button
-                type="button"
-                onClick={() => setIsIosInstallModalOpen(false)}
-                className="btn w-100 mt-3"
-                style={{
-                  background: '#20c997',
-                  color: 'white',
-                  fontWeight: 600,
-                  border: 'none',
-                  borderRadius: '10px',
-                  padding: '0.625rem'
-                }}
-              >
-                Got it
-              </button>
+                  {isIosDevice && (
+                    <p style={{ color: '#6c757d', fontSize: '0.75rem', margin: '0.75rem 0 0 0' }}>
+                      Not seeing the share icon? Open this site in Safari — Chrome and Firefox on iPhone use the same iOS share sheet.
+                    </p>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setIsIosInstallModalOpen(false)}
+                    className="btn w-100 mt-3"
+                    style={{
+                      background: '#20c997',
+                      color: 'white',
+                      fontWeight: 600,
+                      border: 'none',
+                      borderRadius: '10px',
+                      padding: '0.625rem'
+                    }}
+                  >
+                    Got it
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </>,
