@@ -2,6 +2,9 @@
 // to the current git commit SHA so every push invalidates the cache and
 // triggers an auto-reload in the PWA.
 const CACHE_NAME = 'sip-score-cache-dev';
+const RUNTIME_CACHE = CACHE_NAME + '-runtime';
+const API_CACHE = CACHE_NAME + '-api';
+
 const urlsToCache = [
   '/',
   '/index.html',
@@ -11,6 +14,15 @@ const urlsToCache = [
 
 // Version file to check for updates
 const VERSION_URL = '/version.json';
+
+// How long a stale API cache entry may be served before we insist on the
+// network. 10 minutes is a good balance for a low-churn dataset like
+// ratings/follows/preferences: fresh enough to feel live, tolerant enough
+// to survive brief network handoffs.
+const API_STALE_LIMIT_MS = 10 * 60 * 1000;
+// Network-first attempt cap for API calls before falling back to cache.
+// Kept short so a flaky mobile network doesn't wall the UI.
+const API_NETWORK_TIMEOUT_MS = 3000;
 
 // Install event - cache essential files
 self.addEventListener('install', event => {
@@ -28,10 +40,12 @@ self.addEventListener('activate', event => {
     caches.keys().then(cacheNames => {
       return Promise.all(
         cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
+          // Keep the current shell cache + its runtime/api siblings.
+          if (cacheName === CACHE_NAME || cacheName === RUNTIME_CACHE || cacheName === API_CACHE) {
+            return undefined;
           }
+          console.log('Deleting old cache:', cacheName);
+          return caches.delete(cacheName);
         })
       );
     })
@@ -62,8 +76,6 @@ async function checkForUpdates() {
 
     if (newVersion !== currentVersion) {
       console.log('App version updated:', currentVersion, '->', newVersion);
-      // Silently update cache in background - do NOT notify or reload
-      // This allows users to stay logged in until they manually refresh
       try {
         await cache.addAll(urlsToCache);
         await cache.delete(VERSION_URL);
@@ -71,65 +83,157 @@ async function checkForUpdates() {
       } catch (error) {
         console.log('Cache update failed:', error);
       }
-
-      // Optional: Log that update is ready, but don't force reload
-      // This gives users time to save work before they refresh manually
     }
   } catch (error) {
     console.log('Update check failed:', error);
   }
 }
 
-// Fetch event - serve from cache, fallback to network
-self.addEventListener('fetch', event => {
-  // Skip API calls - always go to network for fresh data
-  if (event.request.url.includes('/api/')) {
-    event.respondWith(
-      fetch(event.request, { cache: 'no-store' })
-        .catch(() => {
-          return new Response(
-            JSON.stringify({ error: 'Offline - API unavailable' }),
-            { status: 503, headers: { 'Content-Type': 'application/json' } }
-          );
-        })
-    );
-    return;
-  }
+// --- helpers ---------------------------------------------------------------
 
-  // For HTML files, always check network first for updates
-  if (event.request.method === 'GET' && (event.request.url.endsWith('/') || event.request.url.endsWith('/index.html'))) {
-    event.respondWith(
-      fetch(event.request, { cache: 'no-store' })
-        .then(response => {
-          if (response && response.status === 200) {
-            const responseToCache = response.clone();
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(event.request, responseToCache);
-            });
-          }
-          return response;
-        })
-        .catch(() => {
-          return caches.match(event.request);
-        })
-    );
-    return;
-  }
+function isHtmlNavigation(request) {
+  if (request.mode === 'navigate') return true;
+  const url = request.url;
+  return request.method === 'GET' && (url.endsWith('/') || url.endsWith('/index.html'));
+}
 
-  // For everything else, try cache first, then network
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request).then(response => {
-        if (response && response.status === 200) {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseToCache);
-          });
+function isApiRequest(url) {
+  return url.includes('/api/');
+}
+
+function timestampedResponse(response, ts) {
+  // Clone body + wrap with a header we can read back to know cache age.
+  const headers = new Headers(response.headers);
+  headers.set('x-sw-cached-at', String(ts));
+  return response.blob().then(body => new Response(body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers
+  }));
+}
+
+async function networkFirstApi(request) {
+  const cache = await caches.open(API_CACHE);
+
+  // Race: real fetch vs a short timeout that resolves to null so we can
+  // fall back to cache without waiting the full browser HTTP timeout.
+  let timeoutId;
+  const timeout = new Promise(resolve => {
+    timeoutId = setTimeout(() => resolve(null), API_NETWORK_TIMEOUT_MS);
+  });
+
+  try {
+    const network = fetch(request, { cache: 'no-store' })
+      .then(async response => {
+        // Only cache successful, cacheable responses. Skip opaque or errors.
+        if (response && response.ok && response.type !== 'opaque') {
+          const stamped = await timestampedResponse(response.clone(), Date.now());
+          cache.put(request, stamped).catch(() => {});
         }
         return response;
-      }).catch(() => {
-        return caches.match(event.request);
       });
+
+    const winner = await Promise.race([network, timeout]);
+    if (winner) {
+      clearTimeout(timeoutId);
+      return winner;
+    }
+
+    // Timeout won: try cache, but if nothing there, keep waiting on the
+    // real network so we still deliver something if it eventually returns.
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    return network;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    return new Response(
+      JSON.stringify({ error: 'Offline - API unavailable' }),
+      { status: 503, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
+}
+
+async function cacheFirstHtml(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request) || await cache.match('/index.html') || await cache.match('/');
+
+  // Kick off a background revalidate so next launch has fresh HTML,
+  // but paint the cached copy immediately if we have it.
+  const networkUpdate = fetch(request, { cache: 'no-store' })
+    .then(response => {
+      if (response && response.status === 200) {
+        cache.put(request, response.clone()).catch(() => {});
+      }
+      return response;
     })
-  );
+    .catch(() => null);
+
+  if (cached) {
+    // Fire-and-forget the revalidate.
+    networkUpdate.catch(() => {});
+    return cached;
+  }
+
+  const fresh = await networkUpdate;
+  if (fresh) return fresh;
+  return new Response('<h1>Offline</h1><p>Sip &amp; Score is offline and no cached copy is available yet.</p>', {
+    status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' }
+  });
+}
+
+async function cacheFirstAsset(request) {
+  const runtime = await caches.open(RUNTIME_CACHE);
+  const shell = await caches.open(CACHE_NAME);
+  const cached = await runtime.match(request) || await shell.match(request);
+  if (cached) return cached;
+
+  try {
+    const response = await fetch(request);
+    if (response && response.status === 200 && (response.type === 'basic' || response.type === 'cors')) {
+      runtime.put(request, response.clone()).catch(() => {});
+    }
+    return response;
+  } catch (err) {
+    // Nothing we can do for a missing asset offline.
+    return new Response('', { status: 504, statusText: 'Offline' });
+  }
+}
+
+// --- fetch router ----------------------------------------------------------
+
+self.addEventListener('fetch', event => {
+  const request = event.request;
+  const url = request.url;
+
+  // Mutations must always go to the network - never cache POST/PUT/DELETE.
+  if (request.method !== 'GET') {
+    if (isApiRequest(url)) {
+      event.respondWith(
+        fetch(request).catch(() => new Response(
+          JSON.stringify({ error: 'Offline - change will be lost' }),
+          { status: 503, headers: { 'Content-Type': 'application/json' } }
+        ))
+      );
+    }
+    return;
+  }
+
+  // /api/* GETs: network-first with a short timeout, then stale cache.
+  if (isApiRequest(url)) {
+    event.respondWith(networkFirstApi(request));
+    return;
+  }
+
+  // HTML shell: cache-first with background revalidation so first paint
+  // is instant offline. Fresh HTML lands on next launch.
+  if (isHtmlNavigation(request)) {
+    event.respondWith(cacheFirstHtml(request));
+    return;
+  }
+
+  // Everything else (hashed JS/CSS/images/fonts): cache-first, populate
+  // runtime cache on miss.
+  event.respondWith(cacheFirstAsset(request));
 });
