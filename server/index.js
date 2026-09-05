@@ -963,6 +963,20 @@ app.get('/api/auth/link-status', async (req, res) => {
   return res.json({ linked: result.rowCount > 0, email: result.rows[0]?.email || null })
 })
 
+// Public availability check for a proposed username during signup.
+app.get('/api/auth/check-username', async (req, res) => {
+  const raw = String(req.query?.name || '').trim()
+  const sanitized = sanitizeUserName(raw)
+  if (!sanitized) {
+    return res.json({ available: false, reason: 'invalid' })
+  }
+  const taken = await pool.query(
+    'SELECT 1 FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+    [sanitized]
+  )
+  return res.json({ available: taken.rowCount === 0, sanitized })
+})
+
 // Sends a magic link that, once clicked, attaches the current session's username to an email
 // so the account becomes accessible from any device/browser going forward.
 app.post('/api/auth/link-email', authRateLimiter, async (req, res) => {

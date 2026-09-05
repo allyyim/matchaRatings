@@ -831,6 +831,7 @@ function App() {
   const [pendingUserName, setPendingUserName] = useState('')
   const [requiresManualName, setRequiresManualName] = useState(false)
   const [isSubmittingName, setIsSubmittingName] = useState(false)
+  const [usernameAvailability, setUsernameAvailability] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle')
   const [isUserReady, setIsUserReady] = useState(false)
   const [authError, setAuthError] = useState('')
   const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser' | 'confirm-account' | 'magic-link' | 'magic-link-username'>('choice')
@@ -1303,6 +1304,33 @@ function App() {
       }
     }
   }, [isUserReady, myEntries.length])
+
+  useEffect(() => {
+    const name = pendingUserName.trim()
+    if (!name) {
+      setUsernameAvailability('idle')
+      return
+    }
+    if (authMode !== 'newuser' && authMode !== 'magic-link-username') {
+      return
+    }
+    setUsernameAvailability('checking')
+    const handle = setTimeout(async () => {
+      try {
+        const res = await apiFetch<{ available: boolean; reason?: string }>(`/auth/check-username?name=${encodeURIComponent(name)}`)
+        if (res.reason === 'invalid') {
+          setUsernameAvailability('invalid')
+        } else if (res.available) {
+          setUsernameAvailability('available')
+        } else {
+          setUsernameAvailability('taken')
+        }
+      } catch {
+        setUsernameAvailability('idle')
+      }
+    }, 400)
+    return () => clearTimeout(handle)
+  }, [pendingUserName, authMode])
 
   useEffect(() => {
     // Handle magic link verification from URL
@@ -2596,6 +2624,10 @@ function App() {
                   setAuthError('Please enter a username')
                   return
                 }
+                if (usernameAvailability === 'taken') {
+                  setAuthError('That username is already taken')
+                  return
+                }
                 try {
                   setIsSubmittingName(true)
                   setAuthError('')
@@ -2613,16 +2645,22 @@ function App() {
               }}>
                 <input
                   type="text"
-                  className="form-control mb-3"
+                  className={`form-control mb-1 ${usernameAvailability === 'taken' || usernameAvailability === 'invalid' ? 'is-invalid' : usernameAvailability === 'available' ? 'is-valid' : ''}`}
                   value={pendingUserName}
                   onChange={(e) => setPendingUserName(e.target.value)}
                   placeholder="your username"
                   autoFocus
                 />
+                <div className="mb-3" style={{ minHeight: '1.25rem', fontSize: '0.8125rem' }}>
+                  {usernameAvailability === 'checking' && <span className="text-muted">Checking availability…</span>}
+                  {usernameAvailability === 'available' && <span className="text-success">✓ Username available</span>}
+                  {usernameAvailability === 'taken' && <span className="text-danger">Username already taken</span>}
+                  {usernameAvailability === 'invalid' && <span className="text-danger">Username contains invalid characters</span>}
+                </div>
                 <button
                   type="submit"
                   className="btn btn-success w-100"
-                  disabled={!pendingUserName.trim() || isSubmittingName}
+                  disabled={!pendingUserName.trim() || isSubmittingName || usernameAvailability === 'taken' || usernameAvailability === 'invalid' || usernameAvailability === 'checking'}
                 >
                   {isSubmittingName ? 'Sending…' : 'Send link'}
                 </button>
@@ -2658,6 +2696,10 @@ function App() {
                   setAuthError('Please enter a name')
                   return
                 }
+                if (usernameAvailability === 'taken') {
+                  setAuthError('That username is already taken')
+                  return
+                }
                 try {
                   setIsSubmittingName(true)
                   setAuthError('')
@@ -2683,17 +2725,23 @@ function App() {
               }}>
                 <input
                   type="text"
-                  className="form-control mb-3"
+                  className={`form-control mb-1 ${usernameAvailability === 'taken' || usernameAvailability === 'invalid' ? 'is-invalid' : usernameAvailability === 'available' ? 'is-valid' : ''}`}
                   placeholder="Enter your name"
                   value={pendingUserName}
                   onChange={(e) => setPendingUserName(e.target.value)}
                   disabled={isSubmittingName}
                   autoFocus
                 />
+                <div className="mb-3" style={{ minHeight: '1.25rem', fontSize: '0.8125rem' }}>
+                  {usernameAvailability === 'checking' && <span className="text-muted">Checking availability…</span>}
+                  {usernameAvailability === 'available' && <span className="text-success">✓ Username available</span>}
+                  {usernameAvailability === 'taken' && <span className="text-danger">Username already taken</span>}
+                  {usernameAvailability === 'invalid' && <span className="text-danger">Username contains invalid characters</span>}
+                </div>
                 <button
                   type="submit"
                   className="btn btn-success w-100 mb-2"
-                  disabled={isSubmittingName || !pendingUserName.trim()}
+                  disabled={isSubmittingName || !pendingUserName.trim() || usernameAvailability === 'taken' || usernameAvailability === 'invalid' || usernameAvailability === 'checking'}
                   style={{ padding: '0.875rem' }}
                 >
                   {isSubmittingName ? 'Creating account…' : 'Continue'}
@@ -4510,7 +4558,7 @@ function App() {
               </div>
             </div>
             <div className="d-flex flex-column gap-3">
-              {isMyRatingsLoading && (
+              {isMyRatingsLoading && filteredMine.length === 0 && (
                 <div className="rating-loading-shell" aria-live="polite">
                   <div className="text-muted small">Loading your log…</div>
                 </div>
@@ -4518,7 +4566,7 @@ function App() {
 
               {!isMyRatingsLoading && filteredMine.length === 0 && <div className="alert alert-light border">Your matcha journey starts here 🍵</div>}
 
-              {!isMyRatingsLoading && filteredMine.slice(0, myLogsVisibleCount).map((entry) => (
+              {filteredMine.slice(0, myLogsVisibleCount).map((entry) => (
                 <article key={entry.id} data-entry-id={entry.id} className="card border-0 shadow-sm entry-card" onClick={() => startEntryEdit(entry)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') startEntryEdit(entry) }}>
                   <div className="card-body">
                     <div className="d-flex gap-2 align-items-start justify-content-between mb-2">
