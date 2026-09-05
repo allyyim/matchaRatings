@@ -3529,7 +3529,7 @@ function App() {
             }}
           >
             <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h6 className="fw-bold text-success mb-0">FAQ 🍵</h6>
+              <h6 className="fw-bold text-success mb-0">FAQ</h6>
               <button
                 type="button"
                 className="close-btn"
@@ -3577,7 +3577,7 @@ function App() {
 
               <h6 className="fw-semibold text-success mb-2">Still stuck?</h6>
               <p className="text-muted mb-3">
-                Tap <strong>Contact Support</strong> and we'll help you out. 🍵
+                Tap <strong>Contact Support</strong> and we'll help you out.
               </p>
             </div>
           </div>
@@ -3609,7 +3609,7 @@ function App() {
             }}
           >
             <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h6 className="fw-bold text-success mb-0">Contact Support 💌</h6>
+              <h6 className="fw-bold text-success mb-0">Contact Support</h6>
               <button
                 type="button"
                 className="close-btn"
@@ -3642,7 +3642,7 @@ function App() {
 
               <h6 className="fw-semibold text-success mb-2">Response time</h6>
               <p className="text-muted mb-3">
-                We usually reply within 1–2 days. Thanks for helping Sip &amp; Score get better with every cup. 🍵
+                We usually reply within 1–2 days. Thanks for helping Sip &amp; Score get better with every cup.
               </p>
 
               <div className="d-grid">
