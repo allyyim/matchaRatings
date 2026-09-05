@@ -1676,7 +1676,13 @@ app.get('/api/similar-users', async (req, res) => {
         const ratingCount = Number(row.rating_count) || 0
         const activityBoost = Math.min(0.08, Math.log10(1 + ratingCount) * 0.04)
 
-        const matchScore = Math.max(0, Math.min(1, flavorScore + bodyScore + activityBoost))
+        // Only apply the activity boost when there's a real taste signal —
+        // otherwise brand-new accounts with 0 shared flavors would surface
+        // just because they have some rating history.
+        const baseScore = flavorScore + bodyScore
+        const matchScore = baseScore > 0
+          ? Math.max(0, Math.min(1, baseScore + activityBoost))
+          : 0
 
         return {
           userName: row.user_name,
@@ -1687,9 +1693,10 @@ app.get('/api/similar-users', async (req, res) => {
           matchScore,
         }
       })
-      .filter((u) => u.matchScore > 0.05)
+      .filter((u) => u.matchScore > 0)
       .sort((a, b) => b.matchScore - a.matchScore)
 
+    console.log(`[similar-users] ${userName} → evaluated ${result.rowCount} candidates, returning ${similarUsers.length}`)
     return res.json({ similarUsers })
   } catch (error) {
     console.error('Similar users lookup failed:', error)

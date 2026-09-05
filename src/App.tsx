@@ -4691,7 +4691,7 @@ function App() {
                             onClick={() => setSimilarActiveTab('users')}
                             style={{ textDecoration: 'none', borderBottom: similarActiveTab === 'users' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
                           >
-                            Users with Similar Taste
+                            Similar Users
                           </button>
                           <button
                             type="button"
@@ -4699,7 +4699,7 @@ function App() {
                             onClick={() => setSimilarActiveTab('places')}
                             style={{ textDecoration: 'none', borderBottom: similarActiveTab === 'places' ? '2px solid var(--primary-green)' : 'none', paddingBottom: '0.5rem' }}
                           >
-                            Places with Your Profile
+                            Similar Places
                           </button>
                         </div>
 
