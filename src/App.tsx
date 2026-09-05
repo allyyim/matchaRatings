@@ -5618,7 +5618,7 @@ function App() {
                   <div className="explore-places-subtitle-wrapper mb-3">
                     <p className="explore-places-subtitle">
                       <span className="explore-places-badge">Top 10</span>
-                      <span className="explore-places-tag">community picks 🍵</span>
+                      <span className="explore-places-tag">community picks</span>
                     </p>
                   </div>
 
@@ -5668,7 +5668,7 @@ function App() {
                   <div className="explore-places-subtitle-wrapper mb-3">
                     <p className="explore-places-subtitle">
                       <span className="explore-places-badge">Leaderboard</span>
-                      <span className="explore-places-tag">every sipper, ranked 🍃</span>
+                      <span className="explore-places-tag">every sipper, ranked</span>
                     </p>
                   </div>
 
@@ -5676,38 +5676,48 @@ function App() {
 
                   {exploreUsers.length > 0 && (
                     <div className="d-flex flex-column gap-2">
-                      {exploreUsers.map((user, index) => (
-                        <article
-                          key={`${user.userName}-${index}`}
-                          className="card border-0 shadow-sm"
-                          role="button"
-                          tabIndex={0}
-                          style={{ cursor: 'pointer' }}
-                          onClick={() => void openFriendModal(user.userName)}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                              event.preventDefault()
-                              void openFriendModal(user.userName)
-                            }
-                          }}
-                        >
-                          <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
-                            <div className="fw-semibold">
-                              #{index + 1}{' '}
-                              <span className="explore-user-link">
-                                {user.userName}
-                              </span>
+                      {exploreUsers.map((user, index) => {
+                        const rank = index + 1
+                        const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
+                        const isSelf = user.userName.toLowerCase() === (currentUserName || '').toLowerCase()
+                        const isFollowing = followingSet.has(user.userName)
+                        return (
+                          <article
+                            key={`${user.userName}-${index}`}
+                            className="explore-user-card"
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => void openFriendModal(user.userName)}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault()
+                                void openFriendModal(user.userName)
+                              }
+                            }}
+                          >
+                            <div className="explore-place-rank" aria-hidden="true">
+                              {medal ? (
+                                <span className="explore-place-medal">{medal}</span>
+                              ) : (
+                                <span className="explore-place-rank-num">#{rank}</span>
+                              )}
                             </div>
-                            <div className="d-flex gap-3 align-items-center">
-                              <div className="text-success fw-bold">{user.placeCount}</div>
-                              {user.userName.toLowerCase() !== (currentUserName || '').toLowerCase() && (
+                            <div className="explore-place-main">
+                              <div className="explore-place-name">
+                                <span className="explore-user-link">{user.userName}</span>
+                                {isSelf && <span className="explore-user-you-badge">you</span>}
+                              </div>
+                              <div className="explore-place-meta">
+                                {user.placeCount} {user.placeCount === 1 ? 'place explored' : 'places explored'}
+                              </div>
+                            </div>
+                            <div className="explore-user-actions">
+                              {!isSelf && (
                                 <button
                                   type="button"
-                                  className="btn btn-link btn-sm text-muted p-0"
-                                  style={{ textDecoration: 'none' }}
+                                  className={`explore-follow-btn ${isFollowing ? 'is-following' : ''}`}
                                   onClick={async (event) => {
                                     event.stopPropagation()
-                                    const isFollowing = followingSet.has(user.userName)
                                     try {
                                       if (isFollowing) {
                                         await apiFetch(`/follows/${user.userName}`, { method: 'DELETE' })
@@ -5722,15 +5732,15 @@ function App() {
                                       alert(error instanceof Error ? error.message : 'Failed to update follow status')
                                     }
                                   }}
-                                  title={followingSet.has(user.userName) ? 'Unfollow' : 'Follow'}
+                                  title={isFollowing ? 'Unfollow' : 'Follow'}
                                 >
-                                  {followingSet.has(user.userName) ? '✓ Following' : '+ Follow'}
+                                  {isFollowing ? '✓ Following' : '+ Follow'}
                                 </button>
                               )}
                             </div>
-                          </div>
-                        </article>
-                      ))}
+                          </article>
+                        )
+                      })}
                     </div>
                   )}
                 </section>
