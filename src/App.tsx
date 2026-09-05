@@ -928,7 +928,7 @@ function App() {
   const [selectedExplorePlaceEntries, setSelectedExplorePlaceEntries] = useState<RatingEntry[]>([])
   const [isExplorePlaceModalOpen, setIsExplorePlaceModalOpen] = useState(false)
   const [isLoadingExplorePlaceEntries, setIsLoadingExplorePlaceEntries] = useState(false)
-  const [myLogsVisibleCount, setMyLogsVisibleCount] = useState(3)
+  const [myLogsVisibleCount, setMyLogsVisibleCount] = useState(10)
   const [myLogsSearchTerm, setMyLogsSearchTerm] = useState('')
   const [isFriendLogsExpanded, setIsFriendLogsExpanded] = useState(false)
   const [friendLogsSearchTerm, setFriendLogsSearchTerm] = useState('')
@@ -4473,11 +4473,11 @@ function App() {
                   See More
                 </button>
               )}
-              {myLogsVisibleCount > 3 && filteredMine.length > 3 && (
+              {myLogsVisibleCount > 10 && filteredMine.length > 10 && (
                 <button
                   type="button"
                   className="btn btn-link text-success w-100 mt-1"
-                  onClick={() => setMyLogsVisibleCount(3)}
+                  onClick={() => setMyLogsVisibleCount(10)}
                 >
                   See Less
                 </button>
