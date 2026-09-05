@@ -5358,17 +5358,43 @@ function App() {
               )}
 
               {/* Following Tab */}
-              {communityActiveTab === 'following' && followingSet.size > 0 && (
+              {communityActiveTab === 'following' && (
                 <div>
-                  <p className="text-muted small mb-3">Users you're following</p>
-                  <div className="row g-3">
-                    {Array.from(followingSet).map((friend) => (
-                      <div key={friend} className="col-12 col-md-6 col-lg-4">
-                        <div
-                          className="card border-0 shadow-sm h-100"
+                  <div className="explore-places-subtitle-wrapper mb-4">
+                    <span className="explore-places-subtitle">
+                      <span className="explore-places-badge">Following</span>
+                      <span className="explore-places-tag">
+                        {followingSet.size === 0
+                          ? 'your matcha circle awaits'
+                          : `${followingSet.size} sipper${followingSet.size === 1 ? '' : 's'} on your radar`}
+                      </span>
+                    </span>
+                  </div>
+
+                  {followingSet.size === 0 ? (
+                    <div className="alert alert-light border text-center" role="status">
+                      <div className="fw-semibold mb-1" style={{ color: '#198754' }}>Your circle is empty — for now 🍵</div>
+                      <div className="text-muted small mb-3">
+                        Follow other sippers to keep tabs on their latest matcha finds. Start with the Leaderboard or search someone by name.
+                      </div>
+                      <div className="d-flex flex-wrap gap-2 justify-content-center">
+                        <button
+                          type="button"
+                          className="btn btn-success btn-sm"
+                          onClick={() => setCommunityActiveTab('search')}
+                        >
+                          Search users →
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="explore-users-list">
+                      {Array.from(followingSet).map((friend, index) => (
+                        <article
+                          key={friend}
+                          className="explore-user-card"
                           role="button"
                           tabIndex={0}
-                          style={{ cursor: 'pointer' }}
                           onClick={() => void openFriendModal(friend)}
                           onKeyDown={(event) => {
                             if (event.key === 'Enter' || event.key === ' ') {
@@ -5377,11 +5403,19 @@ function App() {
                             }
                           }}
                         >
-                          <div className="card-body">
-                            <h6 className="card-title fw-semibold text-success mb-3">{friend}</h6>
+                          <div className="explore-place-rank" aria-hidden="true">
+                            <span className="explore-place-rank-num">#{index + 1}</span>
+                          </div>
+                          <div className="explore-place-main">
+                            <div className="explore-place-name">
+                              <span className="explore-user-link">{friend}</span>
+                            </div>
+                            <div className="explore-place-meta fst-italic">tap to peek their sips</div>
+                          </div>
+                          <div className="explore-user-actions">
                             <button
                               type="button"
-                              className="btn btn-sm btn-outline-danger w-100"
+                              className="explore-follow-btn is-following"
                               onClick={async (e) => {
                                 e.stopPropagation()
                                 try {
@@ -5390,17 +5424,23 @@ function App() {
                                   setFollowingSet(new Set(followingSet))
                                 } catch (error) {
                                   console.error('Failed to unfollow:', error)
-                                  alert(error instanceof Error ? error.message : 'Failed to unfollow')
+                                  const msg = error instanceof Error ? error.message : ''
+                                  if (/your account not found/i.test(msg)) {
+                                    alert('Your session is out of date. Please sign out and sign back in to refresh your account, then try again.')
+                                  } else {
+                                    alert(msg || 'Failed to unfollow')
+                                  }
                                 }
                               }}
+                              title="Unfollow"
                             >
-                              Unfollow
+                              ✓ Following
                             </button>
                           </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                        </article>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
