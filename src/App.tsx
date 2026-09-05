@@ -5735,7 +5735,7 @@ function App() {
         </main>
       )}
 
-      <nav className="bottom-nav d-lg-none">
+      <nav className="bottom-nav">
         <button
           type="button"
           className={`bottom-nav-btn ${activePage === 'home' ? 'active' : ''}`}
