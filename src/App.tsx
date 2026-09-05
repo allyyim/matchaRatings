@@ -4554,10 +4554,13 @@ function App() {
                           if (isFollowing) {
                             await apiFetch(`/follows/${friendModalUser}`, { method: 'DELETE' })
                             followingSet.delete(friendModalUser)
+                            setSavedEntryToast({ headline: 'Unfollowed', highlight: friendModalUser })
                           } else {
                             await apiFetch(`/follows/${friendModalUser}`, { method: 'POST' })
                             followingSet.add(friendModalUser)
+                            setSavedEntryToast({ headline: `Following — one more sipper to watch`, highlight: friendModalUser })
                           }
+                          window.setTimeout(() => setSavedEntryToast(null), 3500)
                           setFollowingSet(new Set(followingSet))
                         } catch (error) {
                           console.error('Failed to update follow status:', error)
@@ -5145,40 +5148,43 @@ function App() {
                       </div>
                     </div>
                     <div className="entry-metrics">
-                      <div className="mb-2">
+                      <div className="entry-stat-cluster mb-2">
                         <span className="score-chip-row"><span className="score-chip-label">Sip Score</span><span className="score-chip" title="Combined taste + greenness score">
                           <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
                           <span className="score-chip-suffix">/100</span>
                         </span></span>
+                        <span className="stat-chip-row"><span className="stat-chip-label">Greenness</span><span className="stat-chip" title="How vibrantly green the matcha reads">
+                          <span className="stat-chip-value">{entry.greenness.toFixed(0)}</span>
+                          <span className="stat-chip-suffix">%</span>
+                        </span></span>
                       </div>
-                      <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
-                      {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
+                      {entry.flavorPreferences && (Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) || getBodyProfile(entry.flavorPreferences)) && (
+                        <div className="entry-chip-row">
                           {sortFlavorsByColor(Object.entries(entry.flavorPreferences).filter(([k, v]) => v > 0 && isKnownFlavor(k)).map(([k]) => k)).map((flavor) => (
                             <span
                               key={flavor}
                               className="badge"
                               style={{
-                                fontSize: '0.7rem',
+                                fontSize: '0.72rem',
                                 background: flavorColor(flavor).bg,
                                 border: '1px solid ' + flavorColor(flavor).border,
                                 color: flavorColor(flavor).fg,
                                 fontWeight: '600',
                                 textTransform: 'capitalize',
-                                padding: '0.25rem 0.5rem',
-                                textAlign: 'center'
+                                padding: '0.3rem 0.6rem',
+                                borderRadius: '999px'
                               }}
                             >
                               {flavor}
                             </span>
                           ))}
+                          {getBodyProfile(entry.flavorPreferences) && (
+                            <span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.72rem', padding: '0.3rem 0.65rem', borderRadius: '999px' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span>
+                          )}
                         </div>
                       )}
-                      {getBodyProfile(entry.flavorPreferences) && (
-                        <div className="mt-2"><span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
-                      )}
                     </div>
-                    {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
+                    {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
                     <img
                       src={entry.photo || noPhotoPlaceholderUrl}
                       alt=""
@@ -5422,6 +5428,8 @@ function App() {
                                   await apiFetch(`/follows/${friend}`, { method: 'DELETE' })
                                   followingSet.delete(friend)
                                   setFollowingSet(new Set(followingSet))
+                                  setSavedEntryToast({ headline: 'Unfollowed', highlight: friend })
+                                  window.setTimeout(() => setSavedEntryToast(null), 3500)
                                 } catch (error) {
                                   console.error('Failed to unfollow:', error)
                                   const msg = error instanceof Error ? error.message : ''
@@ -5785,40 +5793,43 @@ function App() {
                       </button>
                     </div>
                     <div className="entry-metrics">
-                      <div className="mb-2">
+                      <div className="entry-stat-cluster mb-2">
                         <span className="score-chip-row"><span className="score-chip-label">Sip Score</span><span className="score-chip" title="Combined taste + greenness score">
                           <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
                           <span className="score-chip-suffix">/100</span>
                         </span></span>
+                        <span className="stat-chip-row"><span className="stat-chip-label">Greenness</span><span className="stat-chip" title="How vibrantly green the matcha reads">
+                          <span className="stat-chip-value">{entry.greenness.toFixed(0)}</span>
+                          <span className="stat-chip-suffix">%</span>
+                        </span></span>
                       </div>
-                      <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
-                      {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
+                      {entry.flavorPreferences && (Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) || getBodyProfile(entry.flavorPreferences)) && (
+                        <div className="entry-chip-row">
                           {sortFlavorsByColor(Object.entries(entry.flavorPreferences).filter(([k, v]) => v > 0 && isKnownFlavor(k)).map(([k]) => k)).map((flavor) => (
                             <span
                               key={flavor}
                               className="badge"
                               style={{
-                                fontSize: '0.7rem',
+                                fontSize: '0.72rem',
                                 background: flavorColor(flavor).bg,
                                 border: '1px solid ' + flavorColor(flavor).border,
                                 color: flavorColor(flavor).fg,
                                 fontWeight: '600',
                                 textTransform: 'capitalize',
-                                padding: '0.25rem 0.5rem',
-                                textAlign: 'center'
+                                padding: '0.3rem 0.6rem',
+                                borderRadius: '999px'
                               }}
                             >
                               {flavor}
                             </span>
                           ))}
+                          {getBodyProfile(entry.flavorPreferences) && (
+                            <span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.72rem', padding: '0.3rem 0.65rem', borderRadius: '999px' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span>
+                          )}
                         </div>
                       )}
-                      {getBodyProfile(entry.flavorPreferences) && (
-                        <div className="mt-2"><span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
-                      )}
                     </div>
-                    {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
+                    {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
                     <img
                       src={entry.photo || noPhotoPlaceholderUrl}
                       alt=""
@@ -5981,10 +5992,13 @@ function App() {
                                       if (isFollowing) {
                                         await apiFetch(`/follows/${user.userName}`, { method: 'DELETE' })
                                         followingSet.delete(user.userName)
+                                        setSavedEntryToast({ headline: 'Unfollowed', highlight: user.userName })
                                       } else {
                                         await apiFetch(`/follows/${user.userName}`, { method: 'POST' })
                                         followingSet.add(user.userName)
+                                        setSavedEntryToast({ headline: `Following — one more sipper to watch`, highlight: user.userName })
                                       }
+                                      window.setTimeout(() => setSavedEntryToast(null), 3500)
                                       setFollowingSet(new Set(followingSet))
                                     } catch (error) {
                                       console.error('Failed to update follow status:', error)

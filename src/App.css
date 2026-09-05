@@ -1264,6 +1264,74 @@ textarea.form-control {
   font-weight: 500;
 }
 
+/* Softer, muted-green chip for greenness/coverage stats — same shape as
+   the Sip Score chip but lower visual weight so score reads first. */
+.stat-chip-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.stat-chip-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6c757d;
+  letter-spacing: 0.02em;
+}
+
+.stat-chip {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.15rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: #e9f6ee;
+  color: #146c43;
+  border: 1px solid rgba(20, 108, 67, 0.18);
+  font-weight: 700;
+  line-height: 1;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.stat-chip-value {
+  font-size: 0.9rem;
+}
+
+.stat-chip-suffix {
+  font-size: 0.68rem;
+  opacity: 0.75;
+  font-weight: 500;
+}
+
+/* Cluster wrapper — keeps score + greenness on the same row on wider
+   cards, wraps gracefully on narrow ones. */
+.entry-stat-cluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  align-items: center;
+}
+
+/* Flavor + body chips row — replaces the fixed 3-column grid so chips
+   flow naturally like the leaderboard/community chips. */
+.entry-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.entry-thoughts {
+  margin: 0.85rem 0 0;
+  padding: 0.65rem 0.85rem;
+  background: #f8f9fa;
+  border-left: 3px solid rgba(25, 135, 84, 0.5);
+  border-radius: 0 8px 8px 0;
+  color: #343a40;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
 .explore-user-card {
   width: 100%;
   border: 1px solid var(--border-light);
