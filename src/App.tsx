@@ -1162,7 +1162,7 @@ function App() {
           setIsUserReady(true)
           setWelcomeMessage(response.userName)
           setVerifiedAccountName(null)
-          setTimeout(() => setWelcomeMessage(''), 1500)
+          setTimeout(() => setWelcomeMessage(''), 1800)
           void loadRandomForest().catch(() => undefined)
         } catch (error) {
           if (error instanceof ApiError) {
@@ -2481,7 +2481,7 @@ function App() {
                     setRequiresManualName(false)
                     setIsUserReady(true)
                     setWelcomeMessage(response.userName)
-                    setTimeout(() => setWelcomeMessage(''), 1500)
+                    setTimeout(() => setWelcomeMessage(''), 1800)
                     void loadRandomForest().catch(() => undefined)
                   } catch (error) {
                     setAuthError(error instanceof Error ? error.message : 'Account linking failed')
@@ -2715,7 +2715,7 @@ function App() {
                   setIsUserReady(true)
                   setWelcomeMessage(response.userName)
                   setPendingUserName('')
-                  setTimeout(() => setWelcomeMessage(''), 1500)
+                  setTimeout(() => setWelcomeMessage(''), 1800)
                   void loadRandomForest().catch(() => undefined)
                 } catch (error) {
                   setAuthError(error instanceof Error ? error.message : 'Failed to create account')
@@ -2771,8 +2771,8 @@ function App() {
       <a className="skip-link" href="#main-content">Skip to content</a>
 
       {welcomeMessage && createPortal(
-        <div className="welcome-toast">
-          <div>🍵 Welcome back, {welcomeMessage}!</div>
+        <div className="welcome-toast" role="status" aria-live="polite">
+          <div>Welcome back, <span style={{ color: '#20c997' }}>{welcomeMessage}</span></div>
         </div>,
         document.body
       )}
