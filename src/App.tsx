@@ -3927,25 +3927,25 @@ function App() {
       )}
 
       <nav className="navbar navbar-expand-lg navbar-light sticky-top soft-nav minimal-nav" aria-label="Main navigation" style={{ paddingLeft: 0, paddingRight: 0, marginRight: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingLeft: '1rem', paddingRight: 0, marginRight: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1f5f34' }}>SIP</span>
-            <span style={{ fontSize: '1rem', fontWeight: '700', color: '#6c757d' }}>&</span>
-            <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#20c997' }}>SCORE</span>
-          </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingLeft: 0, paddingRight: '1rem', marginRight: 0 }}>
           <button
             type="button"
             className="btn btn-link text-dark p-0 d-flex align-items-center gap-2"
             onClick={() => setIsProfileDrawerOpen(true)}
             title="My Profile"
-            style={{ textDecoration: 'none', marginRight: '-0.5rem', paddingRight: 0 }}
+            style={{ textDecoration: 'none', marginLeft: 0, paddingLeft: '1rem' }}
           >
-            <span style={{ fontSize: '0.875rem', color: '#495057' }}>{currentUserName}</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
               <circle cx="12" cy="7" r="4"></circle>
             </svg>
+            <span style={{ fontSize: '0.875rem', color: '#495057' }}>{currentUserName}</span>
           </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1f5f34' }}>SIP</span>
+            <span style={{ fontSize: '1rem', fontWeight: '700', color: '#6c757d' }}>&</span>
+            <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#20c997' }}>SCORE</span>
+          </div>
         </div>
       </nav>
 
