@@ -4598,21 +4598,26 @@ function App() {
                   <div className="row g-3">
                     {Array.from(followingSet).map((friend) => (
                       <div key={friend} className="col-12 col-md-6 col-lg-4">
-                        <div className="card border-0 shadow-sm h-100">
+                        <div
+                          className="card border-0 shadow-sm h-100"
+                          role="button"
+                          tabIndex={0}
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => void openFriendModal(friend)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault()
+                              void openFriendModal(friend)
+                            }
+                          }}
+                        >
                           <div className="card-body">
                             <h6 className="card-title fw-semibold text-success mb-3">{friend}</h6>
                             <button
                               type="button"
-                              className="btn btn-sm btn-outline-success w-100 mb-2"
-                              onClick={() => void openFriendModal(friend)}
-                              disabled={isLoadingFriendRatings}
-                            >
-                              View Ratings
-                            </button>
-                            <button
-                              type="button"
                               className="btn btn-sm btn-outline-danger w-100"
-                              onClick={async () => {
+                              onClick={async (e) => {
+                                e.stopPropagation()
                                 try {
                                   await apiFetch(`/follows/${friend}`, { method: 'DELETE' })
                                   followingSet.delete(friend)
@@ -4701,10 +4706,22 @@ function App() {
                               <div className="row g-3">
                                 {similarUsers.slice(0, similarUsersVisible).map((user) => (
                                   <div key={user.userName} className="col-12 col-sm-6 col-md-4">
-                                    <div className="card border-0 shadow-sm h-100">
+                                    <div
+                                      className="card border-0 shadow-sm h-100"
+                                      role="button"
+                                      tabIndex={0}
+                                      style={{ cursor: 'pointer' }}
+                                      onClick={() => void openFriendModal(user.userName)}
+                                      onKeyDown={(event) => {
+                                        if (event.key === 'Enter' || event.key === ' ') {
+                                          event.preventDefault()
+                                          void openFriendModal(user.userName)
+                                        }
+                                      }}
+                                    >
                                       <div className="card-body">
                                         <div className="d-flex justify-content-between align-items-start mb-2">
-                                          <h6 className="card-title fw-semibold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => void openFriendModal(user.userName)}>
+                                          <h6 className="card-title fw-semibold text-success mb-0">
                                             {user.userName}
                                           </h6>
                                           <span className="badge" style={{
