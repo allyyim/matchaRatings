@@ -836,6 +836,7 @@ function App() {
   const [authError, setAuthError] = useState('')
   const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser' | 'confirm-account' | 'magic-link' | 'magic-link-username'>('choice')
   const [welcomeMessage, setWelcomeMessage] = useState('')
+  const [savedEntryToast, setSavedEntryToast] = useState<{ headline: string; highlight: string } | null>(null)
   const [potentialAccounts, setPotentialAccounts] = useState<string[]>([])
   const [selectedPotentialAccount, setSelectedPotentialAccount] = useState<string | null>(null)
   const [verifiedAccountName, setVerifiedAccountName] = useState<string | null>(null)
@@ -2095,6 +2096,18 @@ function App() {
       const updated = await apiFetch<{ ratings: RatingEntry[] }>(`/ratings?userName=${encodeURIComponent(currentUserName)}`)
       setMyEntries(updated.ratings)
 
+      // Personalized "new entry logged" toast — same UI as the welcome toast,
+      // wording tuned to the rating so it feels alive without being cheesy.
+      const sipScore = Number((getWeightedScore(currentRating, resolvedGreenness) / 2).toFixed(1))
+      const placeLabel = trimmedLocation
+      let headline = 'Logged a new sip'
+      if (currentRating >= 4.5) headline = `A stunner — Sip Score ${sipScore}`
+      else if (currentRating >= 4) headline = `Solid sip logged · Sip Score ${sipScore}`
+      else if (currentRating >= 3) headline = `Sip logged · Sip Score ${sipScore}`
+      else if (currentRating > 0) headline = `Noted the miss · Sip Score ${sipScore}`
+      setSavedEntryToast({ headline, highlight: placeLabel })
+      window.setTimeout(() => setSavedEntryToast(null), 2200)
+
       // Milestone popups intentionally disabled — saved for a future feature.
       // See git history for the previous count-based confetti/toast logic.
 
@@ -2861,6 +2874,13 @@ function App() {
       {welcomeMessage && createPortal(
         <div className="welcome-toast" role="status" aria-live="polite">
           <div>Welcome back, <span style={{ color: '#20c997' }}>{welcomeMessage}</span></div>
+        </div>,
+        document.body
+      )}
+
+      {savedEntryToast && createPortal(
+        <div className="welcome-toast" role="status" aria-live="polite">
+          <div>{savedEntryToast.headline}{savedEntryToast.highlight ? <> at <span style={{ color: '#20c997' }}>{savedEntryToast.highlight}</span></> : null}</div>
         </div>,
         document.body
       )}
