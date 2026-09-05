@@ -2100,11 +2100,11 @@ function App() {
       // wording tuned to the rating so it feels alive without being cheesy.
       const sipScore = Number((getWeightedScore(currentRating, resolvedGreenness) / 2).toFixed(1))
       const placeLabel = trimmedLocation
-      let headline = 'Logged a new sip'
-      if (currentRating >= 4.5) headline = `A stunner — Sip Score ${sipScore}`
-      else if (currentRating >= 4) headline = `Solid sip logged · Sip Score ${sipScore}`
-      else if (currentRating >= 3) headline = `Sip logged · Sip Score ${sipScore}`
-      else if (currentRating > 0) headline = `Noted the miss · Sip Score ${sipScore}`
+      let headline = `Sip logged · Sip Score ${sipScore}`
+      if (sipScore >= 85) headline = `A stunner — Sip Score ${sipScore}`
+      else if (sipScore >= 70) headline = `Solid sip logged · Sip Score ${sipScore}`
+      else if (sipScore >= 50) headline = `Sip logged · Sip Score ${sipScore}`
+      else headline = `Noted the miss · Sip Score ${sipScore}`
       setSavedEntryToast({ headline, highlight: placeLabel })
       window.setTimeout(() => setSavedEntryToast(null), 2200)
 
