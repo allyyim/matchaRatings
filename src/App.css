@@ -1080,18 +1080,21 @@ textarea.form-control {
 .explore-place-modal-overlay {
   position: fixed;
   inset: 0;
+  height: 100vh;
+  height: 100dvh;
   z-index: 10000;
   background: rgba(8, 22, 14, 0.6);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
 }
 
 .explore-place-modal {
   width: min(48rem, 100%);
   max-height: min(85vh, 50rem);
+  max-height: min(85dvh, 50rem);
   overflow: hidden;
   background: white;
   border-radius: 1.25rem;
@@ -1111,6 +1114,7 @@ textarea.form-control {
 
 .explore-place-modal-list {
   max-height: min(65vh, 36rem);
+  max-height: min(65dvh, 36rem);
   overflow-y: auto;
   padding-right: 0.1rem;
 }
@@ -1641,19 +1645,22 @@ a:focus-visible {
 .camera-modal-overlay {
   position: fixed;
   inset: 0;
+  height: 100vh;
+  height: 100dvh;
   z-index: 10001;
   background: rgba(8, 22, 14, 0.6);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
   animation: fadeIn 0.2s ease;
 }
 
 .camera-modal-container {
   width: min(90vw, 600px);
   max-height: 90vh;
+  max-height: 90dvh;
   overflow-y: auto;
   background: white;
   border-radius: 1.25rem;
@@ -1703,13 +1710,15 @@ a:focus-visible {
 .upload-menu-overlay {
   position: fixed;
   inset: 0;
+  height: 100vh;
+  height: 100dvh;
   z-index: 10001;
   background: rgba(8, 22, 14, 0.6);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
   animation: fadeIn 0.2s ease;
 }
 
@@ -1742,13 +1751,15 @@ a:focus-visible {
 .email-link-modal-overlay {
   position: fixed;
   inset: 0;
+  height: 100vh;
+  height: 100dvh;
   z-index: 10002;
   background: rgba(8, 22, 14, 0.6);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
   animation: fadeIn 0.2s ease;
 }
 
@@ -1763,19 +1774,22 @@ a:focus-visible {
 .notes-modal-overlay {
   position: fixed;
   inset: 0;
+  height: 100vh;
+  height: 100dvh;
   z-index: 10002;
   background: rgba(8, 22, 14, 0.6);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
   animation: fadeIn 0.2s ease;
 }
 
 .notes-modal {
   width: min(90vw, 600px);
   max-height: 90vh;
+  max-height: 90dvh;
   background: white;
   border-radius: 1.25rem;
   box-shadow: var(--shadow-lg);
@@ -1863,13 +1877,15 @@ h1, h2, h3, h4, h5, h6 {
 .filter-menu-overlay {
   position: fixed;
   inset: 0;
+  height: 100vh;
+  height: 100dvh;
   z-index: 10001;
   background: rgba(8, 22, 14, 0.6);
   backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
   animation: fadeIn 0.2s ease;
 }
 
@@ -2010,18 +2026,22 @@ h1, h2, h3, h4, h5, h6 {
   left: 0;
   right: 0;
   bottom: 0;
+  height: 100vh;
+  height: 100dvh;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1100;
   backdrop-filter: blur(2px);
+  padding: max(0.75rem, env(safe-area-inset-top)) 0.75rem max(0.75rem, env(safe-area-inset-bottom));
 }
 
 .modal-card {
   width: 90%;
   max-width: 500px;
   max-height: 85vh;
+  max-height: 85dvh;
   overflow-y: auto;
   animation: fadeIn 0.2s ease;
 }
@@ -2152,13 +2172,16 @@ main#main-content {
 .new-log-modal-overlay {
   position: fixed;
   inset: 0;
+  height: 100vh;
+  height: 100dvh;
   background-color: rgba(0, 0, 0, 0.4);
   z-index: 1050;
   display: flex;
   align-items: flex-start;
   justify-content: center;
   overflow-y: auto;
-  padding: env(safe-area-inset-top) 0.75rem calc(1.5rem + env(safe-area-inset-bottom));
+  -webkit-overflow-scrolling: touch;
+  padding: max(0.75rem, env(safe-area-inset-top)) 0.75rem calc(1.5rem + env(safe-area-inset-bottom));
 }
 .new-log-modal {
   width: 100%;

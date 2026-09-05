@@ -4366,12 +4366,12 @@ function App() {
           aria-modal="true"
           aria-label={`${friendModalUser}'s ratings`}
           onClick={() => setIsFriendModalOpen(false)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1060, padding: '1rem' }}
+          style={{ position: 'fixed', inset: 0, height: '100dvh', background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1060, padding: 'max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom))' }}
         >
           <div
             className="card shadow-lg border-0"
             onClick={(e) => e.stopPropagation()}
-            style={{ width: '100%', maxWidth: '640px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
+            style={{ width: '100%', maxWidth: '640px', maxHeight: '85dvh', display: 'flex', flexDirection: 'column' }}
           >
             <div className="card-header bg-white border-bottom p-3">
               <div className="d-flex align-items-start justify-content-between gap-2 mb-2">
