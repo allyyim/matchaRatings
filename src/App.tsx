@@ -3411,19 +3411,6 @@ function App() {
               </button>
             </div>
 
-            {(canShowIosInstall || deferredInstallPrompt !== null) && (
-              <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
-                <button
-                  type="button"
-                  className="btn btn-link btn-sm text-start p-0 w-100"
-                  onClick={() => setIsIosInstallModalOpen(true)}
-                  style={{ textDecoration: 'none', color: '#198754' }}
-                >
-                  {deferredInstallPrompt !== null ? 'Install App' : 'How to Install App'}
-                </button>
-              </div>
-            )}
-
             <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
               <button
                 type="button"
@@ -3454,6 +3441,19 @@ function App() {
                 Share App
               </button>
             </div>
+
+            {(canShowIosInstall || deferredInstallPrompt !== null) && (
+              <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
+                <button
+                  type="button"
+                  className="btn btn-link btn-sm text-start p-0 w-100"
+                  onClick={() => setIsIosInstallModalOpen(true)}
+                  style={{ textDecoration: 'none', color: '#198754' }}
+                >
+                  {deferredInstallPrompt !== null ? 'Install App' : 'How to Install App'}
+                </button>
+              </div>
+            )}
 
             <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
               <button
@@ -3549,31 +3549,21 @@ function App() {
             <div style={{ padding: '1rem', overflowY: 'auto', flex: 1 }}>
               <label className="form-label fw-semibold mb-2 text-success">Your Matcha preferences</label>
               <div className="text-muted small mb-2" style={{ fontSize: '0.75rem' }}>Flavors</div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
-                {['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'creamy', 'floral', 'earthy', 'Chocolatey', 'mellow'].map((flavor) => {
-                  const isSelected = userFlavors.includes(flavor)
+              <div className="pref-chip-grid pref-chip-grid-2 mb-3">
+                {['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'creamy', 'floral', 'earthy', 'chocolatey', 'mellow'].map((flavor) => {
+                  const isSelected = userFlavors.map(f => f.toLowerCase()).includes(flavor.toLowerCase())
                   return (
-                  <button
-                    key={flavor}
-                    type="button"
-                    style={{
-                      textTransform: 'capitalize',
-                      fontSize: '0.8rem',
-                      padding: '0.375rem 0.75rem',
-                      borderRadius: '0.5rem',
-                      border: '1px solid ' + (isSelected ? '#0d4f4a' : 'rgba(176, 222, 214, 0.3)'),
-                      background: isSelected ? '#0d4f4a' : 'linear-gradient(135deg, #d4ede9 0%, #e0f3f0 100%)',
-                      color: isSelected ? '#ffffff' : '#6b9e95',
-                      fontWeight: isSelected ? '600' : '500',
-                      cursor: 'pointer'
-                    }}
-                    onClick={() => setUserFlavors(userFlavors.includes(flavor)
-                      ? userFlavors.filter(f => f !== flavor)
-                      : [...userFlavors, flavor]
-                    )}
-                  >
-                    {flavor}
-                  </button>
+                    <button
+                      key={flavor}
+                      type="button"
+                      className={`pref-chip ${isSelected ? 'is-active' : ''}`}
+                      onClick={() => setUserFlavors(userFlavors.map(f => f.toLowerCase()).includes(flavor.toLowerCase())
+                        ? userFlavors.filter(f => f.toLowerCase() !== flavor.toLowerCase())
+                        : [...userFlavors, flavor]
+                      )}
+                    >
+                      {flavor}
+                    </button>
                   )
                 })}
               </div>
@@ -3582,7 +3572,7 @@ function App() {
                 Body
                 <BodyInfoIcon />
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginBottom: '0.75rem' }}>
+              <div className="pref-chip-grid pref-chip-grid-3 mb-2">
                 {BODY_PROFILE_OPTIONS.map((opt) => {
                   const active = userBodyPref === opt.value
                   return (
@@ -3590,16 +3580,7 @@ function App() {
                       key={`pref-body-${opt.value}`}
                       type="button"
                       title={opt.desc}
-                      style={{
-                        fontSize: '0.8rem',
-                        padding: '0.375rem 0.5rem',
-                        borderRadius: '0.5rem',
-                        border: '1px solid ' + (active ? '#0d4f4a' : 'rgba(176, 222, 214, 0.3)'),
-                        background: active ? '#0d4f4a' : 'linear-gradient(135deg, #d4ede9 0%, #e0f3f0 100%)',
-                        color: active ? '#ffffff' : '#6b9e95',
-                        fontWeight: active ? '600' : '500',
-                        cursor: 'pointer'
-                      }}
+                      className={`pref-chip ${active ? 'is-active' : ''}`}
                       onClick={() => setUserBodyPref(active ? '' : opt.value)}
                     >
                       {opt.label}
@@ -5684,59 +5665,44 @@ function App() {
 
               {exploreActiveTab === 'users' && (
                 <section>
-                  <div className="explore-places-subtitle-wrapper mb-3">
-                    <p className="explore-places-subtitle">
-                      <span className="explore-places-badge">Top Sippers</span>
-                      <span className="explore-places-tag">most places logged 🍃</span>
-                    </p>
-                  </div>
+                  <p className="text-muted mb-3">Leaderboard</p>
 
-                  {exploreUsers.length === 0 && <div className="alert alert-light border mb-0 text-center">No user place data yet.</div>}
+                  {exploreUsers.length === 0 && <div className="alert alert-light border mb-0">No user place data yet.</div>}
 
                   {exploreUsers.length > 0 && (
                     <div className="d-flex flex-column gap-2">
-                      {exploreUsers.map((user, index) => {
-                        const rank = index + 1
-                        const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
-                        const isSelf = user.userName.toLowerCase() === (currentUserName || '').toLowerCase()
-                        const isFollowing = followingSet.has(user.userName)
-                        return (
-                          <article
-                            key={`${user.userName}-${index}`}
-                            className="explore-user-card"
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => void openFriendModal(user.userName)}
-                            onKeyDown={(event) => {
-                              if (event.key === 'Enter' || event.key === ' ') {
-                                event.preventDefault()
-                                void openFriendModal(user.userName)
-                              }
-                            }}
-                          >
-                            <div className="explore-place-rank" aria-hidden="true">
-                              {medal ? (
-                                <span className="explore-place-medal">{medal}</span>
-                              ) : (
-                                <span className="explore-place-rank-num">#{rank}</span>
-                              )}
+                      {exploreUsers.map((user, index) => (
+                        <article
+                          key={`${user.userName}-${index}`}
+                          className="card border-0 shadow-sm"
+                          role="button"
+                          tabIndex={0}
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => void openFriendModal(user.userName)}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault()
+                              void openFriendModal(user.userName)
+                            }
+                          }}
+                        >
+                          <div className="card-body d-flex justify-content-between align-items-center flex-wrap gap-2 py-2">
+                            <div className="fw-semibold">
+                              #{index + 1}{' '}
+                              <span className="explore-user-link">
+                                {user.userName}
+                              </span>
                             </div>
-                            <div className="explore-place-main">
-                              <div className="explore-place-name">
-                                <span className="explore-user-link">{user.userName}</span>
-                                {isSelf && <span className="explore-user-you-badge">you</span>}
-                              </div>
-                              <div className="explore-place-meta">
-                                {user.placeCount} {user.placeCount === 1 ? 'place explored' : 'places explored'}
-                              </div>
-                            </div>
-                            <div className="explore-user-actions">
-                              {!isSelf && (
+                            <div className="d-flex gap-3 align-items-center">
+                              <div className="text-success fw-bold">{user.placeCount}</div>
+                              {user.userName.toLowerCase() !== (currentUserName || '').toLowerCase() && (
                                 <button
                                   type="button"
-                                  className={`explore-follow-btn ${isFollowing ? 'is-following' : ''}`}
+                                  className="btn btn-link btn-sm text-muted p-0"
+                                  style={{ textDecoration: 'none' }}
                                   onClick={async (event) => {
                                     event.stopPropagation()
+                                    const isFollowing = followingSet.has(user.userName)
                                     try {
                                       if (isFollowing) {
                                         await apiFetch(`/follows/${user.userName}`, { method: 'DELETE' })
@@ -5751,15 +5717,15 @@ function App() {
                                       alert(error instanceof Error ? error.message : 'Failed to update follow status')
                                     }
                                   }}
-                                  title={isFollowing ? 'Unfollow' : 'Follow'}
+                                  title={followingSet.has(user.userName) ? 'Unfollow' : 'Follow'}
                                 >
-                                  {isFollowing ? '✓ Following' : '+ Follow'}
+                                  {followingSet.has(user.userName) ? '✓ Following' : '+ Follow'}
                                 </button>
                               )}
                             </div>
-                          </article>
-                        )
-                      })}
+                          </div>
+                        </article>
+                      ))}
                     </div>
                   )}
                 </section>
