@@ -3439,6 +3439,30 @@ function App() {
               <button
                 type="button"
                 className="btn btn-link btn-sm text-start p-0 w-100"
+                onClick={() => setIsFaqModalOpen(true)}
+                style={{ textDecoration: 'none', color: '#198754' }}
+              >
+                FAQ
+              </button>
+            </div>
+
+            {(canShowIosInstall || deferredInstallPrompt !== null) && (
+              <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
+                <button
+                  type="button"
+                  className="btn btn-link btn-sm text-start p-0 w-100"
+                  onClick={() => setIsIosInstallModalOpen(true)}
+                  style={{ textDecoration: 'none', color: '#198754' }}
+                >
+                  {deferredInstallPrompt !== null ? 'Install App' : 'How to Install App'}
+                </button>
+              </div>
+            )}
+
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
+              <button
+                type="button"
+                className="btn btn-link btn-sm text-start p-0 w-100"
                 onClick={async () => {
                   const shareLink = 'https://allyyim.github.io/matchaRatings/'
                   const shareData = {
@@ -3463,30 +3487,6 @@ function App() {
                 style={{ textDecoration: 'none', color: '#198754' }}
               >
                 Share App
-              </button>
-            </div>
-
-            {(canShowIosInstall || deferredInstallPrompt !== null) && (
-              <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
-                <button
-                  type="button"
-                  className="btn btn-link btn-sm text-start p-0 w-100"
-                  onClick={() => setIsIosInstallModalOpen(true)}
-                  style={{ textDecoration: 'none', color: '#198754' }}
-                >
-                  {deferredInstallPrompt !== null ? 'Install App' : 'How to Install App'}
-                </button>
-              </div>
-            )}
-
-            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
-              <button
-                type="button"
-                className="btn btn-link btn-sm text-start p-0 w-100"
-                onClick={() => setIsFaqModalOpen(true)}
-                style={{ textDecoration: 'none', color: '#198754' }}
-              >
-                FAQ
               </button>
             </div>
 
@@ -3929,7 +3929,7 @@ function App() {
 
               <div style={{ paddingBottom: '0.75rem', borderBottom: '1px solid #f1f3f5', marginBottom: '0.75rem' }}>
                 <div className="fw-semibold mb-1" style={{ color: '#212529' }}>How does greenness scoring work?</div>
-                <div className="text-muted">Snap a photo of your matcha and an on-device model reads its color — from muted olive all the way to bright jade — and translates it into a freshness score out of 100. Your photo never leaves your phone.</div>
+                <div className="text-muted">Snap a photo of your matcha and an on-device model reads its color — from muted green-yellow all the way to rich emerald — and translates it into a freshness score out of 100. Your photo never leaves your phone.</div>
               </div>
 
               <div style={{ paddingBottom: '0.75rem', borderBottom: '1px solid #f1f3f5', marginBottom: '0.75rem' }}>
