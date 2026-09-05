@@ -79,6 +79,66 @@
   100% { opacity: 0; transform: translate(-50%, -4px); }
 }
 
+/* Milestone celebration — extended, bigger card with subtext */
+.milestone-toast {
+  animation-duration: 5s;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 1rem 1.25rem;
+  min-width: 280px;
+  max-width: min(380px, calc(100vw - 2rem));
+  border-left-width: 4px;
+}
+
+.milestone-toast::before {
+  display: none;
+}
+
+.milestone-headline {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #146c43;
+  letter-spacing: 0.005em;
+}
+
+.milestone-subtext {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #495057;
+  line-height: 1.35;
+}
+
+/* Confetti overlay — CSS-only burst of colored pieces */
+.milestone-confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1999;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: -20px;
+  width: 8px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0;
+  transform-origin: center;
+  animation: confettiFall 3.4s cubic-bezier(0.2, 0.6, 0.3, 1) forwards;
+}
+
+.confetti-piece:nth-child(3n)  { width: 10px; height: 10px; border-radius: 50%; }
+.confetti-piece:nth-child(5n)  { width: 6px;  height: 18px; }
+.confetti-piece:nth-child(7n)  { width: 12px; height: 6px;  border-radius: 999px; }
+
+@keyframes confettiFall {
+  0%   { opacity: 0; transform: translateY(-20px) rotate(0deg); }
+  8%   { opacity: 1; }
+  100% { opacity: 0; transform: translateY(105vh) rotate(720deg); }
+}
+
 /* Global Styles */
 * {
   box-sizing: border-box;

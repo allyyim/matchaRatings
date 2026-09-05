@@ -955,6 +955,7 @@ function App() {
   const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser' | 'confirm-account' | 'magic-link' | 'magic-link-username'>('choice')
   const [welcomeMessage, setWelcomeMessage] = useState('')
   const [savedEntryToast, setSavedEntryToast] = useState<{ headline: string; highlight: string } | null>(null)
+  const [milestoneCelebration, setMilestoneCelebration] = useState<{ count: number; headline: string; subtext: string } | null>(null)
   const [potentialAccounts, setPotentialAccounts] = useState<string[]>([])
   const [selectedPotentialAccount, setSelectedPotentialAccount] = useState<string | null>(null)
   const [verifiedAccountName, setVerifiedAccountName] = useState<string | null>(null)
@@ -2229,6 +2230,25 @@ function App() {
       setSavedEntryToast({ headline, highlight: placeLabel })
       window.setTimeout(() => setSavedEntryToast(null), 3500)
 
+      // Milestone celebration: check the new total against a fixed set of
+      // milestones and fire a confetti burst + special toast if we hit one.
+      const MILESTONES: Record<number, { headline: string; subtext: string }> = {
+        1:   { headline: 'First sip logged 🍵', subtext: 'Welcome to Sip & Score — your matcha journey begins!' },
+        10:  { headline: '10 sips in the books 🎉', subtext: 'You\'re officially building a matcha log.' },
+        25:  { headline: '25 matchas rated 🍵', subtext: 'That\'s a serious sipping streak.' },
+        50:  { headline: '50 sips whisked ✨', subtext: 'You\'re in the top tier of tasters now.' },
+        100: { headline: '100 matchas 🎉🍵', subtext: 'Certified sipper status: unlocked.' },
+        125: { headline: '125 sips deep 🍃', subtext: 'Nothing green escapes your review.' },
+        150: { headline: '150 rated 🍵', subtext: 'The whisk masters approve.' },
+        200: { headline: '200 sips! 🎊', subtext: 'Living-legend matcha status achieved.' }
+      }
+      const total = updated.ratings.length
+      const milestone = MILESTONES[total]
+      if (milestone) {
+        setMilestoneCelebration({ count: total, headline: milestone.headline, subtext: milestone.subtext })
+        window.setTimeout(() => setMilestoneCelebration(null), 5000)
+      }
+
       // Milestone popups intentionally disabled — saved for a future feature.
       // See git history for the previous count-based confetti/toast logic.
 
@@ -3013,6 +3033,29 @@ function App() {
         <div className="welcome-toast" role="status" aria-live="polite">
           <div>{savedEntryToast.headline}{savedEntryToast.highlight ? <> at <span style={{ color: '#20c997' }}>{savedEntryToast.highlight}</span></> : null}</div>
         </div>,
+        document.body
+      )}
+
+      {milestoneCelebration && createPortal(
+        <>
+          <div className="milestone-confetti" aria-hidden="true">
+            {Array.from({ length: 32 }).map((_, i) => (
+              <span
+                key={i}
+                className="confetti-piece"
+                style={{
+                  left: `${(i * 3.1) % 100}%`,
+                  animationDelay: `${(i % 10) * 0.08}s`,
+                  background: ['#20c997', '#198754', '#f9c74f', '#f28482', '#94d2bd', '#ffb703', '#83c5be'][i % 7]
+                }}
+              />
+            ))}
+          </div>
+          <div className="welcome-toast milestone-toast" role="status" aria-live="polite">
+            <div className="milestone-headline">{milestoneCelebration.headline}</div>
+            <div className="milestone-subtext">{milestoneCelebration.subtext}</div>
+          </div>
+        </>,
         document.body
       )}
 
