@@ -3540,34 +3540,29 @@ function App() {
               </button>
             </div>
 
-            <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, fontSize: '0.875rem', lineHeight: '1.55' }}>
+            <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, fontSize: '0.875rem', lineHeight: '1.5' }}>
               <p className="text-muted mb-3" style={{ fontStyle: 'italic' }}>
                 A few quick answers so you can get back to sipping.
               </p>
 
-              <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #f1f3f5', marginBottom: '1rem' }}>
+              <div style={{ paddingBottom: '0.75rem', borderBottom: '1px solid #f1f3f5', marginBottom: '0.75rem' }}>
                 <div className="fw-semibold mb-1" style={{ color: '#212529' }}>What is Sip &amp; Score?</div>
-                <div className="text-muted">A personal matcha journal. Log cups, rate taste and greenness, and discover matching places and people.</div>
+                <div className="text-muted">A matcha journal — log cups, rate taste and greenness, discover matches.</div>
               </div>
 
-              <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #f1f3f5', marginBottom: '1rem' }}>
+              <div style={{ paddingBottom: '0.75rem', borderBottom: '1px solid #f1f3f5', marginBottom: '0.75rem' }}>
                 <div className="fw-semibold mb-1" style={{ color: '#212529' }}>How does greenness scoring work?</div>
-                <div className="text-muted">An on-device AI model grades your photo from 1–100. Photos are never uploaded for scoring.</div>
+                <div className="text-muted">An on-device AI model rates your photo 1–100. Photos aren't uploaded.</div>
               </div>
 
-              <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #f1f3f5', marginBottom: '1rem' }}>
+              <div style={{ paddingBottom: '0.75rem', borderBottom: '1px solid #f1f3f5', marginBottom: '0.75rem' }}>
                 <div className="fw-semibold mb-1" style={{ color: '#212529' }}>How are recommendations chosen?</div>
-                <div className="text-muted">We match your flavor preferences and matcha body to other users and places, ranked by overlap strength.</div>
+                <div className="text-muted">By matching your flavor preferences and matcha body to users and places.</div>
               </div>
 
-              <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #f1f3f5', marginBottom: '1rem' }}>
+              <div style={{ paddingBottom: '0.75rem', borderBottom: '1px solid #f1f3f5', marginBottom: '0.75rem' }}>
                 <div className="fw-semibold mb-1" style={{ color: '#212529' }}>Does it work offline?</div>
-                <div className="text-muted">Yes. Install as a PWA and your logs, photos, and stats stay accessible without a connection.</div>
-              </div>
-
-              <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #f1f3f5', marginBottom: '1rem' }}>
-                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>Where is my data stored?</div>
-                <div className="text-muted">Account and ratings sync securely across devices. See the Privacy Policy for details.</div>
+                <div className="text-muted">Yes — install as a PWA and your data stays accessible.</div>
               </div>
 
               <div>
