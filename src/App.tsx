@@ -1346,6 +1346,16 @@ function App() {
   }, [])
 
   useEffect(() => {
+    if (!isUserReady || !canShowIosInstall) return
+    if (localStorage.getItem('iosInstallPromptSeen') === '1') return
+    const timer = setTimeout(() => {
+      setIsIosInstallModalOpen(true)
+      localStorage.setItem('iosInstallPromptSeen', '1')
+    }, 600)
+    return () => clearTimeout(timer)
+  }, [isUserReady, canShowIosInstall])
+
+  useEffect(() => {
     // Handle magic link verification from URL
     const params = new URLSearchParams(window.location.search)
     const authToken = params.get('authToken')
