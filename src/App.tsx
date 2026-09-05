@@ -3884,8 +3884,8 @@ function App() {
                           <span className="text-muted small">{entry.date}</span>
                         </div>
                         <div className="entry-metrics">
-                          <div className="fw-bold mb-1">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
                           <div className="fw-bold mb-1">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
+                          <div style={{ color: '#6c757d', fontWeight: 'normal' }} className="mb-1">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
                           <div style={{ color: '#6c757d', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
                         </div>
                         {entry.thoughts && (
