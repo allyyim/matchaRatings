@@ -246,6 +246,28 @@ const INITIAL_GREENSCORE_REFRESH_LIMIT = 4
 const MIN_BACKGROUND_GREENSCORE_DIFF = 5
 const BACKGROUND_GREENSCORE_TIMEOUT_MS = 5000
 
+// Per-user localStorage cache keys so critical UI state (ratings list,
+// preferences, following list) survives a bad network / offline restart
+// and reappears instantly on next launch instead of flashing empty.
+function cacheKey(userName: string, kind: string): string {
+  const safe = String(userName || '').toLowerCase().trim()
+  return `matcha:${safe}:${kind}`
+}
+function readCache<T>(userName: string, kind: string): T | null {
+  if (!userName) return null
+  try {
+    const raw = localStorage.getItem(cacheKey(userName, kind))
+    if (!raw) return null
+    return JSON.parse(raw) as T
+  } catch { return null }
+}
+function writeCache(userName: string, kind: string, value: unknown): void {
+  if (!userName) return
+  try {
+    localStorage.setItem(cacheKey(userName, kind), JSON.stringify(value))
+  } catch { /* quota exceeded / private mode — ignore */ }
+}
+
 function getWeightedScore(rating: number, greenness: number) {
   const greennessWeight = rating >= 4 ? FULL_GREENNESS_WEIGHT : LOW_RATING_GREENNESS_WEIGHT
   return rating * 20 + greenness * greennessWeight
@@ -1346,6 +1368,15 @@ function App() {
 
     let cancelled = false
 
+    // Hydrate immediately from cache so slow / offline networks don't leave
+    // the user staring at an empty list. The server fetch below will then
+    // reconcile if it succeeds; if it fails, we keep the cached copy.
+    const cachedRatings = readCache<RatingEntry[]>(currentUserName, 'ratings')
+    if (cachedRatings && Array.isArray(cachedRatings) && cachedRatings.length > 0) {
+      setMyEntries(cachedRatings)
+      setIsMyRatingsLoading(false)
+    }
+
     async function loadMyRatings() {
       setIsMyRatingsLoading(true)
       try {
@@ -1356,6 +1387,7 @@ function App() {
         if (cancelled) return
 
         setMyEntries(response.ratings)
+        writeCache(currentUserName, 'ratings', response.ratings)
 
         const refreshKey = getGreennessRefreshKey(currentUserName)
         const hasRefreshed = localStorage.getItem(refreshKey) === '1'
@@ -1367,15 +1399,17 @@ function App() {
               for (const refreshed of refreshedEntries) {
                 byId.set(refreshed.id, refreshed)
               }
-              return Array.from(byId.values())
+              const merged = Array.from(byId.values())
+              writeCache(currentUserName, 'ratings', merged)
+              return merged
             })
             localStorage.setItem(refreshKey, '1')
           }
         }
       } catch {
-        if (!cancelled) {
-          setMyEntries([])
-        }
+        // Network failed — DO NOT wipe existing entries. Leave whatever we
+        // hydrated from cache (or the previous session's state) alone so
+        // the user doesn't lose their list on a bad connection.
       } finally {
         if (!cancelled) {
           setIsMyRatingsLoading(false)
@@ -1394,14 +1428,22 @@ function App() {
 
     let cancelled = false
 
+    // Hydrate from cache first so the Following pill count is right
+    // immediately, even on a bad connection or fresh cold-start offline.
+    const cachedFollowing = readCache<string[]>(currentUserName, 'following')
+    if (cachedFollowing && Array.isArray(cachedFollowing)) {
+      setFollowingSet(new Set(cachedFollowing))
+    }
+
     async function loadFollowingList() {
       try {
         const response = await apiFetch<{ following: string[] }>('/follows/list')
         if (!cancelled) {
           setFollowingSet(new Set(response.following))
+          writeCache(currentUserName, 'following', response.following)
         }
       } catch (error) {
-        console.error('Failed to load following list:', error)
+        console.error('Failed to load following list (keeping cached copy):', error)
       }
     }
 
@@ -1699,19 +1741,45 @@ function App() {
   useEffect(() => {
     if (!isUserReady || !currentUserName) return
 
+    // Hydrate from cache first so preferences stick across offline/data
+    // switches even if the server fetch fails or returns empty on a
+    // brand-new session.
+    const cachedFlavors = readCache<string[]>(currentUserName, 'flavors')
+    if (cachedFlavors && Array.isArray(cachedFlavors) && cachedFlavors.length > 0) {
+      setUserFlavors(cachedFlavors)
+    }
+
     async function loadUserPreferences() {
       try {
         const data = await apiFetch<{ flavors?: string[] }>('/preferences')
         if (data?.flavors && Array.isArray(data.flavors)) {
+          // Only overwrite cache when the server actually knows about
+          // preferences. An empty array from the server can legitimately
+          // mean "no prefs", so we accept it — but we log a signal so
+          // future debugging is easier if this ever wipes prefs unexpectedly.
           setUserFlavors(data.flavors)
+          writeCache(currentUserName, 'flavors', data.flavors)
         }
       } catch (error) {
-        console.error('Failed to load user preferences on mount:', error)
+        console.error('Failed to load user preferences (keeping cached copy):', error)
       }
     }
 
     loadUserPreferences()
   }, [isUserReady, currentUserName])
+
+  // Mirror followingSet + myEntries to localStorage whenever they change,
+  // so the very next launch (esp. offline) starts with the last-known-good
+  // list instead of empty.
+  useEffect(() => {
+    if (!currentUserName) return
+    writeCache(currentUserName, 'following', Array.from(followingSet))
+  }, [currentUserName, followingSet])
+
+  useEffect(() => {
+    if (!currentUserName || myEntries.length === 0) return
+    writeCache(currentUserName, 'ratings', myEntries)
+  }, [currentUserName, myEntries])
 
   // If the user opens the Recs tab without any flavor prefs set, auto-open
   // the preferences modal so they can set them right away (Recs is useless
@@ -3323,6 +3391,10 @@ function App() {
                           localStorage.removeItem('matchaBodyPref')
                         }
                       } catch { /* ignore */ }
+                      // Persist locally BEFORE the network call. If the API
+                      // request fails on a bad connection, we still have the
+                      // user's picks on-device and can re-sync on next launch.
+                      writeCache(currentUserName, 'flavors', userFlavors)
                       const response = await apiFetch('/preferences', {
                         method: 'POST',
                         body: JSON.stringify({
@@ -3531,7 +3603,7 @@ function App() {
                 <button
                   type="button"
                   className="btn btn-outline-success btn-sm w-100"
-                  onClick={() => setIsCameraModalOpen(true)}
+                  onClick={openPhotoLibrary}
                 >
                   Change Photo
                 </button>
