@@ -512,6 +512,53 @@ function analyzeGreennessFromDataUrl(dataUrl: string): Promise<{
         return { bucket: 'none' as const, weight: 0 }
       }
 
+      // Detect off-color pixels within the drink region: dull/muted, yellow-leaning, or brown-leaning.
+      // These pixels indicate faded, oxidized, or low-grade matcha and should drag the score down.
+      function classifyOffColorPixel(r: number, g: number, b: number) {
+        const brightness = (r + g + b) / (255 * 3)
+        const maxRGB = Math.max(r, g, b)
+        const minRGB = Math.min(r, g, b)
+        const saturation = maxRGB ? (maxRGB - minRGB) / maxRGB : 0
+
+        // Ignore near-white highlights and near-black shadows (already skipped for white; add black guard).
+        if (brightness < 0.08) return 'none' as const
+
+        // Brown: warm tones where red leads, green is muted, blue is lowest, and brightness is mid-low.
+        // Typical brown: R > G > B with R-B gap and moderate saturation.
+        if (
+          r > g && g > b &&
+          r - b >= 25 &&
+          r - g >= 8 &&
+          brightness >= 0.15 && brightness <= 0.6 &&
+          saturation >= 0.18
+        ) {
+          return 'brown' as const
+        }
+
+        // Yellow: R and G both high and close to each other, B noticeably lower.
+        // Distinguish from matcha green by requiring R to be within ~15 of G (not clearly green-dominant).
+        if (
+          r >= 140 && g >= 140 &&
+          Math.abs(r - g) <= 20 &&
+          (Math.min(r, g) - b) >= 40 &&
+          saturation >= 0.25
+        ) {
+          return 'yellow' as const
+        }
+
+        // Dull / muted: low saturation, mid brightness, no strong color character.
+        // These are grayish-beige pixels that shouldn't count as vibrant matcha.
+        if (
+          saturation < 0.12 &&
+          brightness >= 0.25 && brightness <= 0.8 &&
+          maxRGB - minRGB < 30
+        ) {
+          return 'dull' as const
+        }
+
+        return 'none' as const
+      }
+
       function isInside(x: number, y: number) {
         return x >= 0 && y >= 0 && x < img.width && y < img.height
       }
@@ -521,12 +568,31 @@ function analyzeGreennessFromDataUrl(dataUrl: string): Promise<{
       let emeraldPixelCount = 0
       let palePixelCount = 0
       let matchaLikePixelCount = 0
+      let dullPixelCount = 0
+      let yellowPixelCount = 0
+      let brownPixelCount = 0
+      let regionNonWhitePixelCount = 0
 
       for (let y = 0; y < img.height; y++) {
         for (let x = 0; x < img.width; x++) {
           if (!region.contains(x, y)) continue
 
           const index = getPixelIndex(x, y)
+
+          // Tally off-color pixels within the drink region on a single pass,
+          // independent of the matcha-only flood-fill below.
+          const offPixelOffset = (y * img.width + x) * 4
+          const offR = imageData[offPixelOffset]
+          const offG = imageData[offPixelOffset + 1]
+          const offB = imageData[offPixelOffset + 2]
+          if (!(offR > 230 && offG > 230 && offB > 230)) {
+            regionNonWhitePixelCount++
+            const offBucket = classifyOffColorPixel(offR, offG, offB)
+            if (offBucket === 'dull') dullPixelCount++
+            else if (offBucket === 'yellow') yellowPixelCount++
+            else if (offBucket === 'brown') brownPixelCount++
+          }
+
           if (visited[index]) continue
 
           const i = (y * img.width + x) * 4
@@ -619,7 +685,17 @@ function analyzeGreennessFromDataUrl(dataUrl: string): Promise<{
             // Add a small analytical adjustment so similarly green drinks separate more often.
             const analyticalAdjustment = (emeraldRatio * 0.45) + (coverageRatio * 0.35) + (paleRatio * 0.1)
 
-            return Number(Math.min(100, baseScore + analyticalAdjustment).toFixed(1))
+            // Penalize dull/muted, yellow, and brown pixels found inside the drink region.
+            // Yellow and brown are strongest signals of low grade / oxidized matcha.
+            // Dull pixels indicate faded, chalky, or off-white drinks.
+            const denom = Math.max(1, regionNonWhitePixelCount)
+            const dullRatio = dullPixelCount / denom
+            const yellowRatio = yellowPixelCount / denom
+            const brownRatio = brownPixelCount / denom
+            const offColorPenalty = Math.min(45, (yellowRatio * 55) + (brownRatio * 65) + (dullRatio * 25))
+
+            const finalScore = baseScore + analyticalAdjustment - offColorPenalty
+            return Number(Math.max(0, Math.min(100, finalScore)).toFixed(1))
           })()
         : 0
       resolve({ score, statusMessage, coveragePercent, confidencePercent })
