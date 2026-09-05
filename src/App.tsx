@@ -2039,6 +2039,9 @@ function App() {
   async function processImage(dataUrl: string) {
 
     try {
+      // Clear any prior analysis result so the previous greenness score doesn't
+      // linger on the preview while the new photo is being processed.
+      setMatchaGreenness(null)
       const optimizedDataUrl = await Promise.race([
         downscaleDataUrlImage(dataUrl),
         new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Image processing timed out.')), IMAGE_PROCESS_TIMEOUT_MS))
@@ -2182,7 +2185,7 @@ function App() {
       else if (sipScore >= 50) headline = `Sip logged · Sip Score ${sipScore}`
       else headline = `Noted the miss · Sip Score ${sipScore}`
       setSavedEntryToast({ headline, highlight: placeLabel })
-      window.setTimeout(() => setSavedEntryToast(null), 2200)
+      window.setTimeout(() => setSavedEntryToast(null), 3500)
 
       // Milestone popups intentionally disabled — saved for a future feature.
       // See git history for the previous count-based confetti/toast logic.
@@ -2403,6 +2406,11 @@ function App() {
 
       const updated = await apiFetch<{ ratings: RatingEntry[] }>(`/ratings?userName=${encodeURIComponent(currentUserName)}`)
       setMyEntries(updated.ratings)
+
+      const editedPlace = editLocation.trim()
+      setSavedEntryToast({ headline: 'Entry updated', highlight: editedPlace })
+      window.setTimeout(() => setSavedEntryToast(null), 3500)
+
       setIsEditingEntry(false)
       setSelectedEntryId(null)
       setEditEntryPhoto('')
@@ -2424,6 +2432,8 @@ function App() {
   async function deleteEntry(entryId: number) {
     if (!currentUserName) return
 
+    const removedEntry = myEntries.find((entry) => entry.id === entryId)
+
     await apiFetch<{ deletedId: number }>(`/ratings/${entryId}?userName=${encodeURIComponent(currentUserName)}`, {
       method: 'DELETE'
     })
@@ -2431,8 +2441,11 @@ function App() {
     setMyEntries((prev) => prev.filter((entry) => entry.id !== entryId))
     setIsEditingEntry(false)
     setSelectedEntryId(null)
-    setMilestoneMessage('Entry removed from your log')
-    setTimeout(() => setMilestoneMessage(''), 3000)
+    setSavedEntryToast({
+      headline: 'Entry removed from your log',
+      highlight: removedEntry?.location?.trim() ?? ''
+    })
+    window.setTimeout(() => setSavedEntryToast(null), 3500)
   }
 
   if (!isUserReady) {
