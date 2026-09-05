@@ -946,6 +946,8 @@ function App() {
   const [isPrivacyPolicyModalOpen, setIsPrivacyPolicyModalOpen] = useState(false)
   const [isFaqModalOpen, setIsFaqModalOpen] = useState(false)
   const [isContactSupportModalOpen, setIsContactSupportModalOpen] = useState(false)
+  const [isIosInstallModalOpen, setIsIosInstallModalOpen] = useState(false)
+  const [canShowIosInstall, setCanShowIosInstall] = useState(false)
 
   const [userFlavors, setUserFlavors] = useState<string[]>([])
   const [userBodyPref, setUserBodyPref] = useState<'' | 'full-bodied' | 'medium' | 'milky'>(() => {
@@ -1331,6 +1333,17 @@ function App() {
     }, 400)
     return () => clearTimeout(handle)
   }, [pendingUserName, authMode])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') return
+    const ua = navigator.userAgent || ''
+    const isIphoneIpodIpad = /iPhone|iPod|iPad/.test(ua)
+    const isIpadOs = navigator.platform === 'MacIntel' && (navigator as unknown as { maxTouchPoints?: number }).maxTouchPoints ? ((navigator as unknown as { maxTouchPoints: number }).maxTouchPoints > 1) : false
+    const isIos = isIphoneIpodIpad || isIpadOs
+    const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua)
+    const isStandalone = window.matchMedia?.('(display-mode: standalone)').matches || (navigator as unknown as { standalone?: boolean }).standalone === true
+    setCanShowIosInstall(isIos && isSafari && !isStandalone)
+  }, [])
 
   useEffect(() => {
     // Handle magic link verification from URL
@@ -3321,6 +3334,19 @@ function App() {
               </button>
             </div>
 
+            {canShowIosInstall && (
+              <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
+                <button
+                  type="button"
+                  className="btn btn-link btn-sm text-start p-0 w-100"
+                  onClick={() => setIsIosInstallModalOpen(true)}
+                  style={{ textDecoration: 'none', color: '#198754' }}
+                >
+                  Install App
+                </button>
+              </div>
+            )}
+
             <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
               <button
                 type="button"
@@ -3546,6 +3572,164 @@ function App() {
                 }}
               >
                 Save
+              </button>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
+
+      {isIosInstallModalOpen && createPortal(
+        <>
+          <div
+            className="modal-overlay"
+            onClick={() => setIsIosInstallModalOpen(false)}
+            style={{ zIndex: 1055 }}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Install Sip and Score"
+            style={{
+              position: 'fixed',
+              left: '50%',
+              bottom: '1.25rem',
+              transform: 'translateX(-50%)',
+              width: 'calc(100vw - 2rem)',
+              maxWidth: '380px',
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              boxShadow: '0 20px 48px rgba(15, 23, 42, 0.18), 0 4px 12px rgba(15, 23, 42, 0.08)',
+              border: '1px solid rgba(0,0,0,0.06)',
+              zIndex: 1060,
+              overflow: 'hidden'
+            }}
+          >
+            <div style={{ padding: '1.25rem 1.25rem 0.5rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
+                <img
+                  src={`${import.meta.env.BASE_URL}icon-192.png`}
+                  alt=""
+                  width={36}
+                  height={36}
+                  style={{ borderRadius: '8px' }}
+                />
+                <div>
+                  <div style={{ fontWeight: 700, color: '#212529', fontSize: '0.9375rem', lineHeight: 1.2 }}>Install Sip &amp; Score</div>
+                  <div style={{ color: '#6c757d', fontSize: '0.75rem' }}>Add to your Home Screen</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsIosInstallModalOpen(false)}
+                aria-label="Close install prompt"
+                style={{
+                  border: 'none',
+                  background: 'transparent',
+                  color: '#6c757d',
+                  fontSize: '1.125rem',
+                  cursor: 'pointer',
+                  padding: '0.25rem 0.5rem',
+                  lineHeight: 1
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ padding: '0.5rem 1.25rem 1rem 1.25rem' }}>
+              <p style={{ color: '#495057', fontSize: '0.875rem', margin: '0 0 1rem 0', lineHeight: 1.5 }}>
+                Get one-tap access from your Home Screen — works offline and feels like a native app.
+              </p>
+
+              <ol style={{ margin: 0, padding: 0, listStyle: 'none' }}>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 0', borderBottom: '1px solid #f1f3f5' }}>
+                  <div style={{
+                    flexShrink: 0,
+                    width: 26,
+                    height: 26,
+                    borderRadius: '50%',
+                    background: '#20c997',
+                    color: 'white',
+                    fontWeight: 700,
+                    fontSize: '0.8125rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>1</div>
+                  <div style={{ flex: 1, fontSize: '0.875rem', color: '#212529' }}>
+                    Tap the Share icon
+                    <svg
+                      aria-hidden="true"
+                      width="18"
+                      height="22"
+                      viewBox="0 0 20 26"
+                      style={{ verticalAlign: 'middle', margin: '0 0.25rem', color: '#0d6efd' }}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M10 2v14" />
+                      <path d="M5.5 6.5L10 2l4.5 4.5" />
+                      <path d="M4 11v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V11" />
+                    </svg>
+                    in the Safari toolbar.
+                  </div>
+                </li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 0', borderBottom: '1px solid #f1f3f5' }}>
+                  <div style={{
+                    flexShrink: 0,
+                    width: 26,
+                    height: 26,
+                    borderRadius: '50%',
+                    background: '#20c997',
+                    color: 'white',
+                    fontWeight: 700,
+                    fontSize: '0.8125rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>2</div>
+                  <div style={{ flex: 1, fontSize: '0.875rem', color: '#212529' }}>
+                    Choose <strong>Add to Home Screen</strong>.
+                  </div>
+                </li>
+                <li style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 0' }}>
+                  <div style={{
+                    flexShrink: 0,
+                    width: 26,
+                    height: 26,
+                    borderRadius: '50%',
+                    background: '#20c997',
+                    color: 'white',
+                    fontWeight: 700,
+                    fontSize: '0.8125rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>3</div>
+                  <div style={{ flex: 1, fontSize: '0.875rem', color: '#212529' }}>
+                    Tap <strong>Add</strong> in the top-right corner.
+                  </div>
+                </li>
+              </ol>
+
+              <button
+                type="button"
+                onClick={() => setIsIosInstallModalOpen(false)}
+                className="btn w-100 mt-3"
+                style={{
+                  background: '#20c997',
+                  color: 'white',
+                  fontWeight: 600,
+                  border: 'none',
+                  borderRadius: '10px',
+                  padding: '0.625rem'
+                }}
+              >
+                Got it
               </button>
             </div>
           </div>
