@@ -899,6 +899,49 @@ function App() {
   const [friendModalEntries, setFriendModalEntries] = useState<RatingEntry[]>([])
   const [isFriendModalOpen, setIsFriendModalOpen] = useState(false)
   const [isLoadingFriendModal, setIsLoadingFriendModal] = useState(false)
+
+  const friendModalRank = useMemo(() => {
+    if (!friendModalUser) return null
+    const idx = exploreUsers.findIndex((u) => u.userName.toLowerCase() === friendModalUser.toLowerCase())
+    return idx >= 0 ? idx + 1 : null
+  }, [friendModalUser, exploreUsers])
+
+  const friendModalPlaceCount = useMemo(() => {
+    const set = new Set<string>()
+    friendModalEntries.forEach((e) => {
+      const l = (e.location || '').trim().toLowerCase()
+      if (l) set.add(l)
+    })
+    return set.size
+  }, [friendModalEntries])
+
+  const friendModalPrefs = useMemo(() => {
+    const counts: Record<string, number> = {}
+    const bodyCounts: Record<string, number> = {}
+    friendModalEntries.forEach((e) => {
+      if (!e.flavorPreferences) return
+      for (const [k, v] of Object.entries(e.flavorPreferences)) {
+        const num = Number(v)
+        if (!num || num <= 0) continue
+        if (k.startsWith('__body:')) {
+          const b = k.slice('__body:'.length)
+          bodyCounts[b] = (bodyCounts[b] || 0) + 1
+        } else if (isKnownFlavor(k)) {
+          counts[k] = (counts[k] || 0) + 1
+        }
+      }
+    })
+    const total = friendModalEntries.length || 1
+    const flavors = sortFlavorsByColor(
+      Object.entries(counts)
+        .filter(([, c]) => c / total >= 0.3)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([k]) => k)
+    )
+    const topBody = Object.entries(bodyCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || ''
+    return { flavors, body: topBody }
+  }, [friendModalEntries])
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [currentOnboardingSlide, setCurrentOnboardingSlide] = useState(0)
   const [selectedExplorePlaceName, setSelectedExplorePlaceName] = useState('')
@@ -3759,14 +3802,72 @@ function App() {
             onClick={(e) => e.stopPropagation()}
             style={{ width: '100%', maxWidth: '640px', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
           >
-            <div className="card-header bg-white border-bottom p-3 d-flex align-items-center justify-content-between">
-              <h5 className="mb-0 text-success fw-bold">{friendModalUser}</h5>
-              <button
-                type="button"
-                className="btn-close"
-                aria-label="Close"
-                onClick={() => setIsFriendModalOpen(false)}
-              />
+            <div className="card-header bg-white border-bottom p-3">
+              <div className="d-flex align-items-start justify-content-between gap-2 mb-2">
+                <div className="flex-grow-1">
+                  <h5 className="mb-1 text-success fw-bold">{friendModalUser}</h5>
+                  <div className="small text-muted d-flex flex-wrap gap-2 align-items-center">
+                    {friendModalRank !== null && (
+                      <span>Rank <strong className="text-success">#{friendModalRank}</strong></span>
+                    )}
+                    {friendModalRank !== null && <span aria-hidden="true">•</span>}
+                    <span><strong className="text-success">{friendModalPlaceCount}</strong> places rated</span>
+                  </div>
+                </div>
+                <div className="d-flex align-items-center gap-2">
+                  {friendModalUser && friendModalUser.toLowerCase() !== (currentUserName || '').toLowerCase() && (
+                    <button
+                      type="button"
+                      className={`btn btn-sm rounded-pill ${followingSet.has(friendModalUser) ? 'btn-success' : 'btn-outline-success'}`}
+                      onClick={async (e) => {
+                        e.stopPropagation()
+                        const isFollowing = followingSet.has(friendModalUser)
+                        try {
+                          if (isFollowing) {
+                            await apiFetch(`/follows/${friendModalUser}`, { method: 'DELETE' })
+                            followingSet.delete(friendModalUser)
+                          } else {
+                            await apiFetch(`/follows/${friendModalUser}`, { method: 'POST' })
+                            followingSet.add(friendModalUser)
+                          }
+                          setFollowingSet(new Set(followingSet))
+                        } catch (error) {
+                          console.error('Failed to update follow status:', error)
+                          alert(error instanceof Error ? error.message : 'Failed to update follow status')
+                        }
+                      }}
+                    >
+                      {followingSet.has(friendModalUser) ? '✓ Following' : '+ Follow'}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    className="btn-close"
+                    aria-label="Close"
+                    onClick={() => setIsFriendModalOpen(false)}
+                  />
+                </div>
+              </div>
+              {(friendModalPrefs.flavors.length > 0 || friendModalPrefs.body) && (
+                <div className="mt-2">
+                  <div className="small text-muted mb-1">Matcha preferences</div>
+                  <div className="d-flex flex-wrap gap-1 align-items-center">
+                    {friendModalPrefs.flavors.map((flavor) => {
+                      const _c = flavorColor(flavor)
+                      return (
+                        <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.25rem 0.55rem' }}>
+                          {flavor}
+                        </span>
+                      )
+                    })}
+                    {friendModalPrefs.body && (
+                      <span className="badge" style={{ ...(function(){ const _c = bodyColor(friendModalPrefs.body); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>
+                        Body: {bodyProfileLabel(friendModalPrefs.body)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="card-body p-3" style={{ overflowY: 'auto' }}>
               {isLoadingFriendModal ? (
@@ -4462,36 +4563,24 @@ function App() {
                       <div className="row g-3">
                         {friendSuggestions.map((friend) => (
                           <div key={friend.userName} className="col-12 col-sm-6 col-md-4">
-                            <div className="card border-0 shadow-sm h-100">
+                            <div
+                              className="card border-0 shadow-sm h-100"
+                              role="button"
+                              tabIndex={0}
+                              style={{ cursor: 'pointer' }}
+                              onClick={() => void openFriendModal(friend.userName)}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault()
+                                  void openFriendModal(friend.userName)
+                                }
+                              }}
+                            >
                               <div className="card-body">
-                                <h6 className="card-title fw-semibold text-success mb-2" style={{ cursor: 'pointer' }} onClick={() => void openFriendModal(friend.userName)}>
+                                <h6 className="card-title fw-semibold text-success mb-2">
                                   {friend.userName}
                                 </h6>
-                                <p className="text-muted small mb-3">{friend.placeCount} places</p>
-                                <button
-                                  type="button"
-                                  className="btn btn-link btn-sm text-success p-0"
-                                  style={{ textDecoration: 'none' }}
-                                  onClick={async () => {
-                                    const isFollowing = followingSet.has(friend.userName)
-                                    try {
-                                      if (isFollowing) {
-                                        await apiFetch(`/follows/${friend.userName}`, { method: 'DELETE' })
-                                        followingSet.delete(friend.userName)
-                                      } else {
-                                        await apiFetch(`/follows/${friend.userName}`, { method: 'POST' })
-                                        followingSet.add(friend.userName)
-                                      }
-                                      setFollowingSet(new Set(followingSet))
-                                    } catch (error) {
-                                      console.error('Failed to update follow status:', error)
-                                      alert(error instanceof Error ? error.message : 'Failed to update follow status')
-                                    }
-                                  }}
-                                  title={followingSet.has(friend.userName) ? 'Unfollow' : 'Follow'}
-                                >
-                                  {followingSet.has(friend.userName) ? '✓ Following' : '+ Follow'}
-                                </button>
+                                <p className="text-muted small mb-0">{friend.placeCount} places rated</p>
                               </div>
                             </div>
                           </div>
@@ -4682,10 +4771,22 @@ function App() {
                                   )
                                   return (
                                   <div key={place.location} className="col-12 col-sm-6 col-md-4">
-                                    <div className="card border-0 shadow-sm h-100">
+                                    <div
+                                      className="card border-0 shadow-sm h-100"
+                                      role="button"
+                                      tabIndex={0}
+                                      style={{ cursor: 'pointer' }}
+                                      onClick={() => void openExplorePlaceRatings(place.location)}
+                                      onKeyDown={(event) => {
+                                        if (event.key === 'Enter' || event.key === ' ') {
+                                          event.preventDefault()
+                                          void openExplorePlaceRatings(place.location)
+                                        }
+                                      }}
+                                    >
                                       <div className="card-body">
                                         <div className="d-flex justify-content-between align-items-start mb-2">
-                                          <h6 className="card-title fw-semibold text-success mb-0" style={{ cursor: 'pointer' }} onClick={() => setSelectedExplorePlaceName(place.location)}>
+                                          <h6 className="card-title fw-semibold text-success mb-0">
                                             {place.location}
                                           </h6>
                                           <span className="badge" style={{
