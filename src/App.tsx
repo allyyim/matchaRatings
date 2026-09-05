@@ -899,6 +899,7 @@ function App() {
   const [friendModalEntries, setFriendModalEntries] = useState<RatingEntry[]>([])
   const [isFriendModalOpen, setIsFriendModalOpen] = useState(false)
   const [isLoadingFriendModal, setIsLoadingFriendModal] = useState(false)
+  const [friendModalUserPrefs, setFriendModalUserPrefs] = useState<{ flavors: string[]; body: string }>({ flavors: [], body: '' })
 
   const friendModalRank = useMemo(() => {
     if (!friendModalUser) return null
@@ -916,32 +917,11 @@ function App() {
   }, [friendModalEntries])
 
   const friendModalPrefs = useMemo(() => {
-    const counts: Record<string, number> = {}
-    const bodyCounts: Record<string, number> = {}
-    friendModalEntries.forEach((e) => {
-      if (!e.flavorPreferences) return
-      for (const [k, v] of Object.entries(e.flavorPreferences)) {
-        const num = Number(v)
-        if (!num || num <= 0) continue
-        if (k.startsWith('__body:')) {
-          const b = k.slice('__body:'.length)
-          bodyCounts[b] = (bodyCounts[b] || 0) + 1
-        } else if (isKnownFlavor(k)) {
-          counts[k] = (counts[k] || 0) + 1
-        }
-      }
-    })
-    const total = friendModalEntries.length || 1
-    const flavors = sortFlavorsByColor(
-      Object.entries(counts)
-        .filter(([, c]) => c / total >= 0.3)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 8)
-        .map(([k]) => k)
-    )
-    const topBody = Object.entries(bodyCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || ''
-    return { flavors, body: topBody }
-  }, [friendModalEntries])
+    return {
+      flavors: sortFlavorsByColor(friendModalUserPrefs.flavors.filter(isKnownFlavor)),
+      body: friendModalUserPrefs.body,
+    }
+  }, [friendModalUserPrefs])
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [currentOnboardingSlide, setCurrentOnboardingSlide] = useState(0)
   const [selectedExplorePlaceName, setSelectedExplorePlaceName] = useState('')
@@ -1671,7 +1651,10 @@ function App() {
   }, [activePage])
 
   useEffect(() => {
-    if (communityActiveTab !== 'recommendations' || !currentUserName || userFlavors.length === 0) {
+    if (communityActiveTab !== 'recommendations' || !currentUserName) {
+      return
+    }
+    if (userFlavors.length === 0 && !userBodyPref) {
       return
     }
 
@@ -1679,7 +1662,7 @@ function App() {
     setIsLoadingSimilarPlaces(true)
 
     Promise.all([
-      apiFetch<{ similarUsers: Array<{ userName: string; flavors: string[]; body?: string; matchScore: number }> }>(`/similar-users?userName=${encodeURIComponent(currentUserName)}`),
+      apiFetch<{ similarUsers: Array<{ userName: string; flavors: string[]; body?: string; matchScore: number }> }>(`/similar-users?userName=${encodeURIComponent(currentUserName)}&_r=${recsRefreshKey}`),
       apiFetch<{ similarPlaces: Array<{ location: string; flavors: string[]; body?: string; matchScore: number }> }>(`/similar-places?userName=${encodeURIComponent(currentUserName)}&flavors=${encodeURIComponent(userFlavors.join(','))}&body=${encodeURIComponent(userBodyPref)}&_r=${recsRefreshKey}`)
     ])
       .then(([usersData, placesData]) => {
@@ -2128,13 +2111,19 @@ function App() {
     setFriendEntries([])
     setFriendModalUser(friendName)
     setFriendModalEntries([])
+    setFriendModalUserPrefs({ flavors: [], body: '' })
     setIsFriendModalOpen(true)
     setIsLoadingFriendModal(true)
     try {
-      const response = await apiFetch<{ friendName: string; ratings: RatingEntry[] }>(`/friends/${encodeURIComponent(friendName)}/ratings`)
-      setFriendModalEntries(response.ratings)
+      const [ratingsResp, prefsResp] = await Promise.all([
+        apiFetch<{ friendName: string; ratings: RatingEntry[] }>(`/friends/${encodeURIComponent(friendName)}/ratings`),
+        apiFetch<{ userName: string; flavors: string[]; body: string }>(`/users/${encodeURIComponent(friendName)}/preferences`).catch(() => ({ userName: friendName, flavors: [], body: '' })),
+      ])
+      setFriendModalEntries(ratingsResp.ratings)
+      setFriendModalUserPrefs({ flavors: prefsResp.flavors || [], body: prefsResp.body || '' })
     } catch {
       setFriendModalEntries([])
+      setFriendModalUserPrefs({ flavors: [], body: '' })
     } finally {
       setIsLoadingFriendModal(false)
     }

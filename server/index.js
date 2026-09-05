@@ -1517,6 +1517,54 @@ app.get('/api/follows/list', async (req, res) => {
   return res.json({ following: result.rows.map(r => r.user_name) })
 })
 
+// Fetch another user's saved matcha preferences (canonical flavors + body).
+// Used by the friend modal so we show what a user *actually set* in their
+// profile drawer instead of aggregating over their ratings.
+app.get('/api/users/:userName/preferences', async (req, res) => {
+  const userName = sanitizeUserName(String(req.params.userName || '').trim())
+  if (!userName) {
+    return res.status(400).json({ error: 'userName is required' })
+  }
+
+  try {
+    const KNOWN_FLAVORS = new Set([
+      'sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent',
+      'creamy', 'floral', 'earthy', 'chocolatey', 'mellow', 'bitter'
+    ])
+
+    const result = await pool.query(
+      `SELECT up.flavors
+         FROM user_preferences up
+         JOIN accounts a ON a.email = up.email
+         WHERE LOWER(a.user_name) = LOWER($1)
+         LIMIT 1`,
+      [userName]
+    )
+
+    if (result.rowCount === 0) {
+      return res.json({ userName, flavors: [], body: '' })
+    }
+
+    const raw = result.rows[0].flavors || {}
+    const flavors = []
+    let body = ''
+    for (const [rawKey, rawVal] of Object.entries(raw)) {
+      if (!rawVal) continue
+      const k = String(rawKey || '').toLowerCase()
+      if (k.startsWith('__body:')) {
+        body = k.slice('__body:'.length)
+      } else if (KNOWN_FLAVORS.has(k)) {
+        flavors.push(k)
+      }
+    }
+
+    return res.json({ userName, flavors, body })
+  } catch (error) {
+    console.error('Fetch user preferences failed:', error)
+    return res.status(500).json({ error: 'Failed to load user preferences' })
+  }
+})
+
 // Find users with similar flavor preferences
 app.get('/api/similar-users', async (req, res) => {
   const userName = sanitizeUserName(String(req.query.userName || '').trim())
