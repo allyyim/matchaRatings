@@ -3035,7 +3035,6 @@ function App() {
                         </div>
                         <div className="small text-muted mb-1">{entry.location || selectedExplorePlaceName}</div>
                         <div className="entry-metrics">
-                          <div className="fw-bold mb-2">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
                           <div className="mb-2">
                             <span className="score-chip-row"><span className="score-chip-label">Sip Score</span><span className="score-chip" title="Combined taste + greenness score">
                               <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
@@ -4447,7 +4446,6 @@ function App() {
                               <span className="score-chip-suffix">/100</span>
                             </span></span>
                           </div>
-                          <div style={{ color: '#6c757d', fontWeight: 'normal' }} className="mb-1">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
                           <div style={{ color: '#6c757d', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
                         </div>
                         {entry.thoughts && (
