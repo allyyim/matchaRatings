@@ -4372,7 +4372,7 @@ function App() {
                   className="btn btn-outline-success w-100 mt-2"
                   onClick={() => setMyLogsVisibleCount((c) => Math.min(c + 10, filteredMine.length))}
                 >
-                  See More ({filteredMine.length - myLogsVisibleCount} more)
+                  See More
                 </button>
               )}
               {myLogsVisibleCount > 3 && filteredMine.length > 3 && (
