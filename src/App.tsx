@@ -3540,45 +3540,36 @@ function App() {
               </button>
             </div>
 
-            <div style={{ padding: '1rem', overflowY: 'auto', flex: 1, fontSize: '0.875rem', lineHeight: '1.6' }}>
-              <p className="text-muted mb-3">
-                A few things people ask us — quick answers so you can get back to sipping.
-              </p>
+            <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, fontSize: '0.875rem', lineHeight: '1.55' }}>
+              <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #f1f3f5', marginBottom: '1rem' }}>
+                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>What is Sip &amp; Score?</div>
+                <div className="text-muted">A personal matcha journal. Log cups, rate taste and greenness, and discover matching places and people.</div>
+              </div>
 
-              <h6 className="fw-semibold text-success mb-2">What is Sip &amp; Score?</h6>
-              <p className="text-muted mb-3">
-                Your personal matcha journal. Log every cup, rate taste and greenness, and discover places and people with a palate like yours.
-              </p>
+              <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #f1f3f5', marginBottom: '1rem' }}>
+                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>How does greenness scoring work?</div>
+                <div className="text-muted">An on-device AI model grades your photo from 1–100. Photos are never uploaded for scoring.</div>
+              </div>
 
-              <h6 className="fw-semibold text-success mb-2">How does greenness work?</h6>
-              <p className="text-muted mb-3">
-                Snap a photo and our on-device AI grades how vibrantly green your matcha is on a 1–100 scale. No servers see your photo — the model runs right in your browser.
-              </p>
+              <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #f1f3f5', marginBottom: '1rem' }}>
+                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>How are recommendations chosen?</div>
+                <div className="text-muted">We match your flavor preferences and matcha body to other users and places, ranked by overlap strength.</div>
+              </div>
 
-              <h6 className="fw-semibold text-success mb-2">How are Similar Users picked?</h6>
-              <p className="text-muted mb-3">
-                We compare your flavor preferences and matcha body against everyone else's, weight the overlap both ways, and reward matches on the notes you actually chose. Set your preferences in the profile drawer to get better matches.
-              </p>
+              <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #f1f3f5', marginBottom: '1rem' }}>
+                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>Does it work offline?</div>
+                <div className="text-muted">Yes. Install as a PWA and your logs, photos, and stats stay accessible without a connection.</div>
+              </div>
 
-              <h6 className="fw-semibold text-success mb-2">How are Similar Places picked?</h6>
-              <p className="text-muted mb-3">
-                We look at the flavor and body profile the community has captured for each place, then rank them by how closely they line up with yours.
-              </p>
+              <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #f1f3f5', marginBottom: '1rem' }}>
+                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>Where is my data stored?</div>
+                <div className="text-muted">Account and ratings sync securely across devices. See the Privacy Policy for details.</div>
+              </div>
 
-              <h6 className="fw-semibold text-success mb-2">Can I use it offline?</h6>
-              <p className="text-muted mb-3">
-                Yep. Sip &amp; Score is a PWA — install it to your home screen and your logs, photos, and stats stay reachable even without signal.
-              </p>
-
-              <h6 className="fw-semibold text-success mb-2">Where does my data live?</h6>
-              <p className="text-muted mb-3">
-                Your account and ratings are stored securely on our server so they follow you across devices. Photos live on your device cache. See the Privacy Policy for the full scoop.
-              </p>
-
-              <h6 className="fw-semibold text-success mb-2">Still stuck?</h6>
-              <p className="text-muted mb-3">
-                Tap <strong>Contact Support</strong> and we'll help you out.
-              </p>
+              <div>
+                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>Need more help?</div>
+                <div className="text-muted">Reach out via <strong>Contact Support</strong>.</div>
+              </div>
             </div>
           </div>
         </>,
