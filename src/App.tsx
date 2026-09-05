@@ -3037,10 +3037,10 @@ function App() {
                         <div className="entry-metrics">
                           <div className="fw-bold mb-2">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
                           <div className="mb-2">
-                            <span className="score-chip" title="Overall score">
+                            <span className="score-chip-row"><span className="score-chip-label">Sip Score</span><span className="score-chip" title="Combined taste + greenness score">
                               <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
                               <span className="score-chip-suffix">/100</span>
-                            </span>
+                            </span></span>
                           </div>
                           <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (
@@ -4442,10 +4442,10 @@ function App() {
                         </div>
                         <div className="entry-metrics">
                           <div className="mb-1">
-                            <span className="score-chip" title="Overall score">
+                            <span className="score-chip-row"><span className="score-chip-label">Sip Score</span><span className="score-chip" title="Combined taste + greenness score">
                               <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
                               <span className="score-chip-suffix">/100</span>
-                            </span>
+                            </span></span>
                           </div>
                           <div style={{ color: '#6c757d', fontWeight: 'normal' }} className="mb-1">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
                           <div style={{ color: '#6c757d', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
@@ -4957,10 +4957,10 @@ function App() {
                     </div>
                     <div className="entry-metrics">
                       <div className="mb-2">
-                        <span className="score-chip" title="Overall score">
+                        <span className="score-chip-row"><span className="score-chip-label">Sip Score</span><span className="score-chip" title="Combined taste + greenness score">
                           <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
                           <span className="score-chip-suffix">/100</span>
-                        </span>
+                        </span></span>
                       </div>
                       <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
                       {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (
@@ -5552,10 +5552,10 @@ function App() {
                     </div>
                     <div className="entry-metrics">
                       <div className="mb-2">
-                        <span className="score-chip" title="Overall score">
+                        <span className="score-chip-row"><span className="score-chip-label">Sip Score</span><span className="score-chip" title="Combined taste + greenness score">
                           <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
                           <span className="score-chip-suffix">/100</span>
-                        </span>
+                        </span></span>
                       </div>
                       <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
                       {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (

@@ -1171,6 +1171,19 @@ textarea.form-control {
 
 /* Reusable green score pill (overall score X.X /100) used on every rating log
    across the app so scores read consistently no matter whose log it is. */
+.score-chip-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.score-chip-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #6c757d;
+  letter-spacing: 0.02em;
+}
+
 .score-chip {
   display: inline-flex;
   align-items: baseline;
