@@ -981,6 +981,10 @@ app.get('/api/auth/check-username', async (req, res) => {
 })
 
 // Demo/recruiter login: mints a token for a fixed "demo" account and seeds sample data on first use.
+// The demo account is intentionally hidden from all public/social surfaces (friends search,
+// explore leaderboards, similar users/places, follows) so recruiter-facing seed data never
+// leaks into the real PWA/website experience for normal users.
+const DEMO_USER_NAME = 'demo'
 async function seedDemoData(userName) {
   const seeds = [
     { location: 'Cha Cha Matcha (NYC)', rating: 4.5, greenness: 88, thoughts: 'Vibrant color, smooth umami finish. Loved the ceremonial grade.', flavors: ['umami', 'sweet', 'creamy', '__body:medium'] },
@@ -1269,6 +1273,7 @@ app.get('/api/friends/search', async (req, res) => {
         FROM accounts a
         LEFT JOIN ratings r ON a.user_name = r.user_name AND r.location IS NOT NULL AND r.location != ''
         WHERE LOWER(a.user_name) LIKE LOWER($1)
+          AND LOWER(a.user_name) <> 'demo'
         GROUP BY a.user_name
         ORDER BY place_count DESC, a.user_name ASC
         LIMIT 20
@@ -1288,6 +1293,12 @@ app.get('/api/friends/:friendName/ratings', async (req, res) => {
   const friendName = sanitizeUserName(String(req.params.friendName || '').trim())
   if (!friendName) {
     return res.status(400).json({ error: 'friendName is required' })
+  }
+
+  // Never expose the demo/recruiter account's seeded ratings to other users.
+  const requesterName = String(req.session?.userName || '').toLowerCase()
+  if (friendName.toLowerCase() === DEMO_USER_NAME && requesterName !== DEMO_USER_NAME) {
+    return res.status(404).json({ error: 'User not found' })
   }
 
   const result = await pool.query(
@@ -1315,6 +1326,7 @@ app.get('/api/explore/places', async (req, res) => {
         SELECT location, AVG(rating::numeric) as avg_rating, AVG(greenness::numeric) as avg_greenness, COUNT(*) as entry_count
         FROM ratings
         WHERE TRIM(location) <> ''
+          AND LOWER(user_name) <> 'demo'
         GROUP BY location
       `
     )
@@ -1398,6 +1410,7 @@ app.get('/api/explore/places/:placeName/ratings', async (req, res) => {
       SELECT *
       FROM ratings
       WHERE TRIM(location) <> ''
+        AND LOWER(user_name) <> 'demo'
     `
   )
 
@@ -1430,6 +1443,7 @@ app.get('/api/explore/users', async (req, res) => {
         SELECT user_name, COUNT(DISTINCT location) as place_count
         FROM ratings
         WHERE TRIM(location) <> ''
+          AND LOWER(user_name) <> 'demo'
         GROUP BY user_name
         ORDER BY place_count DESC, user_name ASC
         LIMIT $1
@@ -1529,6 +1543,10 @@ app.post('/account/email', async (req, res) => {
 
 // Follow/unfollow endpoints
 app.post('/api/follows/:targetUserName', async (req, res) => {
+  // Prevent normal users from following/social-linking the demo account.
+  if (String(req.params.targetUserName || '').toLowerCase() === DEMO_USER_NAME) {
+    return res.status(404).json({ error: 'Target user not found' })
+  }
   const followerEmail = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
   if (!followerEmail) return res.status(404).json({ error: 'Your account not found' })
 
@@ -1597,6 +1615,12 @@ app.get('/api/users/:userName/preferences', async (req, res) => {
   const userName = sanitizeUserName(String(req.params.userName || '').trim())
   if (!userName) {
     return res.status(400).json({ error: 'userName is required' })
+  }
+
+  // Hide the demo account's preferences from everyone except demo itself.
+  const requesterName = String(req.session?.userName || '').toLowerCase()
+  if (userName.toLowerCase() === DEMO_USER_NAME && requesterName !== DEMO_USER_NAME) {
+    return res.status(404).json({ error: 'User not found' })
   }
 
   try {
@@ -1706,6 +1730,7 @@ app.get('/api/similar-users', async (req, res) => {
         FROM accounts a
         LEFT JOIN user_preferences up ON a.email = up.email
         WHERE LOWER(a.user_name) <> LOWER($1)
+          AND LOWER(a.user_name) <> 'demo'
           AND up.flavors IS NOT NULL
         ORDER BY rating_count DESC
         LIMIT 200
@@ -1824,6 +1849,7 @@ app.get('/api/similar-places', async (req, res) => {
         WHERE r.location IS NOT NULL
           AND r.location != ''
           AND r.flavor_preferences IS NOT NULL
+          AND LOWER(r.user_name) <> 'demo'
         LIMIT 5000
       `
     )
@@ -2039,6 +2065,7 @@ app.get('/api/users/similar-preferences', async (req, res) => {
         FROM accounts a
         LEFT JOIN ratings r ON LOWER(a.user_name) = LOWER(r.user_name)
         WHERE LOWER(a.user_name) != LOWER($1)
+          AND LOWER(a.user_name) <> 'demo'
         GROUP BY a.user_name
         ORDER BY ratings_count DESC
         LIMIT $2
