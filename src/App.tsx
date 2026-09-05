@@ -950,6 +950,8 @@ function App() {
   const [canShowIosInstall, setCanShowIosInstall] = useState(false)
   const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<{ prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> } | null>(null)
   const [isIosDevice, setIsIosDevice] = useState(false)
+  const [isDemoMode, setIsDemoMode] = useState(false)
+  const isDemoAccount = currentUserName.toLowerCase() === 'demo'
 
   const [userFlavors, setUserFlavors] = useState<string[]>([])
   const [userBodyPref, setUserBodyPref] = useState<'' | 'full-bodied' | 'medium' | 'milky'>(() => {
@@ -1335,6 +1337,34 @@ function App() {
     }, 400)
     return () => clearTimeout(handle)
   }, [pendingUserName, authMode])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('demo') === '1') setIsDemoMode(true)
+  }, [])
+
+  const doDemoLogin = async () => {
+    try {
+      setIsSubmittingName(true)
+      setAuthError('')
+      const response = await apiFetch<{ userName: string; token: string }>('/auth/demo', {
+        method: 'POST',
+        body: JSON.stringify({ browserId })
+      })
+      setSessionToken(response.token || '')
+      localStorage.setItem('matchaUserName', response.userName)
+      setCurrentUserName(response.userName)
+      setRequiresManualName(false)
+      setIsUserReady(true)
+      setWelcomeMessage(response.userName)
+      setTimeout(() => setWelcomeMessage(''), 1800)
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Demo login failed')
+    } finally {
+      setIsSubmittingName(false)
+    }
+  }
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') return
@@ -2219,6 +2249,11 @@ function App() {
   const [originalEntryPhoto, setOriginalEntryPhoto] = useState<string>('')
 
   function startEntryEdit(entry: RatingEntry) {
+    if (isDemoAccount) {
+      setMilestoneMessage('Sign up to edit or add your own ratings')
+      setTimeout(() => setMilestoneMessage(''), 2500)
+      return
+    }
     setSelectedEntryId(entry.id)
     setIsEditingEntry(true)
     setEditRating(entry.rating)
@@ -2389,6 +2424,27 @@ function App() {
               >
                 I'm new here
               </button>
+              {isDemoMode && (
+                <>
+                  <div className="d-flex align-items-center my-3" aria-hidden="true">
+                    <div style={{ flex: 1, height: 1, background: '#e9ecef' }} />
+                    <span className="text-muted small mx-2">or</span>
+                    <div style={{ flex: 1, height: 1, background: '#e9ecef' }} />
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-link w-100 fw-semibold"
+                    onClick={() => void doDemoLogin()}
+                    disabled={isSubmittingName}
+                    style={{ color: '#20c997', textDecoration: 'none', padding: '0.5rem 1rem' }}
+                  >
+                    {isSubmittingName ? 'Loading demo…' : 'View demo (no signup)'}
+                  </button>
+                  <p className="text-muted text-center small mb-0" style={{ fontSize: '0.75rem' }}>
+                    Explore Sip &amp; Score with sample ratings — no account required.
+                  </p>
+                </>
+              )}
             </div>
           </section>
         ) : authMode === 'signin' ? (
@@ -3556,6 +3612,12 @@ function App() {
                   type="button"
                   className="btn w-100"
                   onClick={async () => {
+                    if (isDemoAccount) {
+                      setIsPreferencesModalOpen(false)
+                      setMilestoneMessage('Sign up to save your matcha preferences')
+                      setTimeout(() => setMilestoneMessage(''), 2500)
+                      return
+                    }
                     try {
                       setIsPreferencesModalOpen(false)
                       setIsProfileDrawerOpen(false)
@@ -4765,7 +4827,14 @@ function App() {
                 <button
                   type="button"
                   className="btn new-log-inline-btn"
-                  onClick={() => setIsNewLogOpen(true)}
+                  onClick={() => {
+                    if (isDemoAccount) {
+                      setMilestoneMessage('Sign up to add your own ratings')
+                      setTimeout(() => setMilestoneMessage(''), 2500)
+                      return
+                    }
+                    setIsNewLogOpen(true)
+                  }}
                   aria-label="Add new log"
                 >
                   <span className="new-log-inline-plus" aria-hidden="true">+</span>

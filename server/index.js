@@ -977,6 +977,62 @@ app.get('/api/auth/check-username', async (req, res) => {
   return res.json({ available: taken.rowCount === 0, sanitized })
 })
 
+// Demo/recruiter login: mints a token for a fixed "demo" account and seeds sample data on first use.
+async function seedDemoData(userName) {
+  const seeds = [
+    { location: 'Cha Cha Matcha (NYC)', rating: 4.5, greenness: 88, thoughts: 'Vibrant color, smooth umami finish. Loved the ceremonial grade.', flavors: ['umami', 'sweet', 'creamy', '__body:medium'] },
+    { location: 'Ippodo Tea (Kyoto)', rating: 5, greenness: 96, thoughts: 'Benchmark quality. Deep vegetal notes, silky mouthfeel, zero bitterness.', flavors: ['umami', 'vegetal', 'creamy', 'sweet'] },
+    { location: 'Blue Bottle (SF)', rating: 3.5, greenness: 72, thoughts: 'Balanced but leaned bitter. Slightly muted color.', flavors: ['bitter', 'nutty', 'earthy'] },
+    { location: 'Matchaful (NYC)', rating: 4, greenness: 84, thoughts: 'Bright, grassy, with a clean sweet finish. Great daily driver.', flavors: ['vegetal', 'sweet', 'umami'] },
+    { location: 'Stonemill Matcha (SF)', rating: 4.5, greenness: 90, thoughts: 'Rich, creamy, chocolatey undertones. Great with oat milk.', flavors: ['creamy', 'chocolatey', 'mellow', 'sweet'] },
+    { location: 'Kettl Tea (Brooklyn)', rating: 4.5, greenness: 92, thoughts: 'Elegant, floral top-notes and lingering umami. Ceremonial grade.', flavors: ['floral', 'umami', 'vegetal', 'sweet'] },
+    { location: 'Boba Guys (SF)', rating: 3, greenness: 60, thoughts: 'Solid latte base, but leans sugary. Would order iced.', flavors: ['sugary', 'sweet', 'mellow'] }
+  ]
+  for (const s of seeds) {
+    await pool.query(
+      `INSERT INTO ratings (user_name, photo, rating, greenness, location, thoughts, flavor_preferences)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [userName, '', s.rating, s.greenness, s.location, s.thoughts, JSON.stringify(s.flavors)]
+    )
+  }
+  await pool.query(
+    `INSERT INTO user_preferences (email, flavors, updated_at)
+     VALUES ($1, $2, NOW())
+     ON CONFLICT (email) DO UPDATE SET flavors = EXCLUDED.flavors, updated_at = NOW()`,
+    [`${userName}@sipandscore.local`, JSON.stringify(['umami', 'vegetal', 'creamy', 'sweet', '__body:medium'])]
+  )
+}
+
+app.post('/api/auth/demo', authRateLimiter, async (req, res) => {
+  const DEMO_USER = 'demo'
+  const DEMO_EMAIL = 'demo@sipandscore.local'
+  try {
+    const existing = await pool.query(
+      'SELECT 1 FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+      [DEMO_USER]
+    )
+    if (existing.rowCount === 0) {
+      await pool.query(
+        'INSERT INTO accounts (email, user_name) VALUES ($1, $2)',
+        [DEMO_EMAIL, DEMO_USER]
+      )
+    }
+    const ratingCount = await pool.query(
+      'SELECT COUNT(*)::int AS c FROM ratings WHERE LOWER(user_name) = LOWER($1)',
+      [DEMO_USER]
+    )
+    if (ratingCount.rows[0].c === 0) {
+      await seedDemoData(DEMO_USER)
+    }
+    const browserId = String(req.body?.browserId || crypto.randomUUID()).slice(0, 128)
+    const token = generateToken(DEMO_USER, browserId)
+    return res.json({ userName: DEMO_USER, token })
+  } catch (err) {
+    console.error('[demo login] failed:', err)
+    return res.status(500).json({ error: 'Demo login failed' })
+  }
+})
+
 // Sends a magic link that, once clicked, attaches the current session's username to an email
 // so the account becomes accessible from any device/browser going forward.
 app.post('/api/auth/link-email', authRateLimiter, async (req, res) => {
