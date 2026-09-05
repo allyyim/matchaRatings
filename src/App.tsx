@@ -3541,6 +3541,10 @@ function App() {
             </div>
 
             <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, fontSize: '0.875rem', lineHeight: '1.55' }}>
+              <p className="text-muted mb-3" style={{ fontStyle: 'italic' }}>
+                A few quick answers so you can get back to sipping.
+              </p>
+
               <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #f1f3f5', marginBottom: '1rem' }}>
                 <div className="fw-semibold mb-1" style={{ color: '#212529' }}>What is Sip &amp; Score?</div>
                 <div className="text-muted">A personal matcha journal. Log cups, rate taste and greenness, and discover matching places and people.</div>
@@ -3611,32 +3615,32 @@ function App() {
               </button>
             </div>
 
-            <div style={{ padding: '1rem', overflowY: 'auto', flex: 1, fontSize: '0.875rem', lineHeight: '1.6' }}>
-              <p className="text-muted mb-3">
+            <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, fontSize: '0.875rem', lineHeight: '1.55' }}>
+              <p className="text-muted mb-3" style={{ fontStyle: 'italic' }}>
                 Hit a snag, spotted a bug, or have a matcha idea you can't stop thinking about? We'd love to hear from you.
               </p>
 
-              <h6 className="fw-semibold text-success mb-2">Email us</h6>
-              <p className="mb-3">
+              <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #f1f3f5', marginBottom: '1rem' }}>
+                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>Email us</div>
                 <a
                   href="mailto:sipandscore@proton.me?subject=Sip%20%26%20Score%20Support"
-                  style={{ color: '#198754', textDecoration: 'none', fontWeight: 600 }}
+                  style={{ color: '#198754', textDecoration: 'none', fontWeight: 600, wordBreak: 'break-all' }}
                 >
                   sipandscore@proton.me
                 </a>
-              </p>
+              </div>
 
-              <h6 className="fw-semibold text-success mb-2">When you write in</h6>
-              <p className="text-muted mb-2">• Your username (so we can find your logs)</p>
-              <p className="text-muted mb-2">• What you tried and what happened</p>
-              <p className="text-muted mb-3">• Screenshots if you've got 'em</p>
+              <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #f1f3f5', marginBottom: '1rem' }}>
+                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>What to include</div>
+                <div className="text-muted">Your username, what you tried, what happened, and a screenshot if you have one — the more context the faster we can help.</div>
+              </div>
 
-              <h6 className="fw-semibold text-success mb-2">Response time</h6>
-              <p className="text-muted mb-3">
-                We usually reply within 1–2 days. Thanks for helping Sip &amp; Score get better with every cup.
-              </p>
+              <div style={{ paddingBottom: '1rem', borderBottom: '1px solid #f1f3f5', marginBottom: '1rem' }}>
+                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>Response time</div>
+                <div className="text-muted">We usually reply within 1–2 days. Thanks for helping Sip &amp; Score get better with every cup.</div>
+              </div>
 
-              <div className="d-grid">
+              <div className="d-grid mt-3">
                 <a
                   href="mailto:sipandscore@proton.me?subject=Sip%20%26%20Score%20Support"
                   className="btn btn-success btn-sm"
