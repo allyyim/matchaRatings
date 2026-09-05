@@ -951,6 +951,9 @@ app.use('/api', (req, res, next) => {
     console.log('Skipping auth for migration endpoint')
     return next()
   }
+  if (req.path === '/auth/demo' || req.path === '/auth/check-username') {
+    return next()
+  }
   return requireSession(req, res, next)
 })
 
