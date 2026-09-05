@@ -39,6 +39,22 @@ const BODY_PROFILE_OPTIONS: Array<{ value: 'full-bodied' | 'medium' | 'milky'; l
   { value: 'milky', label: 'Milky', desc: 'Lighter and creamier — milk or foam takes the lead over the matcha.' }
 ]
 
+// Ordering by color group so tags of the same palette sit next to each other.
+const FLAVOR_COLOR_ORDER: Record<string, number> = {
+  chocolatey: 0, nutty: 1,
+  sweet: 2, sugary: 3, creamy: 4,
+  umami: 5, earthy: 6, vegetal: 7, floral: 8,
+  astringent: 9, bitter: 10,
+  mellow: 11,
+}
+function sortFlavorsByColor(flavors: string[]): string[] {
+  return [...flavors].sort((a, b) => {
+    const ra = FLAVOR_COLOR_ORDER[String(a).toLowerCase()] ?? 99
+    const rb = FLAVOR_COLOR_ORDER[String(b).toLowerCase()] ?? 99
+    return ra - rb
+  })
+}
+
 function isKnownFlavor(key: string) {
   return FLAVOR_LIST.some((f) => f === key)
 }
@@ -898,7 +914,7 @@ function App() {
   const loadingOverlayText = isSavingEntry
     ? 'Brewing your memory...'
     : isLoadingExplorePlaces
-      ? 'Loading explore data...'
+      ? 'Whisking up the leaderboard...'
       : 'Loading friend ratings...'
 
   const rankedMine = useMemo(() => {
@@ -1579,7 +1595,7 @@ function App() {
 
     Promise.all([
       apiFetch<{ similarUsers: Array<{ userName: string; flavors: string[]; matchScore: number }> }>(`/similar-users?userName=${encodeURIComponent(currentUserName)}`),
-      apiFetch<{ similarPlaces: Array<{ location: string; flavors: string[]; body?: string; matchScore: number }> }>(`/similar-places?flavors=${encodeURIComponent(userFlavors.join(','))}&body=${encodeURIComponent(userBodyPref)}`)
+      apiFetch<{ similarPlaces: Array<{ location: string; flavors: string[]; body?: string; matchScore: number }> }>(`/similar-places?flavors=${encodeURIComponent(userFlavors.join(','))}&body=${encodeURIComponent(userBodyPref)}&_r=${recsRefreshKey}`)
     ])
       .then(([usersData, placesData]) => {
         setSimilarUsers(usersData.similarUsers)
@@ -1704,7 +1720,7 @@ function App() {
   const hasAutoPromptedPrefsRef = useRef(false)
   useEffect(() => {
     if (
-      activePage === 'explore' &&
+      activePage === 'friends' &&
       communityActiveTab === 'recommendations' &&
       isUserReady &&
       userFlavors.length === 0 &&
@@ -1715,6 +1731,16 @@ function App() {
       setIsPreferencesModalOpen(true)
     }
   }, [activePage, communityActiveTab, isUserReady, userFlavors.length])
+
+  // Whenever the user navigates AWAY from the Recs tab, close any stale
+  // prefs drawer/modal so it doesn't linger behind the next page (e.g.
+  // showing up in the background of the Leaderboard loading overlay).
+  useEffect(() => {
+    if (activePage !== 'friends') {
+      setIsProfileDrawerOpen(false)
+      setIsPreferencesModalOpen(false)
+    }
+  }, [activePage])
 
   function updateRatingFromClick(starIndex: number, event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
@@ -1955,6 +1981,7 @@ function App() {
     setIsLoadingExplorePlaceEntries(false)
   }
 
+  // Kept for potential future "View full profile" page (currently unused).
   async function openFriendRatings(friendName: string) {
     if (!friendName.trim()) return
     setSelectedFriend(friendName)
@@ -1976,6 +2003,7 @@ function App() {
       setIsLoadingFriendRatings(false)
     }
   }
+  void openFriendRatings
 
   async function openFriendModal(friendName: string) {
     if (!friendName.trim()) return
@@ -3685,17 +3713,7 @@ function App() {
                 </div>
               )}
             </div>
-            <div className="card-footer bg-white border-top p-3 d-flex justify-content-between gap-2">
-              <button
-                type="button"
-                className="btn btn-outline-success btn-sm"
-                onClick={() => {
-                  setIsFriendModalOpen(false)
-                  void openFriendRatings(friendModalUser)
-                }}
-              >
-                View full profile →
-              </button>
+            <div className="card-footer bg-white border-top p-3 d-flex justify-content-end gap-2">
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => setIsFriendModalOpen(false)}>
                 Close
               </button>
@@ -4551,10 +4569,9 @@ function App() {
                             ) : (
                               <div className="row g-3">
                                 {similarPlaces.slice(0, 10).map((place) => {
-                                  // Defensive: filter out reserved __body:* keys AND any legacy/unknown
-                                  // flavor names (e.g. old "bold" body value that got saved as a flavor
-                                  // before body moved to __body:*). Only surface real flavor tags.
-                                  const cleanFlavors = (place.flavors || []).filter((f) => !f.startsWith('__') && isKnownFlavor(f))
+                                  const cleanFlavors = sortFlavorsByColor(
+                                    (place.flavors || []).filter((f) => !f.startsWith('__') && isKnownFlavor(f))
+                                  )
                                   const derivedBody = place.body || (
                                     (place.flavors || []).find((f) => f.startsWith('__body:'))?.slice('__body:'.length) || ''
                                   )
