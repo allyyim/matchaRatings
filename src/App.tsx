@@ -2114,6 +2114,14 @@ function App() {
     setFriendModalUserPrefs({ flavors: [], body: '' })
     setIsFriendModalOpen(true)
     setIsLoadingFriendModal(true)
+
+    // Make sure the leaderboard is loaded so we can show the user's rank
+    // in the modal even when it's opened from Search / Recs / Following
+    // without ever visiting the Leaderboard tab first.
+    if (exploreUsers.length === 0) {
+      void fetchExploreData(false).catch(() => {})
+    }
+
     try {
       const [ratingsResp, prefsResp] = await Promise.all([
         apiFetch<{ friendName: string; ratings: RatingEntry[] }>(`/friends/${encodeURIComponent(friendName)}/ratings`),
