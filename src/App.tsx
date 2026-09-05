@@ -889,7 +889,7 @@ function App() {
   const [exploreActiveTab, setExploreActiveTab] = useState<'places' | 'users'>('places')
   const [similarActiveTab, setSimilarActiveTab] = useState<'users' | 'places'>('users')
   const [communityActiveTab, setCommunityActiveTab] = useState<'search' | 'following' | 'recommendations'>('recommendations')
-  const [similarUsers, setSimilarUsers] = useState<Array<{ userName: string; flavors: string[]; matchScore: number }>>([])
+  const [similarUsers, setSimilarUsers] = useState<Array<{ userName: string; flavors: string[]; body?: string; matchScore: number }>>([])
   const [isLoadingSimilarUsers, setIsLoadingSimilarUsers] = useState(false)
   const [similarPlaces, setSimilarPlaces] = useState<Array<{ location: string; flavors: string[]; body?: string; matchScore: number }>>([])
   const [isLoadingSimilarPlaces, setIsLoadingSimilarPlaces] = useState(false)
@@ -1679,7 +1679,7 @@ function App() {
     setIsLoadingSimilarPlaces(true)
 
     Promise.all([
-      apiFetch<{ similarUsers: Array<{ userName: string; flavors: string[]; matchScore: number }> }>(`/similar-users?userName=${encodeURIComponent(currentUserName)}`),
+      apiFetch<{ similarUsers: Array<{ userName: string; flavors: string[]; body?: string; matchScore: number }> }>(`/similar-users?userName=${encodeURIComponent(currentUserName)}`),
       apiFetch<{ similarPlaces: Array<{ location: string; flavors: string[]; body?: string; matchScore: number }> }>(`/similar-places?userName=${encodeURIComponent(currentUserName)}&flavors=${encodeURIComponent(userFlavors.join(','))}&body=${encodeURIComponent(userBodyPref)}&_r=${recsRefreshKey}`)
     ])
       .then(([usersData, placesData]) => {
@@ -4740,7 +4740,7 @@ function App() {
                                           <div className="small mt-2">
                                             <p className="text-muted mb-2">Shared flavors:</p>
                                             <div className="d-flex flex-wrap gap-1">
-                                              {user.flavors.filter((f) => !f.startsWith('__') && isKnownFlavor(f)).map((flavor) => {
+                                              {sortFlavorsByColor(user.flavors.filter((f) => !f.startsWith('__') && isKnownFlavor(f))).map((flavor) => {
                                                 const _c = flavorColor(flavor)
                                                 return (
                                                 <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.25rem 0.55rem' }}>
@@ -4749,6 +4749,14 @@ function App() {
                                                 )
                                               })}
                                             </div>
+                                          </div>
+                                        )}
+                                        {user.body && (
+                                          <div className="small mt-2">
+                                            <p className="text-muted mb-2">Matcha body profile:</p>
+                                            <span className="badge" style={{ ...(function(){ const _c = bodyColor(user.body!); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>
+                                              {bodyProfileLabel(user.body)}
+                                            </span>
                                           </div>
                                         )}
                                       </div>

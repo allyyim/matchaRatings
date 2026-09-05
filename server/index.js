@@ -1525,7 +1525,32 @@ app.get('/api/similar-users', async (req, res) => {
   }
 
   try {
-    // Get current user's flavor preferences
+    // Canonical flavor allowlist - keep in sync with client + similar-places
+    const KNOWN_FLAVORS = new Set([
+      'sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent',
+      'creamy', 'floral', 'earthy', 'chocolatey', 'mellow', 'bitter'
+    ])
+
+    // Parse a stored flavor prefs object into { flavors:Set, body:string }
+    const parsePrefs = (obj) => {
+      const flavors = new Set()
+      let body = ''
+      if (obj && typeof obj === 'object') {
+        for (const [rawKey, rawVal] of Object.entries(obj)) {
+          const k = String(rawKey || '').toLowerCase()
+          // Skip empty / falsy values so users don't match on cleared prefs
+          if (!rawVal) continue
+          if (k.startsWith('__body:')) {
+            body = k.slice('__body:'.length)
+          } else if (KNOWN_FLAVORS.has(k)) {
+            flavors.add(k)
+          }
+        }
+      }
+      return { flavors, body }
+    }
+
+    // Current user's prefs
     const userPrefsResult = await pool.query(
       `SELECT flavors FROM user_preferences WHERE email = (SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1))`,
       [userName]
@@ -1535,45 +1560,76 @@ app.get('/api/similar-users', async (req, res) => {
       return res.json({ similarUsers: [] })
     }
 
-    const userFlavors = userPrefsResult.rows[0].flavors || {}
-    const userFlavorsList = Object.keys(userFlavors).filter(f => userFlavors[f])
+    const me = parsePrefs(userPrefsResult.rows[0].flavors || {})
 
-    if (userFlavorsList.length === 0) {
+    // Nothing to match on
+    if (me.flavors.size === 0 && !me.body) {
       return res.json({ similarUsers: [] })
     }
 
-    // Find other users with matching flavors
+    // Candidate pool: users with either flavor prefs or a body pref set
     const result = await pool.query(
       `
-        SELECT DISTINCT a.user_name, up.flavors, up.milk_type,
-          (SELECT COUNT(*) FROM ratings WHERE user_name = a.user_name) as rating_count
+        SELECT DISTINCT a.user_name, up.flavors,
+          (SELECT COUNT(*) FROM ratings WHERE LOWER(user_name) = LOWER(a.user_name)) AS rating_count
         FROM accounts a
         LEFT JOIN user_preferences up ON a.email = up.email
-        WHERE LOWER(a.user_name) != LOWER($1)
+        WHERE LOWER(a.user_name) <> LOWER($1)
           AND up.flavors IS NOT NULL
         ORDER BY rating_count DESC
-        LIMIT 100
+        LIMIT 200
       `,
       [userName]
     )
 
-    // Score users based on flavor preference overlap
+    const myFlavorCount = me.flavors.size
+
     const similarUsers = result.rows
       .map((row) => {
-        const otherFlavors = row.flavors || {}
-        const otherFlavorsList = Object.keys(otherFlavors).filter(f => otherFlavors[f])
-        const matchCount = userFlavorsList.filter(f => otherFlavorsList.includes(f)).length
-        const matchScore = matchCount > 0 ? (matchCount / Math.max(userFlavorsList.length, otherFlavorsList.length)) : 0
+        const them = parsePrefs(row.flavors || {})
+        const shared = [...me.flavors].filter((f) => them.flavors.has(f))
+        const sharedCount = shared.length
+
+        // Two-sided coverage: what fraction of *my* flavors do they hit,
+        // and what fraction of *theirs* do I cover. Blend 55/45 toward mine
+        // so recs feel personalized to what I care about while still
+        // rewarding taste-twins with tight overlap.
+        const userCoverage = myFlavorCount > 0 ? sharedCount / myFlavorCount : 0
+        const placeCoverage = them.flavors.size > 0 ? sharedCount / them.flavors.size : 0
+        let flavorScore = 0.55 * userCoverage + 0.45 * placeCoverage
+
+        // Penalize noisy taste profiles: if they picked lots of flavors I
+        // don't like, subtract a small amount proportional to the surplus.
+        if (them.flavors.size > 0) {
+          const surplus = [...them.flavors].filter((f) => !me.flavors.has(f)).length
+          const surplusRatio = surplus / them.flavors.size
+          flavorScore -= Math.min(0.25, surplusRatio * 0.25)
+        }
+        flavorScore = Math.max(0, flavorScore)
+
+        // Body match is a strong signal for matcha style; +0.18 exact match,
+        // -0.10 mismatch. If either side has no body set, neutral.
+        let bodyScore = 0
+        if (me.body && them.body) {
+          bodyScore = me.body === them.body ? 0.18 : -0.10
+        }
+
+        // Small quality/confidence bump for users with actual rating history
+        const ratingCount = Number(row.rating_count) || 0
+        const activityBoost = Math.min(0.08, Math.log10(1 + ratingCount) * 0.04)
+
+        const matchScore = Math.max(0, Math.min(1, flavorScore + bodyScore + activityBoost))
 
         return {
           userName: row.user_name,
-          flavors: otherFlavorsList,
-          milkTypes: row.milk_type || [],
-          ratingCount: row.rating_count || 0,
-          matchScore: matchScore
+          flavors: sharedCount > 0 ? shared : [...them.flavors],
+          sharedFlavors: shared,
+          body: them.body,
+          ratingCount,
+          matchScore,
         }
       })
-      .filter(u => u.matchScore > 0)
+      .filter((u) => u.matchScore > 0.05)
       .sort((a, b) => b.matchScore - a.matchScore)
 
     return res.json({ similarUsers })
