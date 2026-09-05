@@ -1545,17 +1545,22 @@ app.get('/api/users/:userName/preferences', async (req, res) => {
       return res.json({ userName, flavors: [], body: '' })
     }
 
-    const raw = result.rows[0].flavors || {}
+    const raw = result.rows[0].flavors
     const flavors = []
     let body = ''
-    for (const [rawKey, rawVal] of Object.entries(raw)) {
-      if (!rawVal) continue
+    const takeKey = (rawKey, rawVal) => {
+      if (rawVal !== undefined && !rawVal) return
       const k = String(rawKey || '').toLowerCase()
       if (k.startsWith('__body:')) {
         body = k.slice('__body:'.length)
       } else if (KNOWN_FLAVORS.has(k)) {
-        flavors.push(k)
+        if (!flavors.includes(k)) flavors.push(k)
       }
+    }
+    if (Array.isArray(raw)) {
+      for (const item of raw) takeKey(item, undefined)
+    } else if (raw && typeof raw === 'object') {
+      for (const [k, v] of Object.entries(raw)) takeKey(k, v)
     }
 
     return res.json({ userName, flavors, body })
@@ -1579,21 +1584,26 @@ app.get('/api/similar-users', async (req, res) => {
       'creamy', 'floral', 'earthy', 'chocolatey', 'mellow', 'bitter'
     ])
 
-    // Parse a stored flavor prefs object into { flavors:Set, body:string }
-    const parsePrefs = (obj) => {
+    // Parse a stored flavor prefs blob (array or object) into
+    // { flavors:Set, body:string }. The client sends flavors as an array
+    // of strings — where body is packed as "__body:<value>" — but older
+    // rows may have been stored as objects, so accept both.
+    const parsePrefs = (raw) => {
       const flavors = new Set()
       let body = ''
-      if (obj && typeof obj === 'object') {
-        for (const [rawKey, rawVal] of Object.entries(obj)) {
-          const k = String(rawKey || '').toLowerCase()
-          // Skip empty / falsy values so users don't match on cleared prefs
-          if (!rawVal) continue
-          if (k.startsWith('__body:')) {
-            body = k.slice('__body:'.length)
-          } else if (KNOWN_FLAVORS.has(k)) {
-            flavors.add(k)
-          }
+      const takeKey = (rawKey, rawVal) => {
+        if (rawVal !== undefined && !rawVal) return
+        const k = String(rawKey || '').toLowerCase()
+        if (k.startsWith('__body:')) {
+          body = k.slice('__body:'.length)
+        } else if (KNOWN_FLAVORS.has(k)) {
+          flavors.add(k)
         }
+      }
+      if (Array.isArray(raw)) {
+        for (const item of raw) takeKey(item, undefined)
+      } else if (raw && typeof raw === 'object') {
+        for (const [k, v] of Object.entries(raw)) takeKey(k, v)
       }
       return { flavors, body }
     }

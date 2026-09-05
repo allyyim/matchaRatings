@@ -1753,8 +1753,14 @@ function App() {
     async function loadPreferences() {
       try {
         const data = await apiFetch<{ flavors?: string[] }>('/preferences')
-        if (data?.flavors) {
-          setUserFlavors(data.flavors)
+        if (data?.flavors && Array.isArray(data.flavors)) {
+          const bodyEntry = data.flavors.find((f) => typeof f === 'string' && f.startsWith('__body:'))
+          const cleanFlavors = data.flavors.filter((f) => typeof f === 'string' && !f.startsWith('__body:'))
+          setUserFlavors(cleanFlavors)
+          if (bodyEntry) {
+            const b = bodyEntry.slice('__body:'.length)
+            if (b === 'full-bodied' || b === 'medium' || b === 'milky') setUserBodyPref(b)
+          }
         }
       } catch (error) {
         console.error('Failed to load preferences:', error)
@@ -1779,12 +1785,17 @@ function App() {
       try {
         const data = await apiFetch<{ flavors?: string[] }>('/preferences')
         if (data?.flavors && Array.isArray(data.flavors)) {
-          // Only overwrite cache when the server actually knows about
-          // preferences. An empty array from the server can legitimately
-          // mean "no prefs", so we accept it — but we log a signal so
-          // future debugging is easier if this ever wipes prefs unexpectedly.
-          setUserFlavors(data.flavors)
-          writeCache(currentUserName, 'flavors', data.flavors)
+          const bodyEntry = data.flavors.find((f) => typeof f === 'string' && f.startsWith('__body:'))
+          const cleanFlavors = data.flavors.filter((f) => typeof f === 'string' && !f.startsWith('__body:'))
+          setUserFlavors(cleanFlavors)
+          writeCache(currentUserName, 'flavors', cleanFlavors)
+          if (bodyEntry) {
+            const b = bodyEntry.slice('__body:'.length)
+            if (b === 'full-bodied' || b === 'medium' || b === 'milky') {
+              setUserBodyPref(b)
+              localStorage.setItem('matchaBodyPref', b)
+            }
+          }
         }
       } catch (error) {
         console.error('Failed to load user preferences (keeping cached copy):', error)
@@ -3438,10 +3449,13 @@ function App() {
                       // request fails on a bad connection, we still have the
                       // user's picks on-device and can re-sync on next launch.
                       writeCache(currentUserName, 'flavors', userFlavors)
+                      const flavorsToSave = userBodyPref
+                        ? [...userFlavors, `__body:${userBodyPref}`]
+                        : userFlavors
                       const response = await apiFetch('/preferences', {
                         method: 'POST',
                         body: JSON.stringify({
-                          flavors: userFlavors
+                          flavors: flavorsToSave
                         })
                       })
                       console.log('Preferences saved:', response)
@@ -5114,31 +5128,33 @@ function App() {
                             </div>
                             <div className="d-flex gap-3 align-items-center">
                               <div className="text-success fw-bold">{user.placeCount}</div>
-                              <button
-                                type="button"
-                                className="btn btn-link btn-sm text-muted p-0"
-                                style={{ textDecoration: 'none' }}
-                                onClick={async (event) => {
-                                  event.stopPropagation()
-                                  const isFollowing = followingSet.has(user.userName)
-                                  try {
-                                    if (isFollowing) {
-                                      await apiFetch(`/follows/${user.userName}`, { method: 'DELETE' })
-                                      followingSet.delete(user.userName)
-                                    } else {
-                                      await apiFetch(`/follows/${user.userName}`, { method: 'POST' })
-                                      followingSet.add(user.userName)
+                              {user.userName.toLowerCase() !== (currentUserName || '').toLowerCase() && (
+                                <button
+                                  type="button"
+                                  className="btn btn-link btn-sm text-muted p-0"
+                                  style={{ textDecoration: 'none' }}
+                                  onClick={async (event) => {
+                                    event.stopPropagation()
+                                    const isFollowing = followingSet.has(user.userName)
+                                    try {
+                                      if (isFollowing) {
+                                        await apiFetch(`/follows/${user.userName}`, { method: 'DELETE' })
+                                        followingSet.delete(user.userName)
+                                      } else {
+                                        await apiFetch(`/follows/${user.userName}`, { method: 'POST' })
+                                        followingSet.add(user.userName)
+                                      }
+                                      setFollowingSet(new Set(followingSet))
+                                    } catch (error) {
+                                      console.error('Failed to update follow status:', error)
+                                      alert(error instanceof Error ? error.message : 'Failed to update follow status')
                                     }
-                                    setFollowingSet(new Set(followingSet))
-                                  } catch (error) {
-                                    console.error('Failed to update follow status:', error)
-                                    alert(error instanceof Error ? error.message : 'Failed to update follow status')
-                                  }
-                                }}
-                                title={followingSet.has(user.userName) ? 'Unfollow' : 'Follow'}
-                              >
-                                {followingSet.has(user.userName) ? '✓ Following' : '+ Follow'}
-                              </button>
+                                  }}
+                                  title={followingSet.has(user.userName) ? 'Unfollow' : 'Follow'}
+                                >
+                                  {followingSet.has(user.userName) ? '✓ Following' : '+ Follow'}
+                                </button>
+                              )}
                             </div>
                           </div>
                         </article>
