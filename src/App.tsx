@@ -3036,7 +3036,12 @@ function App() {
                         <div className="small text-muted mb-1">{entry.location || selectedExplorePlaceName}</div>
                         <div className="entry-metrics">
                           <div className="fw-bold mb-2">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
-                          <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
+                          <div className="mb-2">
+                            <span className="score-chip" title="Overall score">
+                              <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
+                              <span className="score-chip-suffix">/100</span>
+                            </span>
+                          </div>
                           <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
@@ -4436,7 +4441,12 @@ function App() {
                           <span className="text-muted small">{entry.date}</span>
                         </div>
                         <div className="entry-metrics">
-                          <div className="fw-bold mb-1">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
+                          <div className="mb-1">
+                            <span className="score-chip" title="Overall score">
+                              <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
+                              <span className="score-chip-suffix">/100</span>
+                            </span>
+                          </div>
                           <div style={{ color: '#6c757d', fontWeight: 'normal' }} className="mb-1">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
                           <div style={{ color: '#6c757d', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
                         </div>
@@ -4946,7 +4956,12 @@ function App() {
                       </div>
                     </div>
                     <div className="entry-metrics">
-                      <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
+                      <div className="mb-2">
+                        <span className="score-chip" title="Overall score">
+                          <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
+                          <span className="score-chip-suffix">/100</span>
+                        </span>
+                      </div>
                       <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
                       {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
@@ -5533,7 +5548,12 @@ function App() {
                       </button>
                     </div>
                     <div className="entry-metrics">
-                      <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
+                      <div className="mb-2">
+                        <span className="score-chip" title="Overall score">
+                          <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
+                          <span className="score-chip-suffix">/100</span>
+                        </span>
+                      </div>
                       <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
                       {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
