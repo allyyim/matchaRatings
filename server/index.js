@@ -1587,15 +1587,37 @@ app.get('/api/similar-users', async (req, res) => {
 app.get('/api/similar-places', async (req, res) => {
   const flavorsParam = String(req.query.flavors || '').trim()
   const userBody = String(req.query.body || '').trim()
+  const userName = String(req.query.userName || '').trim()
   if (!flavorsParam && !userBody) {
     return res.status(400).json({ error: 'flavors parameter is required' })
   }
 
   try {
-    const userFlavors = flavorsParam.split(',').map(f => f.trim()).filter(f => f)
+    const userFlavorsRaw = flavorsParam.split(',').map(f => f.trim()).filter(f => f)
+    const userFlavorsLower = userFlavorsRaw.map(f => f.toLowerCase())
+    const userFlavorSet = new Set(userFlavorsLower)
 
-    if (userFlavors.length === 0 && !userBody) {
+    if (userFlavorsRaw.length === 0 && !userBody) {
       return res.json({ similarPlaces: [] })
+    }
+
+    // Pull the current user's already-rated locations so we can exclude them
+    // from recommendations - recs should surface NEW places, not remind the
+    // user of somewhere they've already logged.
+    let visitedLocations = new Set()
+    if (userName) {
+      try {
+        const visited = await pool.query(
+          `SELECT DISTINCT LOWER(TRIM(location)) AS loc
+             FROM ratings
+             WHERE LOWER(user_name) = LOWER($1)
+               AND location IS NOT NULL AND location <> ''`,
+          [userName]
+        )
+        visitedLocations = new Set(visited.rows.map(r => r.loc))
+      } catch (err) {
+        console.warn('Could not load visited locations for recs personalization:', err.message)
+      }
     }
 
     // Pull EVERY rating that has flavor preferences, not just the most recent
@@ -1640,7 +1662,8 @@ app.get('/api/similar-places', async (req, res) => {
           const body = k.slice('__body:'.length)
           g.bodyCounts[body] = (g.bodyCounts[body] || 0) + 1
         } else if (!k.startsWith('__') && KNOWN_FLAVORS.has(String(k).toLowerCase())) {
-          g.flavorCounts[k] = (g.flavorCounts[k] || 0) + 1
+          const flavorKey = String(k).toLowerCase()
+          g.flavorCounts[flavorKey] = (g.flavorCounts[flavorKey] || 0) + 1
         }
       }
     }
@@ -1648,6 +1671,9 @@ app.get('/api/similar-places', async (req, res) => {
     const similarPlaces = []
     for (const [location, g] of byLocation) {
       if (g.total === 0) continue
+
+      // Skip places the current user has already rated.
+      if (visitedLocations.has(String(location).toLowerCase().trim())) continue
 
       // A flavor is "canonical" for a place if >= 40% of raters marked it,
       // OR (if none reach that bar) fall back to the top 3 most-mentioned.
@@ -1665,44 +1691,86 @@ app.get('/api/similar-places', async (req, res) => {
         placeBody = bodyEntries[0][0]
       }
 
-      // Weighted overlap: each user-liked flavor contributes the fraction of
-      // this place's raters that agreed on it (0..1). So a flavor 100% of
-      // raters called out is worth more than one only 40% mentioned.
-      let weightedMatches = 0
-      for (const uf of userFlavors) {
+      // === Personalized flavor scoring ===
+      // We compute three sub-signals and blend them:
+      //
+      // 1. userCoverage: of the flavors the user picked, how many does this
+      //    place actually hit, weighted by how many raters agreed on each
+      //    (so a place where 100% of raters call out "nutty" is a stronger
+      //    "nutty" hit than one where only 40% did).
+      //
+      // 2. placeCoverage: of this place's canonical flavor profile, how
+      //    much of it lines up with what the user wants. This penalizes
+      //    places whose signature is mostly flavors the user did NOT
+      //    select (e.g. an earthy/vegetal place recommended to a sweet
+      //    lover just because it happens to also be nutty).
+      //
+      // 3. mismatchPenalty: subtracts a smaller amount for each canonical
+      //    flavor the user did NOT choose, weighted by its prevalence,
+      //    so a place with 4 non-user flavors is worse than one with 1.
+      let userWeightedHits = 0
+      for (const uf of userFlavorsLower) {
         const c = g.flavorCounts[uf] || 0
-        if (c > 0) weightedMatches += c / g.total
+        if (c > 0) userWeightedHits += c / g.total // 0..1 per flavor
       }
-      const overlapDenom = Math.max(1, userFlavors.length)
-      const flavorScore = weightedMatches / overlapDenom // 0..1
+      const userCoverage = userWeightedHits / Math.max(1, userFlavorsLower.length)
+
+      let placeMatched = 0
+      let placeMismatched = 0
+      let placeMismatchWeighted = 0
+      for (const cf of canonicalFlavors) {
+        const cfKey = String(cf).toLowerCase()
+        const prevalence = (g.flavorCounts[cfKey] || 0) / g.total // 0..1
+        if (userFlavorSet.has(cfKey)) {
+          placeMatched += 1
+        } else {
+          placeMismatched += 1
+          placeMismatchWeighted += prevalence
+        }
+      }
+      const placeCoverage = placeMatched / Math.max(1, canonicalFlavors.length)
+      const mismatchPenalty = placeMismatched > 0
+        ? Math.min(0.35, placeMismatchWeighted / Math.max(1, canonicalFlavors.length) * 0.5)
+        : 0
+
+      // Blend user-side + place-side coverage. userCoverage says "does this
+      // place tick the boxes I want", placeCoverage says "is this place
+      // mostly ABOUT the things I want". Both matter for a personal rec.
+      const flavorScore = Math.max(
+        0,
+        (0.55 * userCoverage) + (0.45 * placeCoverage) - mismatchPenalty
+      ) // 0..1
 
       const bodyMatch = userBody && placeBody && userBody === placeBody
+      const bodyMismatch = userBody && placeBody && userBody !== placeBody
 
-      // Quality factor from avg star rating: 0.5 (bad) .. 1.0 (5-star)
+      // Quality factor from avg star rating: 0.5 (bad) .. 1.0 (5-star).
       const avgRating = g.ratingSum / g.total
       const qualityFactor = 0.5 + Math.max(0, Math.min(5, avgRating)) / 10
 
-      // Combine: flavor overlap is the primary signal, body match is a
-      // meaningful bonus when the user has a body pref, quality nudges ties.
+      // Combine sub-signals. Flavor is the dominant personal signal; body
+      // match is a meaningful bonus when the user has a body pref; quality
+      // nudges ties. A body mismatch dings the score a bit so we don't
+      // recommend a milky lover a full-bodied place.
       let matchScore = userBody
-        ? (flavorScore * 0.60) + (bodyMatch ? 0.30 : 0) + (qualityFactor * 0.10)
+        ? (flavorScore * 0.60) + (bodyMatch ? 0.28 : (bodyMismatch ? -0.05 : 0)) + (qualityFactor * 0.12)
         : (flavorScore * 0.80) + (qualityFactor * 0.20)
 
       // Confidence: places with more ratings get up to a 30% boost, single
       // ratings get downweighted so one rater's opinion doesn't dominate.
-      // sqrt keeps it gentle. Cap at 1.3x.
       const confidence = Math.min(1.3, 0.7 + 0.15 * Math.sqrt(g.total))
       matchScore *= confidence
 
       // Penalize harsh signature flavors unless user opted in.
       const hasHarshFlavor = canonicalFlavors.some(f => f === 'bitter' || f === 'astringent')
-      const userLikesHarsh = userFlavors.some(f => f === 'bitter' || f === 'astringent')
+      const userLikesHarsh = userFlavorSet.has('bitter') || userFlavorSet.has('astringent')
       if (hasHarshFlavor && !userLikesHarsh) {
         matchScore *= 0.5
       }
 
-      // Only surface places with at least one real signal.
-      if (matchScore <= 0 || (weightedMatches === 0 && !bodyMatch)) continue
+      // Require SOME real personal signal before surfacing a place.
+      const hasFlavorSignal = userWeightedHits > 0 || placeMatched > 0
+      if (matchScore <= 0 || (!hasFlavorSignal && !bodyMatch)) continue
 
       similarPlaces.push({
         location,

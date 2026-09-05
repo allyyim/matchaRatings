@@ -1595,7 +1595,7 @@ function App() {
 
     Promise.all([
       apiFetch<{ similarUsers: Array<{ userName: string; flavors: string[]; matchScore: number }> }>(`/similar-users?userName=${encodeURIComponent(currentUserName)}`),
-      apiFetch<{ similarPlaces: Array<{ location: string; flavors: string[]; body?: string; matchScore: number }> }>(`/similar-places?flavors=${encodeURIComponent(userFlavors.join(','))}&body=${encodeURIComponent(userBodyPref)}&_r=${recsRefreshKey}`)
+      apiFetch<{ similarPlaces: Array<{ location: string; flavors: string[]; body?: string; matchScore: number }> }>(`/similar-places?userName=${encodeURIComponent(currentUserName)}&flavors=${encodeURIComponent(userFlavors.join(','))}&body=${encodeURIComponent(userBodyPref)}&_r=${recsRefreshKey}`)
     ])
       .then(([usersData, placesData]) => {
         setSimilarUsers(usersData.similarUsers)
