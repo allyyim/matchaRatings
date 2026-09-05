@@ -5665,9 +5665,14 @@ function App() {
 
               {exploreActiveTab === 'users' && (
                 <section>
-                  <p className="text-muted mb-3">Leaderboard</p>
+                  <div className="explore-places-subtitle-wrapper mb-3">
+                    <p className="explore-places-subtitle">
+                      <span className="explore-places-badge">Leaderboard</span>
+                      <span className="explore-places-tag">every sipper, ranked 🍃</span>
+                    </p>
+                  </div>
 
-                  {exploreUsers.length === 0 && <div className="alert alert-light border mb-0">No user place data yet.</div>}
+                  {exploreUsers.length === 0 && <div className="alert alert-light border mb-0 text-center">No user place data yet.</div>}
 
                   {exploreUsers.length > 0 && (
                     <div className="d-flex flex-column gap-2">
