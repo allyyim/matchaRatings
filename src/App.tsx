@@ -4529,11 +4529,17 @@ function App() {
                 <div className="flex-grow-1">
                   <h5 className="mb-1 text-success fw-bold">{friendModalUser}</h5>
                   <div className="small text-muted d-flex flex-wrap gap-2 align-items-center">
-                    {friendModalRank !== null && (
-                      <span>Rank <strong className="text-success">#{friendModalRank}</strong></span>
+                    {isLoadingFriendModal ? (
+                      <span className="fst-italic">Loading profile…</span>
+                    ) : (
+                      <>
+                        {friendModalRank !== null && (
+                          <span>Rank <strong className="text-success">#{friendModalRank}</strong></span>
+                        )}
+                        {friendModalRank !== null && <span aria-hidden="true">•</span>}
+                        <span><strong className="text-success">{friendModalPlaceCount}</strong> places rated</span>
+                      </>
                     )}
-                    {friendModalRank !== null && <span aria-hidden="true">•</span>}
-                    <span><strong className="text-success">{friendModalPlaceCount}</strong> places rated</span>
                   </div>
                 </div>
                 <div className="d-flex align-items-center gap-2">
