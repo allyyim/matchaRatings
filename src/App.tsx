@@ -4555,7 +4555,12 @@ function App() {
                           setFollowingSet(new Set(followingSet))
                         } catch (error) {
                           console.error('Failed to update follow status:', error)
-                          alert(error instanceof Error ? error.message : 'Failed to update follow status')
+                          const msg = error instanceof Error ? error.message : ''
+                          if (/your account not found/i.test(msg)) {
+                            alert('Your session is out of date. Please sign out and sign back in to refresh your account, then try again.')
+                          } else {
+                            alert(msg || 'Failed to update follow status')
+                          }
                         }
                       }}
                     >
@@ -5930,7 +5935,12 @@ function App() {
                                       setFollowingSet(new Set(followingSet))
                                     } catch (error) {
                                       console.error('Failed to update follow status:', error)
-                                      alert(error instanceof Error ? error.message : 'Failed to update follow status')
+                                      const msg = error instanceof Error ? error.message : ''
+                                      if (/your account not found/i.test(msg)) {
+                                        alert('Your session is out of date. Please sign out and sign back in to refresh your account, then try again.')
+                                      } else {
+                                        alert(msg || 'Failed to update follow status')
+                                      }
                                     }
                                   }}
                                   title={isFollowing ? 'Unfollow' : 'Follow'}
