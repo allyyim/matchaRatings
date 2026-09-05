@@ -3278,8 +3278,8 @@ function App() {
                 onClick={async () => {
                   const shareLink = 'https://allyyim.github.io/matchaRatings/'
                   const shareData = {
-                    title: 'Sip & Score',
-                    text: 'Check out Sip & Score - an app for rating matcha and exploring matcha places!',
+                    title: 'Sip & Score 🍵',
+                    text: 'I\'m rating every matcha I sip on Sip & Score — come whisk it up with me! 🍵✨',
                     url: shareLink
                   }
 
@@ -3293,7 +3293,7 @@ function App() {
                     }
                   } else {
                     await navigator.clipboard.writeText(shareData.url)
-                    alert('App link copied to clipboard!')
+                    alert('Link copied — go spread the matcha love! 🍵')
                   }
                 }}
                 style={{ textDecoration: 'none', color: '#198754' }}
