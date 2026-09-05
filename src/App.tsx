@@ -5634,7 +5634,12 @@ function App() {
 
               {exploreActiveTab === 'places' && (
                 <section>
-                  <p className="text-muted mb-3 text-center fst-italic">Top ranked matchas — whisked, sipped, scored 🍵</p>
+                  <div className="explore-places-subtitle-wrapper mb-3">
+                    <p className="explore-places-subtitle">
+                      <span className="explore-places-badge">Top 10</span>
+                      <span className="explore-places-tag">community picks 🍵</span>
+                    </p>
+                  </div>
 
                   {explorePlaces.length === 0 && (
                     <div className="alert alert-light border mb-0 text-center">No place data yet. Add ratings to build rankings.</div>
