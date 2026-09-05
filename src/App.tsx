@@ -1099,12 +1099,12 @@ function App() {
   }, [rankedMine])
 
   const sortedMine = useMemo(() => {
-    if (!myLogsSearchTerm.trim()) return rankedMine
+    const trimmedSearch = myLogsSearchTerm.trim().toLowerCase()
+    if (!trimmedSearch) return rankedMine
 
-    const searchLower = myLogsSearchTerm.toLowerCase()
     return rankedMine.filter((entry) =>
-      entry.location.toLowerCase().includes(searchLower) ||
-      entry.thoughts.toLowerCase().includes(searchLower)
+      entry.location.toLowerCase().includes(trimmedSearch) ||
+      entry.thoughts.toLowerCase().includes(trimmedSearch)
     )
   }, [rankedMine, myLogsSearchTerm])
 
@@ -5084,16 +5084,16 @@ function App() {
               )}
 
               {!isMyRatingsLoading && filteredMine.length === 0 && (
-                myEntries.length === 0
-                  ? <div className="alert alert-light border">Your matcha journey starts here 🍵</div>
-                  : (
+                myLogsSearchTerm.trim()
+                  ? (
                     <div className="alert alert-light border text-center" role="status">
-                      <div className="fw-semibold mb-1" style={{ color: '#198754' }}>No sips match that search 🍵</div>
+                      <div className="fw-semibold mb-1" style={{ color: '#198754' }}>Nothing steeped up for that search 🍵</div>
                       <div className="text-muted small">
-                        We couldn't find <em>&ldquo;{myLogsSearchTerm.trim()}&rdquo;</em> in your log. Try a shorter name, check the spelling, or clear the search to see everything you've whisked so far.
+                        We couldn't find <em>&ldquo;{myLogsSearchTerm.trim()}&rdquo;</em> in your log. Try a shorter name, double-check the spelling, or clear the search to see every sip you've whisked so far.
                       </div>
                     </div>
                   )
+                  : <div className="alert alert-light border">Your matcha journey starts here 🍵</div>
               )}
 
               {filteredMine.slice(0, myLogsVisibleCount).map((entry) => (
