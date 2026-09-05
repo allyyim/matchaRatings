@@ -905,7 +905,7 @@ function App() {
   const [selectedExplorePlaceEntries, setSelectedExplorePlaceEntries] = useState<RatingEntry[]>([])
   const [isExplorePlaceModalOpen, setIsExplorePlaceModalOpen] = useState(false)
   const [isLoadingExplorePlaceEntries, setIsLoadingExplorePlaceEntries] = useState(false)
-  const [isMyLogsExpanded, setIsMyLogsExpanded] = useState(false)
+  const [myLogsVisibleCount, setMyLogsVisibleCount] = useState(3)
   const [myLogsSearchTerm, setMyLogsSearchTerm] = useState('')
   const [isFriendLogsExpanded, setIsFriendLogsExpanded] = useState(false)
   const [friendLogsSearchTerm, setFriendLogsSearchTerm] = useState('')
@@ -1812,7 +1812,11 @@ function App() {
 
   function updateRatingFromClick(starIndex: number, event: MouseEvent<HTMLButtonElement>) {
     event.preventDefault()
-    setCurrentRating((prev) => (Math.round(prev) === starIndex ? 0 : starIndex))
+    const target = event.currentTarget as HTMLElement
+    const rect = target.getBoundingClientRect()
+    const isLeftHalf = (event.clientX - rect.left) < rect.width / 2
+    const value = isLeftHalf ? starIndex - 0.5 : starIndex
+    setCurrentRating((prev) => (prev === value ? 0 : value))
   }
 
   function stopCameraAccess() {
@@ -2099,6 +2103,8 @@ function App() {
     setLocationSuggestions([])
   }
 
+  const [originalEntryPhoto, setOriginalEntryPhoto] = useState<string>('')
+
   function startEntryEdit(entry: RatingEntry) {
     setSelectedEntryId(entry.id)
     setIsEditingEntry(true)
@@ -2106,6 +2112,7 @@ function App() {
     setEditLocation(entry.location)
     setEditThoughts(entry.thoughts)
     setEditEntryPhoto(entry.photo)
+    setOriginalEntryPhoto(entry.photo)
     const prefs: Record<string, number> = {}
     if (entry.flavorPreferences && typeof entry.flavorPreferences === 'object') {
       for (const [k, v] of Object.entries(entry.flavorPreferences)) {
@@ -2832,49 +2839,45 @@ function App() {
                 <div className="d-flex flex-column gap-2 explore-place-modal-list">
                   {selectedExplorePlaceEntries.map((entry, index) => (
                     <article key={`place-rating-${entry.id}-${index}`} className="card border-0 shadow-sm">
-                      <div className="card-body d-flex gap-3 align-items-start py-2">
-                        <img src={entry.photo || noPhotoPlaceholderUrl} alt="" className="entry-thumb" loading="lazy" decoding="async" onError={(e) => { const img = e.currentTarget; if (img.src !== noPhotoPlaceholderUrl) img.src = noPhotoPlaceholderUrl }} />
-                        <div className="flex-grow-1">
-                          <div className="d-flex justify-content-between flex-wrap gap-2">
-                            <strong>{entry.userName}</strong>
-                            <span className="text-muted small">{entry.date}</span>
-                          </div>
-                          <div className="small text-muted mb-1">{entry.location || selectedExplorePlaceName}</div>
-                          <div className="entry-metrics">
-                            <div className="fw-bold mb-2">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
-                            <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
-                            <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
-                            {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
-                                {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
-                                  intensity > 0 && isKnownFlavor(flavor) ? (
-                                    <span
-                                      key={flavor}
-                                      className="badge"
-                                      style={{
-                                        fontSize: '0.65rem',
-                                        background: flavorColor(flavor).bg,
-                                        border: '1px solid ' + flavorColor(flavor).border,
-                                        color: flavorColor(flavor).fg,
-                                        fontWeight: '600',
-                                        textTransform: 'capitalize',
-                                        padding: '0.2rem 0.4rem',
-                                        textAlign: 'center',
-                                        whiteSpace: 'nowrap'
-                                      }}
-                                    >
-                                      {flavor}
-                                    </span>
-                                  ) : null
-                                )}
-                              </div>
-                            )}
-                            {getBodyProfile(entry.flavorPreferences) && (
-                              <div className="mt-2"><span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
-                            )}
-                          </div>
-                          {entry.thoughts && <p className="mt-1 mb-0">{entry.thoughts}</p>}
+                      <div className="card-body py-2">
+                        <div className="d-flex justify-content-between flex-wrap gap-2">
+                          <strong>{entry.userName}</strong>
+                          <span className="text-muted small">{entry.date}</span>
                         </div>
+                        <div className="small text-muted mb-1">{entry.location || selectedExplorePlaceName}</div>
+                        <div className="entry-metrics">
+                          <div className="fw-bold mb-2">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
+                          <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
+                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
+                          {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
+                              {sortFlavorsByColor(Object.entries(entry.flavorPreferences).filter(([k, v]) => v > 0 && isKnownFlavor(k)).map(([k]) => k)).map((flavor) => (
+                                <span
+                                  key={flavor}
+                                  className="badge"
+                                  style={{
+                                    fontSize: '0.65rem',
+                                    background: flavorColor(flavor).bg,
+                                    border: '1px solid ' + flavorColor(flavor).border,
+                                    color: flavorColor(flavor).fg,
+                                    fontWeight: '600',
+                                    textTransform: 'capitalize',
+                                    padding: '0.2rem 0.4rem',
+                                    textAlign: 'center',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  {flavor}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {getBodyProfile(entry.flavorPreferences) && (
+                            <div className="mt-2"><span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
+                          )}
+                        </div>
+                        {entry.thoughts && <p className="mt-1 mb-0">{entry.thoughts}</p>}
+                        <img src={entry.photo || noPhotoPlaceholderUrl} alt="" className="entry-hero-photo" loading="lazy" decoding="async" onError={(e) => { const img = e.currentTarget; if (img.src !== noPhotoPlaceholderUrl) img.src = noPhotoPlaceholderUrl }} />
                       </div>
                     </article>
                   ))}
@@ -3557,7 +3560,11 @@ function App() {
                         onClick={(event) => {
                           event.stopPropagation()
                           event.preventDefault()
-                          setEditRating((prev) => (Math.round(prev) === starIndex ? 0 : starIndex))
+                          const target = event.currentTarget as HTMLElement
+                          const rect = target.getBoundingClientRect()
+                          const isLeftHalf = (event.clientX - rect.left) < rect.width / 2
+                          const value = isLeftHalf ? starIndex - 0.5 : starIndex
+                          setEditRating((prev) => (prev === value ? 0 : value))
                         }}
                         onContextMenu={(event) => event.preventDefault()}
                         aria-label={`Edit to ${starIndex} stars`}
@@ -3600,13 +3607,32 @@ function App() {
 
               <div style={{ marginBottom: '1.5rem' }}>
                 <label className="form-label fw-semibold mb-2 text-success">Photo</label>
-                <button
-                  type="button"
-                  className="btn btn-outline-success btn-sm w-100"
-                  onClick={openPhotoLibrary}
-                >
-                  Change Photo
-                </button>
+                <div className="d-flex flex-column align-items-center gap-2">
+                  <img
+                    src={editEntryPhoto || noPhotoPlaceholderUrl}
+                    alt="Current entry photo"
+                    className="entry-hero-photo"
+                    onError={(e) => { const img = e.currentTarget; if (img.src !== noPhotoPlaceholderUrl) img.src = noPhotoPlaceholderUrl }}
+                  />
+                  <div className="d-flex gap-2 w-100">
+                    <button
+                      type="button"
+                      className="btn btn-outline-success btn-sm flex-grow-1"
+                      onClick={openPhotoLibrary}
+                    >
+                      Change Photo
+                    </button>
+                    {originalEntryPhoto && editEntryPhoto !== originalEntryPhoto && (
+                      <button
+                        type="button"
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={() => setEditEntryPhoto(originalEntryPhoto)}
+                      >
+                        Revert to original
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div style={{ marginBottom: '1.5rem' }}>
@@ -3678,11 +3704,6 @@ function App() {
                     )
                   })}
                 </div>
-                {getBodyProfile(editFlavorPrefs) && (
-                  <div className="small text-muted mt-2">
-                    {BODY_PROFILE_OPTIONS.find((o) => o.value === getBodyProfile(editFlavorPrefs))?.desc}
-                  </div>
-                )}
               </div>
 
               <div style={{ marginBottom: '1.5rem' }}>
@@ -3756,29 +3777,27 @@ function App() {
                 <div className="d-flex flex-column gap-2">
                   {friendModalEntries.map((entry) => (
                     <article key={`friend-modal-${entry.id}`} className="card border-0 shadow-sm">
-                      <div className="card-body d-flex gap-3 align-items-start py-2">
+                      <div className="card-body py-2">
+                        <div className="d-flex justify-content-between flex-wrap gap-2">
+                          <strong>{entry.location || 'Unknown location'}</strong>
+                          <span className="text-muted small">{entry.date}</span>
+                        </div>
+                        <div className="entry-metrics">
+                          <div className="fw-bold mb-1">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
+                          <div className="fw-bold mb-1">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
+                          <div style={{ color: '#6c757d', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
+                        </div>
+                        {entry.thoughts && (
+                          <div className="small text-muted mt-2" style={{ whiteSpace: 'pre-wrap' }}>{entry.thoughts}</div>
+                        )}
                         <img
                           src={entry.photo || noPhotoPlaceholderUrl}
                           alt=""
-                          className="entry-thumb"
+                          className="entry-hero-photo"
                           loading="lazy"
                           decoding="async"
                           onError={(e) => { const img = e.currentTarget; if (img.src !== noPhotoPlaceholderUrl) img.src = noPhotoPlaceholderUrl }}
                         />
-                        <div className="flex-grow-1">
-                          <div className="d-flex justify-content-between flex-wrap gap-2">
-                            <strong>{entry.location || 'Unknown location'}</strong>
-                            <span className="text-muted small">{entry.date}</span>
-                          </div>
-                          <div className="entry-metrics">
-                            <div className="fw-bold mb-1">Taste rating: {entry.rating.toFixed(1)} / 5.0</div>
-                            <div className="fw-bold mb-1">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
-                            <div style={{ color: '#6c757d', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
-                          </div>
-                          {entry.thoughts && (
-                            <div className="small text-muted mt-2" style={{ whiteSpace: 'pre-wrap' }}>{entry.thoughts}</div>
-                          )}
-                        </div>
                       </div>
                     </article>
                   ))}
@@ -4218,87 +4237,92 @@ function App() {
 
               {!isMyRatingsLoading && filteredMine.length === 0 && <div className="alert alert-light border">Your matcha journey starts here 🍵</div>}
 
-              {!isMyRatingsLoading && (isMyLogsExpanded ? filteredMine : filteredMine.slice(0, 3)).map((entry) => (
+              {!isMyRatingsLoading && filteredMine.slice(0, myLogsVisibleCount).map((entry) => (
                 <article key={entry.id} data-entry-id={entry.id} className="card border-0 shadow-sm entry-card" onClick={() => startEntryEdit(entry)} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') startEntryEdit(entry) }}>
-                  <div className="card-body d-flex gap-3 align-items-start justify-content-between">
-                    <div className="d-flex gap-3 flex-grow-1 align-items-start">
-                      <div className="entry-media-col">
-                        <img src={entry.photo || noPhotoPlaceholderUrl} alt="" className="entry-thumb" loading="lazy" decoding="async" onError={(e) => { const img = e.currentTarget; if (img.src !== noPhotoPlaceholderUrl) img.src = noPhotoPlaceholderUrl }} />
+                  <div className="card-body">
+                    <div className="d-flex gap-2 align-items-start justify-content-between mb-2">
+                      <div className="d-flex align-items-center gap-2 flex-grow-1">
                         <div className="entry-rank-circle">#{myRankById.get(entry.id) || 0}</div>
+                        <div className="flex-grow-1">
+                          <div className="d-flex justify-content-between flex-wrap gap-2">
+                            <strong>{entry.location || 'Unknown location'}</strong>
+                            <span className="text-muted small">{entry.date}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-grow-1">
-                        <div className="d-flex justify-content-between flex-wrap gap-2">
-                          <strong>{entry.location || 'Unknown location'}</strong>
-                          <span className="text-muted small">{entry.date}</span>
-                        </div>
-                        <div className="entry-metrics">
-                          <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
-                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
-                          {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
-                              {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
-                                intensity > 0 && isKnownFlavor(flavor) ? (
-                                  <span
-                                    key={flavor}
-                                    className="badge"
-                                    style={{
-                                      fontSize: '0.7rem',
-                                      background: flavorColor(flavor).bg,
-                                      border: '1px solid ' + flavorColor(flavor).border,
-                                      color: flavorColor(flavor).fg,
-                                      fontWeight: '600',
-                                      textTransform: 'capitalize',
-                                      padding: '0.25rem 0.5rem',
-                                      textAlign: 'center'
-                                    }}
-                                  >
-                                    {flavor}
-                                  </span>
-                                ) : null
-                              )}
-                            </div>
-                          )}
-                          {getBodyProfile(entry.flavorPreferences) && (
-                            <div className="mt-2"><span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
-                          )}
-                        </div>
-                        {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
+                      <div className="entry-actions" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          className="entry-action-btn"
+                          onClick={(e) => { e.stopPropagation(); startEntryEdit(entry) }}
+                          aria-label="Edit rating"
+                          title="Edit"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M12 20h9"/>
+                            <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          className="entry-action-btn entry-action-danger"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            if (window.confirm('Delete this rating entry?')) {
+                              void deleteEntry(entry.id)
+                            }
+                          }}
+                          aria-label="Delete rating"
+                          title="Delete"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6"/>
+                            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                            <path d="M10 11v6"/>
+                            <path d="M14 11v6"/>
+                            <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
+                          </svg>
+                        </button>
                       </div>
                     </div>
-                    <div className="entry-actions" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        type="button"
-                        className="entry-action-btn"
-                        onClick={(e) => { e.stopPropagation(); startEntryEdit(entry) }}
-                        aria-label="Edit rating"
-                        title="Edit"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 20h9"/>
-                          <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
-                        </svg>
-                      </button>
-                      <button
-                        type="button"
-                        className="entry-action-btn entry-action-danger"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (window.confirm('Delete this rating entry?')) {
-                            void deleteEntry(entry.id)
-                          }
-                        }}
-                        aria-label="Delete rating"
-                        title="Delete"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <polyline points="3 6 5 6 21 6"/>
-                          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-                          <path d="M10 11v6"/>
-                          <path d="M14 11v6"/>
-                          <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>
-                        </svg>
-                      </button>
+                    <div className="entry-metrics">
+                      <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
+                      <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
+                      {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
+                          {sortFlavorsByColor(Object.entries(entry.flavorPreferences).filter(([k, v]) => v > 0 && isKnownFlavor(k)).map(([k]) => k)).map((flavor) => (
+                            <span
+                              key={flavor}
+                              className="badge"
+                              style={{
+                                fontSize: '0.7rem',
+                                background: flavorColor(flavor).bg,
+                                border: '1px solid ' + flavorColor(flavor).border,
+                                color: flavorColor(flavor).fg,
+                                fontWeight: '600',
+                                textTransform: 'capitalize',
+                                padding: '0.25rem 0.5rem',
+                                textAlign: 'center'
+                              }}
+                            >
+                              {flavor}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {getBodyProfile(entry.flavorPreferences) && (
+                        <div className="mt-2"><span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
+                      )}
                     </div>
+                    {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
+                    <img
+                      src={entry.photo || noPhotoPlaceholderUrl}
+                      alt=""
+                      className="entry-hero-photo"
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => { const img = e.currentTarget; if (img.src !== noPhotoPlaceholderUrl) img.src = noPhotoPlaceholderUrl }}
+                    />
                   </div>
 
                   {false && selectedEntryId === entry.id && !isEditingEntry && (
@@ -4342,13 +4366,22 @@ function App() {
                   )}
                 </article>
               ))}
-              {filteredMine.length > 3 && (
+              {filteredMine.length > myLogsVisibleCount && (
                 <button
                   type="button"
                   className="btn btn-outline-success w-100 mt-2"
-                  onClick={() => setIsMyLogsExpanded(!isMyLogsExpanded)}
+                  onClick={() => setMyLogsVisibleCount((c) => Math.min(c + 10, filteredMine.length))}
                 >
-                  {isMyLogsExpanded ? 'See Less' : 'See More'}
+                  See More ({filteredMine.length - myLogsVisibleCount} more)
+                </button>
+              )}
+              {myLogsVisibleCount > 3 && filteredMine.length > 3 && (
+                <button
+                  type="button"
+                  className="btn btn-link text-success w-100 mt-1"
+                  onClick={() => setMyLogsVisibleCount(3)}
+                >
+                  See Less
                 </button>
               )}
             </div>
@@ -4782,71 +4815,76 @@ function App() {
 
               {(isFriendLogsExpanded || !selectedFriend ? filteredFriendEntries : filteredFriendEntries.slice(0, 3)).map((entry) => (
                 <article key={entry.id} className="card border-0 shadow-sm">
-                  <div className="card-body d-flex gap-3 align-items-start justify-content-between">
-                    <div className="d-flex gap-3 flex-grow-1 align-items-start">
-                      <div className="entry-media-col">
-                        <img src={entry.photo || noPhotoPlaceholderUrl} alt="" className="entry-thumb" loading="lazy" decoding="async" onError={(e) => { const img = e.currentTarget; if (img.src !== noPhotoPlaceholderUrl) img.src = noPhotoPlaceholderUrl }} />
+                  <div className="card-body">
+                    <div className="d-flex gap-2 align-items-start justify-content-between mb-2">
+                      <div className="d-flex align-items-center gap-2 flex-grow-1">
                         <div className="entry-rank-circle">#{friendRankById.get(entry.id) || 0}</div>
-                      </div>
-                      <div className="flex-grow-1">
-                        <div className="d-flex justify-content-between flex-wrap gap-2">
-                          <strong>{entry.location || 'Unknown location'}</strong>
-                          <span className="text-muted small">{entry.date}</span>
+                        <div className="flex-grow-1">
+                          <div className="d-flex justify-content-between flex-wrap gap-2">
+                            <strong>{entry.location || 'Unknown location'}</strong>
+                            <span className="text-muted small">{entry.date}</span>
+                          </div>
                         </div>
-                        <div className="entry-metrics">
-                          <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
-                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
-                          {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
-                              {Object.entries(entry.flavorPreferences).map(([flavor, intensity]) =>
-                                intensity > 0 && isKnownFlavor(flavor) ? (
-                                  <span
-                                    key={flavor}
-                                    className="badge"
-                                    style={{
-                                      fontSize: '0.7rem',
-                                      background: flavorColor(flavor).bg,
-                                      border: '1px solid ' + flavorColor(flavor).border,
-                                      color: flavorColor(flavor).fg,
-                                      fontWeight: '600',
-                                      textTransform: 'capitalize',
-                                      padding: '0.25rem 0.5rem',
-                                      textAlign: 'center'
-                                    }}
-                                  >
-                                    {flavor}
-                                  </span>
-                                ) : null
-                              )}
-                            </div>
-                          )}
-                          {getBodyProfile(entry.flavorPreferences) && (
-                            <div className="mt-2"><span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
-                          )}
-                        </div>
-                        {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
                       </div>
+                      <button
+                        type="button"
+                        className="btn btn-link p-0 text-muted"
+                        style={{ textDecoration: 'none' }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          const isLiked = likedRatingsSet.has(entry.id)
+                          if (isLiked) {
+                            void apiFetch(`/ratings/${entry.id}/like`, { method: 'DELETE' })
+                            likedRatingsSet.delete(entry.id)
+                          } else {
+                            void apiFetch(`/ratings/${entry.id}/like`, { method: 'POST' })
+                            likedRatingsSet.add(entry.id)
+                          }
+                          setLikedRatingsSet(new Set(likedRatingsSet))
+                        }}
+                        title={likedRatingsSet.has(entry.id) ? 'Unlike' : 'Like'}
+                      >
+                        {likedRatingsSet.has(entry.id) ? '★' : '☆'}
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      className="btn btn-link p-0 text-muted"
-                      style={{ textDecoration: 'none' }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        const isLiked = likedRatingsSet.has(entry.id)
-                        if (isLiked) {
-                          void apiFetch(`/ratings/${entry.id}/like`, { method: 'DELETE' })
-                          likedRatingsSet.delete(entry.id)
-                        } else {
-                          void apiFetch(`/ratings/${entry.id}/like`, { method: 'POST' })
-                          likedRatingsSet.add(entry.id)
-                        }
-                        setLikedRatingsSet(new Set(likedRatingsSet))
-                      }}
-                      title={likedRatingsSet.has(entry.id) ? 'Unlike' : 'Like'}
-                    >
-                      {likedRatingsSet.has(entry.id) ? '★' : '☆'}
-                    </button>
+                    <div className="entry-metrics">
+                      <div className="fw-bold mb-2">Overall score: {(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)} / 100</div>
+                      <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
+                      {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', maxWidth: '280px', marginTop: '0.5rem' }}>
+                          {sortFlavorsByColor(Object.entries(entry.flavorPreferences).filter(([k, v]) => v > 0 && isKnownFlavor(k)).map(([k]) => k)).map((flavor) => (
+                            <span
+                              key={flavor}
+                              className="badge"
+                              style={{
+                                fontSize: '0.7rem',
+                                background: flavorColor(flavor).bg,
+                                border: '1px solid ' + flavorColor(flavor).border,
+                                color: flavorColor(flavor).fg,
+                                fontWeight: '600',
+                                textTransform: 'capitalize',
+                                padding: '0.25rem 0.5rem',
+                                textAlign: 'center'
+                              }}
+                            >
+                              {flavor}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {getBodyProfile(entry.flavorPreferences) && (
+                        <div className="mt-2"><span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
+                      )}
+                    </div>
+                    {entry.thoughts && <p className="mt-2 mb-0">{entry.thoughts}</p>}
+                    <img
+                      src={entry.photo || noPhotoPlaceholderUrl}
+                      alt=""
+                      className="entry-hero-photo"
+                      loading="lazy"
+                      decoding="async"
+                      onError={(e) => { const img = e.currentTarget; if (img.src !== noPhotoPlaceholderUrl) img.src = noPhotoPlaceholderUrl }}
+                    />
                   </div>
                 </article>
               ))}
