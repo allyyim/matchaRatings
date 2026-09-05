@@ -943,6 +943,8 @@ function App() {
   const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false)
 
   const [isPrivacyPolicyModalOpen, setIsPrivacyPolicyModalOpen] = useState(false)
+  const [isFaqModalOpen, setIsFaqModalOpen] = useState(false)
+  const [isContactSupportModalOpen, setIsContactSupportModalOpen] = useState(false)
 
   const [userFlavors, setUserFlavors] = useState<string[]>([])
   const [userBodyPref, setUserBodyPref] = useState<'' | 'full-bodied' | 'medium' | 'milky'>(() => {
@@ -3306,6 +3308,28 @@ function App() {
               <button
                 type="button"
                 className="btn btn-link btn-sm text-start p-0 w-100"
+                onClick={() => setIsFaqModalOpen(true)}
+                style={{ textDecoration: 'none', color: '#198754' }}
+              >
+                FAQ
+              </button>
+            </div>
+
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
+              <button
+                type="button"
+                className="btn btn-link btn-sm text-start p-0 w-100"
+                onClick={() => setIsContactSupportModalOpen(true)}
+                style={{ textDecoration: 'none', color: '#198754' }}
+              >
+                Contact Support
+              </button>
+            </div>
+
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
+              <button
+                type="button"
+                className="btn btn-link btn-sm text-start p-0 w-100"
                 onClick={() => setIsPrivacyPolicyModalOpen(true)}
                 style={{ textDecoration: 'none', color: '#198754' }}
               >
@@ -3475,6 +3499,161 @@ function App() {
               >
                 Save
               </button>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
+
+      {isFaqModalOpen && createPortal(
+        <>
+          <div
+            className="modal-overlay"
+            onClick={() => setIsFaqModalOpen(false)}
+            style={{ zIndex: 1040 }}
+          />
+          <div
+            className="profile-drawer"
+            style={{
+              position: 'fixed',
+              right: 0,
+              top: 0,
+              height: '100vh',
+              width: '280px',
+              maxWidth: '100vw',
+              backgroundColor: 'white',
+              boxShadow: '-2px 0 8px rgba(0,0,0,0.1)',
+              zIndex: 1050,
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h6 className="fw-bold text-success mb-0">FAQ 🍵</h6>
+              <button
+                type="button"
+                className="close-btn"
+                onClick={() => setIsFaqModalOpen(false)}
+                aria-label="Close FAQ"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ padding: '1rem', overflowY: 'auto', flex: 1, fontSize: '0.875rem', lineHeight: '1.6' }}>
+              <p className="text-muted mb-3">
+                A few things people ask us — quick answers so you can get back to sipping.
+              </p>
+
+              <h6 className="fw-semibold text-success mb-2">What is Sip &amp; Score?</h6>
+              <p className="text-muted mb-3">
+                Your personal matcha journal. Log every cup, rate taste and greenness, and discover places and people with a palate like yours.
+              </p>
+
+              <h6 className="fw-semibold text-success mb-2">How does greenness work?</h6>
+              <p className="text-muted mb-3">
+                Snap a photo and our on-device AI grades how vibrantly green your matcha is on a 1–100 scale. No servers see your photo — the model runs right in your browser.
+              </p>
+
+              <h6 className="fw-semibold text-success mb-2">How are Similar Users picked?</h6>
+              <p className="text-muted mb-3">
+                We compare your flavor preferences and matcha body against everyone else's, weight the overlap both ways, and reward matches on the notes you actually chose. Set your preferences in the profile drawer to get better matches.
+              </p>
+
+              <h6 className="fw-semibold text-success mb-2">How are Similar Places picked?</h6>
+              <p className="text-muted mb-3">
+                We look at the flavor and body profile the community has captured for each place, then rank them by how closely they line up with yours.
+              </p>
+
+              <h6 className="fw-semibold text-success mb-2">Can I use it offline?</h6>
+              <p className="text-muted mb-3">
+                Yep. Sip &amp; Score is a PWA — install it to your home screen and your logs, photos, and stats stay reachable even without signal.
+              </p>
+
+              <h6 className="fw-semibold text-success mb-2">Where does my data live?</h6>
+              <p className="text-muted mb-3">
+                Your account and ratings are stored securely on our server so they follow you across devices. Photos live on your device cache. See the Privacy Policy for the full scoop.
+              </p>
+
+              <h6 className="fw-semibold text-success mb-2">Still stuck?</h6>
+              <p className="text-muted mb-3">
+                Tap <strong>Contact Support</strong> and we'll help you out. 🍵
+              </p>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
+
+      {isContactSupportModalOpen && createPortal(
+        <>
+          <div
+            className="modal-overlay"
+            onClick={() => setIsContactSupportModalOpen(false)}
+            style={{ zIndex: 1040 }}
+          />
+          <div
+            className="profile-drawer"
+            style={{
+              position: 'fixed',
+              right: 0,
+              top: 0,
+              height: '100vh',
+              width: '280px',
+              maxWidth: '100vw',
+              backgroundColor: 'white',
+              boxShadow: '-2px 0 8px rgba(0,0,0,0.1)',
+              zIndex: 1050,
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+          >
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h6 className="fw-bold text-success mb-0">Contact Support 💌</h6>
+              <button
+                type="button"
+                className="close-btn"
+                onClick={() => setIsContactSupportModalOpen(false)}
+                aria-label="Close contact support"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ padding: '1rem', overflowY: 'auto', flex: 1, fontSize: '0.875rem', lineHeight: '1.6' }}>
+              <p className="text-muted mb-3">
+                Hit a snag, spotted a bug, or have a matcha idea you can't stop thinking about? We'd love to hear from you.
+              </p>
+
+              <h6 className="fw-semibold text-success mb-2">Email us</h6>
+              <p className="mb-3">
+                <a
+                  href="mailto:sipandscore@proton.me?subject=Sip%20%26%20Score%20Support"
+                  style={{ color: '#198754', textDecoration: 'none', fontWeight: 600 }}
+                >
+                  sipandscore@proton.me
+                </a>
+              </p>
+
+              <h6 className="fw-semibold text-success mb-2">When you write in</h6>
+              <p className="text-muted mb-2">• Your username (so we can find your logs)</p>
+              <p className="text-muted mb-2">• What you tried and what happened</p>
+              <p className="text-muted mb-3">• Screenshots if you've got 'em</p>
+
+              <h6 className="fw-semibold text-success mb-2">Response time</h6>
+              <p className="text-muted mb-3">
+                We usually reply within 1–2 days. Thanks for helping Sip &amp; Score get better with every cup. 🍵
+              </p>
+
+              <div className="d-grid">
+                <a
+                  href="mailto:sipandscore@proton.me?subject=Sip%20%26%20Score%20Support"
+                  className="btn btn-success btn-sm"
+                  style={{ textDecoration: 'none' }}
+                >
+                  Open Email
+                </a>
+              </div>
             </div>
           </div>
         </>,
