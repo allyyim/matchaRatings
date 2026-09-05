@@ -695,23 +695,48 @@ function analyzeGreennessFromDataUrl(dataUrl: string): Promise<{
             const emeraldRatio = matchaLikePixelCount ? emeraldPixelCount / matchaLikePixelCount : 0
             const paleRatio = matchaLikePixelCount ? palePixelCount / matchaLikePixelCount : 0
             const coverageRatio = Math.min(1, totalBucketPixels / Math.max(1, img.width * img.height * 0.2))
+            const matchaShareOfRegion = regionNonWhitePixelCount
+              ? matchaLikePixelCount / regionNonWhitePixelCount
+              : 0
 
-            // Add a small analytical adjustment so similarly green drinks separate more often.
+            // Small analytical adjustment so similarly green drinks separate.
             const analyticalAdjustment = (emeraldRatio * 0.45) + (coverageRatio * 0.35) + (paleRatio * 0.1)
 
-            // Penalize dull/muted, olive/khaki, yellow, and brown pixels found inside
-            // the drink region. Olive & yellow hit hardest — those are the "muddy matcha" look.
+            // Off-color penalty: dull/muted, olive/khaki, yellow, brown.
             const denom = Math.max(1, regionNonWhitePixelCount)
             const dullRatio = dullPixelCount / denom
             const yellowRatio = yellowPixelCount / denom
             const brownRatio = brownPixelCount / denom
             const oliveRatio = olivePixelCount / denom
-            const offColorPenalty = Math.min(
-              70,
-              (oliveRatio * 90) + (yellowRatio * 80) + (brownRatio * 75) + (dullRatio * 55)
-            )
+            const rawPenalty = (oliveRatio * 90) + (yellowRatio * 80) + (brownRatio * 75) + (dullRatio * 55)
 
-            const finalScore = baseScore + analyticalAdjustment - offColorPenalty
+            // When the drink is clearly emerald-dominant, dull/foam/ice/garnish
+            // pixels are almost always toppings — not muddy matcha. Dampen the
+            // penalty as emerald share climbs. Full weight below 0.25 emeraldRatio,
+            // near-zero weight above 0.7.
+            const penaltyDampen = emeraldRatio >= 0.7
+              ? 0.15
+              : emeraldRatio >= 0.5
+                ? 0.35
+                : emeraldRatio >= 0.35
+                  ? 0.6
+                  : emeraldRatio >= 0.25
+                    ? 0.85
+                    : 1
+            const offColorPenalty = Math.min(70, rawPenalty * penaltyDampen)
+
+            // Excellence bonus: reward deep, unmistakably emerald drinks.
+            // Emerald ratio 0.6+ contributes up to +12; strong matcha share adds up to +4.
+            const emeraldBonus = Math.max(0, emeraldRatio - 0.4) * 20 + Math.min(4, matchaShareOfRegion * 5)
+
+            let finalScore = baseScore + analyticalAdjustment + emeraldBonus - offColorPenalty
+
+            // Floor for genuinely emerald-dominant drinks so foam/cream toppings
+            // can't drag a clearly-vibrant matcha out of the "great" tier.
+            if (emeraldRatio >= 0.65) finalScore = Math.max(finalScore, 94)
+            else if (emeraldRatio >= 0.5) finalScore = Math.max(finalScore, 88)
+            else if (emeraldRatio >= 0.35) finalScore = Math.max(finalScore, 78)
+
             return Number(Math.max(0, Math.min(100, finalScore)).toFixed(1))
           })()
         : 0
