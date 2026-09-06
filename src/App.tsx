@@ -3378,7 +3378,7 @@ function App() {
                               <span className="score-chip-suffix">/100</span>
                             </span></span>
                           </div>
-                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}/100</div>
+                          <div style={{ color: '#6c757d', marginBottom: '0.5rem', fontWeight: 'normal' }}>Matcha Greenness Score: {entry.greenness.toFixed(0)}%</div>
                           {entry.flavorPreferences && Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) && (
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.5rem' }}>
                               {sortFlavorsByColor(Object.entries(entry.flavorPreferences).filter(([k, v]) => v > 0 && isKnownFlavor(k)).map(([k]) => k)).map((flavor) => (
@@ -4867,7 +4867,7 @@ function App() {
                               <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
                               <span className="score-chip-suffix">/100</span>
                             </span></span>
-                            <span className="greenness-inline" title="Matcha Greenness"><span className="greenness-inline-value">{entry.greenness.toFixed(0)}<span className="greenness-inline-outof">/100</span></span><span className="greenness-inline-caption">matcha greenness</span></span>
+                            <span className="greenness-inline" title="Matcha Greenness Score"><span className="greenness-inline-value">{entry.greenness.toFixed(0)}%</span><span className="greenness-inline-caption">matcha greenness score</span></span>
                           </div>
                           {entry.flavorPreferences && (Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) || getBodyProfile(entry.flavorPreferences)) && (
                             <div className="entry-chip-row">
@@ -5420,7 +5420,7 @@ function App() {
                           <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
                           <span className="score-chip-suffix">/100</span>
                         </span></span>
-                        <span className="greenness-inline" title="Matcha Greenness"><span className="greenness-inline-value">{entry.greenness.toFixed(0)}<span className="greenness-inline-outof">/100</span></span><span className="greenness-inline-caption">matcha greenness</span></span>
+                        <span className="greenness-inline" title="Matcha Greenness Score"><span className="greenness-inline-value">{entry.greenness.toFixed(0)}%</span><span className="greenness-inline-caption">matcha greenness score</span></span>
                       </div>
                       {entry.flavorPreferences && (Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) || getBodyProfile(entry.flavorPreferences)) && (
                         <div className="entry-chip-row">
@@ -6102,7 +6102,7 @@ function App() {
                           <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
                           <span className="score-chip-suffix">/100</span>
                         </span></span>
-                        <span className="greenness-inline" title="Matcha Greenness"><span className="greenness-inline-value">{entry.greenness.toFixed(0)}<span className="greenness-inline-outof">/100</span></span><span className="greenness-inline-caption">matcha greenness</span></span>
+                        <span className="greenness-inline" title="Matcha Greenness Score"><span className="greenness-inline-value">{entry.greenness.toFixed(0)}%</span><span className="greenness-inline-caption">matcha greenness score</span></span>
                       </div>
                       {entry.flavorPreferences && (Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) || getBodyProfile(entry.flavorPreferences)) && (
                         <div className="entry-chip-row">
