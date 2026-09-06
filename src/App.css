@@ -1027,6 +1027,12 @@ textarea.form-control {
   background: var(--accent-teal-subtle);
   letter-spacing: -0.02em;
   box-shadow: 0 2px 8px rgba(212, 155, 74, 0.12);
+  flex-shrink: 0;
+}
+
+.entry-rank-circle.is-long {
+  font-size: 0.62rem;
+  letter-spacing: -0.03em;
 }
 
 .entry-metrics {

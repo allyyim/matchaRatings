@@ -1043,6 +1043,40 @@ function App() {
       body: friendModalUserPrefs.body,
     }
   }, [friendModalUserPrefs])
+
+  const [friendModalSort, setFriendModalSort] = useState<'highest' | 'lowest' | 'greenest' | 'newest' | 'oldest'>('highest')
+  const [isFriendModalFilterOpen, setIsFriendModalFilterOpen] = useState(false)
+
+  const rankedFriendModalEntries = useMemo(() => {
+    return [...friendModalEntries].sort(compareEntriesForRank)
+  }, [friendModalEntries])
+
+  const friendModalRankById = useMemo(() => {
+    return new Map(rankedFriendModalEntries.map((entry, index) => [entry.id, index + 1]))
+  }, [rankedFriendModalEntries])
+
+  const sortedFriendModalEntries = useMemo(() => {
+    const next = [...rankedFriendModalEntries]
+    switch (friendModalSort) {
+      case 'lowest':
+        next.sort((a, b) => a.comboScore - b.comboScore || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        break
+      case 'greenest':
+        next.sort((a, b) => b.greenness - a.greenness || b.rating - a.rating || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        break
+      case 'newest':
+        next.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        break
+      case 'oldest':
+        next.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+        break
+      case 'highest':
+      default:
+        // Already sorted highest-first by compareEntriesForRank.
+        break
+    }
+    return next
+  }, [rankedFriendModalEntries, friendModalSort])
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [currentOnboardingSlide, setCurrentOnboardingSlide] = useState(0)
   const [selectedExplorePlaceName, setSelectedExplorePlaceName] = useState('')
@@ -2436,6 +2470,8 @@ function App() {
     setFriendModalUser(friendName)
     setFriendModalEntries([])
     setFriendModalUserPrefs({ flavors: [], body: '' })
+    setFriendModalSort('highest')
+    setIsFriendModalFilterOpen(false)
     setIsFriendModalOpen(true)
     setIsLoadingFriendModal(true)
 
@@ -4761,13 +4797,69 @@ function App() {
               ) : friendModalEntries.length === 0 ? (
                 <div className="alert alert-light border mb-0">No ratings to show yet.</div>
               ) : (
-                <div className="d-flex flex-column gap-2">
-                  {friendModalEntries.map((entry) => (
+                <>
+                  <div className="d-flex justify-content-end mb-2">
+                    <div className="filter-dropdown-wrapper" style={{ position: 'relative' }}>
+                      <button
+                        type="button"
+                        className="filter-icon-button"
+                        onClick={() => setIsFriendModalFilterOpen((open) => !open)}
+                        aria-label="Sort ratings"
+                        title="Sort ratings"
+                        aria-expanded={isFriendModalFilterOpen}
+                      >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                        </svg>
+                      </button>
+                      {isFriendModalFilterOpen && (
+                        <>
+                          <div
+                            className="filter-dropdown-backdrop"
+                            onClick={() => setIsFriendModalFilterOpen(false)}
+                          />
+                          <div className="filter-dropdown-menu" role="menu">
+                            <div className="filter-dropdown-label">Sort by</div>
+                            {[
+                              { value: 'highest' as const, label: 'Highest to lowest score' },
+                              { value: 'lowest' as const, label: 'Lowest to highest score' },
+                              { value: 'greenest' as const, label: 'Greenness' },
+                              { value: 'newest' as const, label: 'Date added' },
+                            ].map((opt) => (
+                              <button
+                                key={opt.value}
+                                type="button"
+                                role="menuitemradio"
+                                aria-checked={friendModalSort === opt.value}
+                                className={`filter-dropdown-item${friendModalSort === opt.value ? ' active' : ''}`}
+                                onClick={() => {
+                                  setFriendModalSort(opt.value)
+                                  setIsFriendModalFilterOpen(false)
+                                }}
+                              >
+                                {opt.label}
+                                {friendModalSort === opt.value && <span aria-hidden="true">✓</span>}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="d-flex flex-column gap-2">
+                  {sortedFriendModalEntries.map((entry) => {
+                    const rank = friendModalRankById.get(entry.id) || 0
+                    return (
                     <article key={`friend-modal-${entry.id}`} className="card border-0 shadow-sm">
                       <div className="card-body py-2">
-                        <div className="d-flex justify-content-between flex-wrap gap-2">
-                          <strong>{entry.location || 'Unknown location'}</strong>
-                          <span className="text-muted small">{entry.date}</span>
+                        <div className="d-flex gap-2 align-items-start mb-1">
+                          <div className={`entry-rank-circle${rank >= 100 ? ' is-long' : ''}`}>#{rank}</div>
+                          <div className="flex-grow-1">
+                            <div className="d-flex justify-content-between flex-wrap gap-2">
+                              <strong>{entry.location || 'Unknown location'}</strong>
+                              <span className="text-muted small">{entry.date}</span>
+                            </div>
+                          </div>
                         </div>
                         <div className="entry-metrics">
                           <div className="entry-stat-cluster mb-2">
@@ -4817,8 +4909,10 @@ function App() {
                         />
                       </div>
                     </article>
-                  ))}
-                </div>
+                    )
+                  })}
+                  </div>
+                </>
               )}
             </div>
             <div className="card-footer bg-white border-top p-3 d-flex justify-content-end gap-2">
