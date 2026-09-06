@@ -1520,6 +1520,13 @@ textarea.form-control {
   font-style: italic;
 }
 
+.greenness-inline-outof {
+  font-weight: 500;
+  color: #6c757d;
+  font-size: 0.72rem;
+  margin-left: 0.1rem;
+}
+
 /* Cluster wrapper — keeps score + greenness on the same row on wider
    cards, wraps gracefully on narrow ones. */
 .entry-stat-cluster {
