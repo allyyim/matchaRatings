@@ -4711,17 +4711,43 @@ function App() {
                           <span className="text-muted small">{entry.date}</span>
                         </div>
                         <div className="entry-metrics">
-                          <div className="mb-1">
+                          <div className="entry-stat-cluster mb-2">
                             <span className="score-chip-row"><span className="score-chip-label">Sip Score</span><span className="score-chip" title="Combined taste + greenness score">
                               <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
                               <span className="score-chip-suffix">/100</span>
                             </span></span>
+                            <span className="stat-chip-row"><span className="stat-chip-label">Greenness</span><span className="stat-chip" title="How vibrantly green the matcha reads">
+                              <span className="stat-chip-value">{entry.greenness.toFixed(0)}</span>
+                              <span className="stat-chip-suffix">%</span>
+                            </span></span>
                           </div>
-                          <div style={{ color: '#6c757d', fontWeight: 'normal' }}>Matcha Greenness: {entry.greenness.toFixed(0)}%</div>
+                          {entry.flavorPreferences && (Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) || getBodyProfile(entry.flavorPreferences)) && (
+                            <div className="entry-chip-row">
+                              {sortFlavorsByColor(Object.entries(entry.flavorPreferences).filter(([k, v]) => v > 0 && isKnownFlavor(k)).map(([k]) => k)).map((flavor) => (
+                                <span
+                                  key={flavor}
+                                  className="badge"
+                                  style={{
+                                    fontSize: '0.72rem',
+                                    background: flavorColor(flavor).bg,
+                                    border: '1px solid ' + flavorColor(flavor).border,
+                                    color: flavorColor(flavor).fg,
+                                    fontWeight: '600',
+                                    textTransform: 'capitalize',
+                                    padding: '0.3rem 0.6rem',
+                                    borderRadius: '999px'
+                                  }}
+                                >
+                                  {flavor}
+                                </span>
+                              ))}
+                              {getBodyProfile(entry.flavorPreferences) && (
+                                <span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.72rem', padding: '0.3rem 0.65rem', borderRadius: '999px' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        {entry.thoughts && (
-                          <div className="small text-muted mt-2" style={{ whiteSpace: 'pre-wrap' }}>{entry.thoughts}</div>
-                        )}
+                        {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
                         <img
                           src={entry.photo || noPhotoPlaceholderUrl}
                           alt=""
