@@ -1489,6 +1489,36 @@ textarea.form-control {
   font-weight: 500;
 }
 
+/* Inline greenness indicator — reads as descriptive supporting metadata
+   next to the Sip Score chip instead of a second competing pill. */
+.greenness-inline {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+  color: #146c43;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.greenness-inline-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+  transform: translateY(1px);
+}
+
+.greenness-inline-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.greenness-inline-caption {
+  font-weight: 500;
+  color: #6c757d;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+}
+
 /* Cluster wrapper — keeps score + greenness on the same row on wider
    cards, wraps gracefully on narrow ones. */
 .entry-stat-cluster {
