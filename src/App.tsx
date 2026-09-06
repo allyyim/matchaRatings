@@ -954,7 +954,7 @@ function App() {
   const [authError, setAuthError] = useState('')
   const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser' | 'confirm-account' | 'magic-link' | 'magic-link-username'>('choice')
   const [welcomeMessage, setWelcomeMessage] = useState('')
-  const [savedEntryToast, setSavedEntryToast] = useState<{ headline: string; highlight: string } | null>(null)
+  const [savedEntryToast, setSavedEntryToast] = useState<{ headline: string; highlight: string; connector?: string } | null>(null)
   const [milestoneCelebration, setMilestoneCelebration] = useState<{ count: number; headline: string; subtext: string } | null>(null)
   const [potentialAccounts, setPotentialAccounts] = useState<string[]>([])
   const [selectedPotentialAccount, setSelectedPotentialAccount] = useState<string | null>(null)
@@ -3040,7 +3040,7 @@ function App() {
 
       {savedEntryToast && createPortal(
         <div className="welcome-toast" role="status" aria-live="polite">
-          <div>{savedEntryToast.headline}{savedEntryToast.highlight ? <> at <span style={{ color: '#20c997' }}>{savedEntryToast.highlight}</span></> : null}</div>
+          <div>{savedEntryToast.headline}{savedEntryToast.highlight ? <>{savedEntryToast.connector ?? ' at '}<span style={{ color: '#20c997' }}>{savedEntryToast.highlight}</span></> : null}</div>
         </div>,
         document.body
       )}
@@ -4645,11 +4645,11 @@ function App() {
                           if (isFollowing) {
                             await apiFetch(`/follows/${friendModalUser}`, { method: 'DELETE' })
                             followingSet.delete(friendModalUser)
-                            setSavedEntryToast({ headline: 'Unfollowed', highlight: friendModalUser })
+                            setSavedEntryToast({ headline: 'Unfollowed', connector: ' ', highlight: friendModalUser })
                           } else {
                             await apiFetch(`/follows/${friendModalUser}`, { method: 'POST' })
                             followingSet.add(friendModalUser)
-                            setSavedEntryToast({ headline: `Following — one more sipper to watch`, highlight: friendModalUser })
+                            setSavedEntryToast({ headline: 'Now following', connector: ' ', highlight: friendModalUser })
                           }
                           window.setTimeout(() => setSavedEntryToast(null), 3500)
                           setFollowingSet(new Set(followingSet))
@@ -5461,11 +5461,11 @@ function App() {
                                         if (isFollowing) {
                                           await apiFetch(`/follows/${friend.userName}`, { method: 'DELETE' })
                                           followingSet.delete(friend.userName)
-                                          setSavedEntryToast({ headline: 'Unfollowed', highlight: friend.userName })
+                                          setSavedEntryToast({ headline: 'Unfollowed', connector: ' ', highlight: friend.userName })
                                         } else {
                                           await apiFetch(`/follows/${friend.userName}`, { method: 'POST' })
                                           followingSet.add(friend.userName)
-                                          setSavedEntryToast({ headline: 'Following — one more sipper to watch', highlight: friend.userName })
+                                          setSavedEntryToast({ headline: 'Now following', connector: ' ', highlight: friend.userName })
                                         }
                                         window.setTimeout(() => setSavedEntryToast(null), 3500)
                                         setFollowingSet(new Set(followingSet))
@@ -5559,7 +5559,7 @@ function App() {
                                   await apiFetch(`/follows/${friend}`, { method: 'DELETE' })
                                   followingSet.delete(friend)
                                   setFollowingSet(new Set(followingSet))
-                                  setSavedEntryToast({ headline: 'Unfollowed', highlight: friend })
+                                  setSavedEntryToast({ headline: 'Unfollowed', connector: ' ', highlight: friend })
                                   window.setTimeout(() => setSavedEntryToast(null), 3500)
                                 } catch (error) {
                                   console.error('Failed to unfollow:', error)
@@ -6123,11 +6123,11 @@ function App() {
                                       if (isFollowing) {
                                         await apiFetch(`/follows/${user.userName}`, { method: 'DELETE' })
                                         followingSet.delete(user.userName)
-                                        setSavedEntryToast({ headline: 'Unfollowed', highlight: user.userName })
+                                        setSavedEntryToast({ headline: 'Unfollowed', connector: ' ', highlight: user.userName })
                                       } else {
                                         await apiFetch(`/follows/${user.userName}`, { method: 'POST' })
                                         followingSet.add(user.userName)
-                                        setSavedEntryToast({ headline: `Following — one more sipper to watch`, highlight: user.userName })
+                                        setSavedEntryToast({ headline: 'Now following', connector: ' ', highlight: user.userName })
                                       }
                                       window.setTimeout(() => setSavedEntryToast(null), 3500)
                                       setFollowingSet(new Set(followingSet))
