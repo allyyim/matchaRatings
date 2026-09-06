@@ -5541,7 +5541,7 @@ function App() {
                           }}
                         >
                           <div className="explore-place-rank" aria-hidden="true">
-                            <span className="explore-place-rank-num">#{index + 1}</span>
+                            <span className={`explore-place-rank-num${(index + 1) >= 100 ? ' is-long' : ''}`}>#{index + 1}</span>
                           </div>
                           <div className="explore-place-main">
                             <div className="explore-place-name">
@@ -6043,7 +6043,7 @@ function App() {
                               {medal ? (
                                 <span className="explore-place-medal">{medal}</span>
                               ) : (
-                                <span className="explore-place-rank-num">#{place.rank}</span>
+                                <span className={`explore-place-rank-num${place.rank >= 100 ? ' is-long' : ''}`}>#{place.rank}</span>
                               )}
                             </div>
                             <div className="explore-place-main">
@@ -6100,7 +6100,7 @@ function App() {
                               {medal ? (
                                 <span className="explore-place-medal">{medal}</span>
                               ) : (
-                                <span className="explore-place-rank-num">#{rank}</span>
+                                <span className={`explore-place-rank-num${rank >= 100 ? ' is-long' : ''}`}>#{rank}</span>
                               )}
                             </div>
                             <div className="explore-place-main">

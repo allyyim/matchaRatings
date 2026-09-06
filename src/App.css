@@ -1504,7 +1504,14 @@ textarea.form-control {
   font-weight: 700;
   color: var(--primary-green);
   font-size: 0.95rem;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
+  padding: 0 0.15rem;
+  white-space: nowrap;
+}
+
+.explore-place-rank-num.is-long {
+  font-size: 0.78rem;
+  letter-spacing: -0.01em;
 }
 
 .explore-place-main {
