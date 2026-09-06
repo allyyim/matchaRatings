@@ -238,7 +238,7 @@ const noPhotoPlaceholderUrl = `data:image/svg+xml;charset=UTF-8,${encodeURICompo
 
 const FULL_GREENNESS_WEIGHT = 1
 const LOW_RATING_GREENNESS_WEIGHT = 0.8
-const API_REQUEST_TIMEOUT_MS = 20000
+const API_REQUEST_TIMEOUT_MS = 45000
 const IMAGE_PROCESS_TIMEOUT_MS = 15000
 const LOCATION_LOOKUP_DEBOUNCE_MS = 180
 const LOCATION_RESULTS_LIMIT = 5
@@ -1879,26 +1879,45 @@ function App() {
       return
     }
 
-    setIsLoadingSimilarUsers(true)
-    setIsLoadingSimilarPlaces(true)
+    let cancelled = false
+    let retryTimer: number | null = null
 
-    Promise.all([
-      apiFetch<{ similarUsers: Array<{ userName: string; flavors: string[]; body?: string; matchScore: number }> }>(`/similar-users?userName=${encodeURIComponent(currentUserName)}&_r=${recsRefreshKey}`),
-      apiFetch<{ similarPlaces: Array<{ location: string; flavors: string[]; body?: string; matchScore: number }> }>(`/similar-places?userName=${encodeURIComponent(currentUserName)}&flavors=${encodeURIComponent(userFlavors.join(','))}&body=${encodeURIComponent(userBodyPref)}&_r=${recsRefreshKey}`)
-    ])
-      .then(([usersData, placesData]) => {
-        setSimilarUsers(usersData.similarUsers)
-        setSimilarPlaces(placesData.similarPlaces)
-      })
-      .catch((error) => {
-        console.error('Failed to load similar users/places:', error)
-        setSimilarUsers([])
-        setSimilarPlaces([])
-      })
-      .finally(() => {
-        setIsLoadingSimilarUsers(false)
-        setIsLoadingSimilarPlaces(false)
-      })
+    const runFetch = (attempt: number) => {
+      setIsLoadingSimilarUsers(true)
+      setIsLoadingSimilarPlaces(true)
+
+      Promise.all([
+        apiFetch<{ similarUsers: Array<{ userName: string; flavors: string[]; body?: string; matchScore: number }> }>(`/similar-users?userName=${encodeURIComponent(currentUserName)}&_r=${recsRefreshKey}`),
+        apiFetch<{ similarPlaces: Array<{ location: string; flavors: string[]; body?: string; matchScore: number }> }>(`/similar-places?userName=${encodeURIComponent(currentUserName)}&flavors=${encodeURIComponent(userFlavors.join(','))}&body=${encodeURIComponent(userBodyPref)}&_r=${recsRefreshKey}`)
+      ])
+        .then(([usersData, placesData]) => {
+          if (cancelled) return
+          setSimilarUsers(usersData.similarUsers)
+          setSimilarPlaces(placesData.similarPlaces)
+          setIsLoadingSimilarUsers(false)
+          setIsLoadingSimilarPlaces(false)
+        })
+        .catch((error) => {
+          if (cancelled) return
+          console.error(`Failed to load similar users/places (attempt ${attempt}):`, error)
+          // Retry once — often the backend is just spinning up from cold start.
+          if (attempt < 2) {
+            retryTimer = window.setTimeout(() => runFetch(attempt + 1), 1500)
+          } else {
+            setSimilarUsers([])
+            setSimilarPlaces([])
+            setIsLoadingSimilarUsers(false)
+            setIsLoadingSimilarPlaces(false)
+          }
+        })
+    }
+
+    runFetch(1)
+
+    return () => {
+      cancelled = true
+      if (retryTimer !== null) window.clearTimeout(retryTimer)
+    }
   }, [communityActiveTab, currentUserName, userFlavors, userBodyPref, recsRefreshKey])
 
   useEffect(() => {
