@@ -3096,9 +3096,10 @@ function App() {
               />
             ))}
           </div>
-          <div className="welcome-toast milestone-toast" role="status" aria-live="polite">
-            <div className="milestone-headline">{milestoneCelebration.headline}</div>
-            <div className="milestone-subtext">{milestoneCelebration.subtext}</div>
+          <div className="milestone-celebration" role="status" aria-live="polite">
+            <div className="milestone-celebration-emoji" aria-hidden="true">🎉</div>
+            <div className="milestone-celebration-headline">{milestoneCelebration.headline}</div>
+            <div className="milestone-celebration-subtext">{milestoneCelebration.subtext}</div>
           </div>
         </>,
         document.body
