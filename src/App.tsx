@@ -2336,17 +2336,39 @@ function App() {
   }
 
   async function fetchExploreData(showOverlay: boolean) {
+    // Hydrate from cache immediately so the leaderboard has content even
+    // during a Render Free cold-start.
     if (showOverlay) {
-      setIsLoadingExplorePlaces(true)
+      const cachedPlaces = readCache<ExplorePlace[]>(currentUserName || 'anon', 'explorePlaces')
+      const cachedUsers = readCache<ExploreUser[]>(currentUserName || 'anon', 'exploreUsers')
+      if (cachedPlaces && cachedPlaces.length > 0) setExplorePlaces(cachedPlaces)
+      if (cachedUsers && cachedUsers.length > 0) setExploreUsers(cachedUsers)
+      // Only show the "whisking" overlay if we have nothing to display yet.
+      const hasSomething = (cachedPlaces && cachedPlaces.length > 0) || (cachedUsers && cachedUsers.length > 0)
+      if (!hasSomething) setIsLoadingExplorePlaces(true)
+    }
+
+    const attemptFetch = async (attempt: number): Promise<void> => {
+      try {
+        const [placesResponse, usersResponse] = await Promise.all([
+          apiFetch<{ places: ExplorePlace[] }>('/explore/places?limit=10'),
+          apiFetch<{ users: ExploreUser[] }>('/explore/users?limit=50')
+        ])
+        setExplorePlaces(placesResponse.places)
+        setExploreUsers(usersResponse.users)
+        writeCache(currentUserName || 'anon', 'explorePlaces', placesResponse.places)
+        writeCache(currentUserName || 'anon', 'exploreUsers', usersResponse.users)
+      } catch (error) {
+        if (attempt < 2) {
+          await new Promise((r) => window.setTimeout(r, 1500))
+          return attemptFetch(attempt + 1)
+        }
+        throw error
+      }
     }
 
     try {
-      const [placesResponse, usersResponse] = await Promise.all([
-        apiFetch<{ places: ExplorePlace[] }>('/explore/places?limit=10'),
-        apiFetch<{ users: ExploreUser[] }>('/explore/users?limit=50')
-      ])
-      setExplorePlaces(placesResponse.places)
-      setExploreUsers(usersResponse.users)
+      await attemptFetch(1)
     } finally {
       if (showOverlay) {
         setIsLoadingExplorePlaces(false)
