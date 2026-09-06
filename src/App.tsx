@@ -4198,44 +4198,44 @@ function App() {
                 A few quick answers so you can get back to sipping.
               </p>
 
-              <div style={{ paddingBottom: '0.75rem', borderBottom: '1px solid #f1f3f5', marginBottom: '0.75rem' }}>
-                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>What is Sip &amp; Score?</div>
-                <div className="text-muted">Your personal matcha journal. Log every cup, rate its taste and vibrancy, and discover places and people whose palate matches yours.</div>
-              </div>
+              <details className="faq-item">
+                <summary className="faq-question">What is Sip &amp; Score?</summary>
+                <div className="faq-answer">Your personal matcha journal. Log every cup, rate its taste and vibrancy, and discover places and people whose palate matches yours.</div>
+              </details>
 
-              <div style={{ paddingBottom: '0.75rem', borderBottom: '1px solid #f1f3f5', marginBottom: '0.75rem' }}>
-                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>What is the Sip Score?</div>
-                <div className="text-muted">Our signature 0–100 quality signal. It blends how a matcha tastes with how vibrantly green it looks so a single number tells you (and everyone else) how good the cup really is.</div>
-              </div>
+              <details className="faq-item">
+                <summary className="faq-question">What is the Sip Score?</summary>
+                <div className="faq-answer">Our signature 0–100 quality signal. It blends how a matcha tastes with how vibrantly green it looks so a single number tells you (and everyone else) how good the cup really is.</div>
+              </details>
 
-              <div style={{ paddingBottom: '0.75rem', borderBottom: '1px solid #f1f3f5', marginBottom: '0.75rem' }}>
-                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>How does greenness scoring work?</div>
-                <div className="text-muted">Snap a photo of your matcha and an on-device model reads its color — from muted green-yellow all the way to rich emerald — and translates it into a freshness score out of 100. Your photo never leaves your phone.</div>
-              </div>
+              <details className="faq-item">
+                <summary className="faq-question">How does greenness scoring work?</summary>
+                <div className="faq-answer">Snap a photo of your matcha and an on-device model reads its color — from muted green-yellow all the way to rich emerald — and translates it into a freshness score out of 100. Your photo never leaves your phone.</div>
+              </details>
 
-              <div style={{ paddingBottom: '0.75rem', borderBottom: '1px solid #f1f3f5', marginBottom: '0.75rem' }}>
-                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>How are recommendations chosen?</div>
-                <div className="text-muted">Every cup you log teaches Sip &amp; Score what you love. We match your flavor profile and preferred matcha body against the community's ratings to surface places and taste-twins you'll actually enjoy.</div>
-              </div>
+              <details className="faq-item">
+                <summary className="faq-question">How are recommendations chosen?</summary>
+                <div className="faq-answer">Every cup you log teaches Sip &amp; Score what you love. We match your flavor profile and preferred matcha body against the community&apos;s ratings to surface places and taste-twins you&apos;ll actually enjoy.</div>
+              </details>
 
-              <div style={{ paddingBottom: '0.75rem', borderBottom: '1px solid #f1f3f5', marginBottom: '0.75rem' }}>
-                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>How do I find friends?</div>
-                <div className="text-muted">Search any username in the Friends tab, or tap Follow on the Leaderboard to keep an eye on top sippers.</div>
-              </div>
+              <details className="faq-item">
+                <summary className="faq-question">How do I find friends?</summary>
+                <div className="faq-answer">Search any username in the Friends tab, or tap Follow on the Leaderboard to keep an eye on top sippers.</div>
+              </details>
 
-              <div style={{ paddingBottom: '0.75rem', borderBottom: '1px solid #f1f3f5', marginBottom: '0.75rem' }}>
-                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>Is my data private?</div>
-                <div className="text-muted">Photos stay on your device. Only your ratings and flavor tags are shared so the community can build better leaderboards and recs.</div>
-              </div>
+              <details className="faq-item">
+                <summary className="faq-question">Is my data private?</summary>
+                <div className="faq-answer">Photos stay on your device. Only your ratings and flavor tags are shared so the community can build better leaderboards and recs.</div>
+              </details>
 
-              <div style={{ paddingBottom: '0.75rem', borderBottom: '1px solid #f1f3f5', marginBottom: '0.75rem' }}>
-                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>Does it work offline?</div>
-                <div className="text-muted">Yes — install Sip &amp; Score as an app and your journal stays accessible even without signal.</div>
-              </div>
+              <details className="faq-item">
+                <summary className="faq-question">Does it work offline?</summary>
+                <div className="faq-answer">Yes — install Sip &amp; Score as an app and your journal stays accessible even without signal.</div>
+              </details>
 
-              <div>
-                <div className="fw-semibold mb-1" style={{ color: '#212529' }}>Need more help?</div>
-                <div className="text-muted">
+              <details className="faq-item">
+                <summary className="faq-question">Need more help?</summary>
+                <div className="faq-answer">
                   Reach out via{' '}
                   <button
                     type="button"
@@ -4256,7 +4256,7 @@ function App() {
                     Contact Support
                   </button>.
                 </div>
-              </div>
+              </details>
             </div>
           </div>
         </>,

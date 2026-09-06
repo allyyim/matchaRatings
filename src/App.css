@@ -193,6 +193,71 @@ html {
   background: transparent;
 }
 
+/* FAQ accordion — native <details>/<summary> styled as clean dropdown rows */
+.faq-item {
+  border-bottom: 1px solid #f1f3f5;
+  margin: 0;
+  padding: 0;
+}
+
+.faq-item[open] {
+  background: #f8f9fa;
+  border-radius: 0.5rem;
+  border-bottom-color: transparent;
+  padding: 0 0.75rem;
+  margin: 0 -0.75rem 0.5rem;
+}
+
+.faq-question {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.75rem 0;
+  font-weight: 600;
+  color: #212529;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  user-select: none;
+}
+
+.faq-question::-webkit-details-marker {
+  display: none;
+}
+
+.faq-question::after {
+  content: '';
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid #6c757d;
+  border-bottom: 2px solid #6c757d;
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+  margin-right: 0.25rem;
+  margin-top: -0.15rem;
+}
+
+.faq-item[open] .faq-question {
+  color: #146c43;
+}
+
+.faq-item[open] .faq-question::after {
+  transform: rotate(-135deg);
+  border-color: #146c43;
+  margin-top: 0.15rem;
+}
+
+.faq-question:hover {
+  color: #146c43;
+}
+
+.faq-answer {
+  color: #495057;
+  padding: 0 0 0.75rem;
+  line-height: 1.5;
+}
+
 /* Global Styles */
 * {
   box-sizing: border-box;
