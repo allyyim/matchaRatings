@@ -1492,13 +1492,16 @@ textarea.form-control {
 /* Inline greenness indicator — reads as descriptive supporting metadata
    next to the Sip Score chip instead of a second competing pill. */
 .greenness-inline {
-  display: inline-flex;
+  display: flex;
+  flex-basis: 100%;
   align-items: baseline;
-  gap: 0.25rem;
-  font-size: 0.82rem;
+  gap: 0.35rem;
+  font-size: 0.78rem;
   color: #146c43;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1.15;
+  margin-top: -0.25rem;
+  padding-left: 0.1rem;
   white-space: nowrap;
 }
 
