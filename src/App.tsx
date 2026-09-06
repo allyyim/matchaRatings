@@ -6159,6 +6159,25 @@ function App() {
         </main>
       )}
 
+      {activePage === 'home' && (
+        <button
+          type="button"
+          className="new-log-fab"
+          onClick={() => {
+            if (isDemoAccount) {
+              setMilestoneMessage('Sign up to add your own ratings')
+              setTimeout(() => setMilestoneMessage(''), 2500)
+              return
+            }
+            setIsNewLogOpen(true)
+          }}
+          aria-label="Add new log"
+          title="New log"
+        >
+          <span aria-hidden="true">+</span>
+        </button>
+      )}
+
       <nav className="bottom-nav">
         <button
           type="button"

@@ -2596,6 +2596,48 @@ main.login-page {
 }
 
 /* Bottom Navigation Bar */
+.new-log-fab {
+  position: fixed;
+  right: 1.25rem;
+  bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, var(--primary-green) 0%, #146c43 100%);
+  color: #fff;
+  font-size: 1.9rem;
+  font-weight: 400;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(25, 135, 84, 0.35), 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  z-index: 1050;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  padding: 0;
+}
+
+.new-log-fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 24px rgba(25, 135, 84, 0.4), 0 3px 6px rgba(0, 0, 0, 0.12);
+}
+
+.new-log-fab:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(25, 135, 84, 0.35);
+}
+
+.new-log-fab:focus-visible {
+  outline: 3px solid rgba(25, 135, 84, 0.35);
+  outline-offset: 3px;
+}
+
+.new-log-fab > span {
+  transform: translateY(-2px);
+}
+
 .bottom-nav {
   position: fixed;
   bottom: 0;
