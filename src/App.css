@@ -1517,6 +1517,7 @@ textarea.form-control {
   color: #6c757d;
   font-size: 0.72rem;
   letter-spacing: 0.02em;
+  font-style: italic;
 }
 
 /* Cluster wrapper — keeps score + greenness on the same row on wider

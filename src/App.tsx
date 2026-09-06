@@ -273,6 +273,14 @@ function getWeightedScore(rating: number, greenness: number) {
   return rating * 20 + greenness * greennessWeight
 }
 
+function greennessTierLabel(greenness: number) {
+  if (greenness >= 90) return 'rich emerald'
+  if (greenness >= 75) return 'vibrant green'
+  if (greenness >= 60) return 'clean green'
+  if (greenness >= 45) return 'muted green'
+  return 'pale / green-yellow'
+}
+
 function withUpdatedGreenness(entry: RatingEntry, greenness: number): RatingEntry {
   return {
     ...entry,
@@ -3373,7 +3381,7 @@ function App() {
                         <div className="small text-muted mb-1">{entry.location || selectedExplorePlaceName}</div>
                         <div className="entry-metrics">
                           <div className="mb-2">
-                            <span className="score-chip-row"><span className="score-chip-label"><span aria-hidden="true" style={{ marginRight: '0.25rem' }}>🍵</span>Sip Score</span><span className="score-chip" title="Combined taste + greenness score">
+                            <span className="score-chip-row"><span className="score-chip-label">Sip Score</span><span className="score-chip" title="Combined taste + greenness score">
                               <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
                               <span className="score-chip-suffix">/100</span>
                             </span></span>
@@ -4863,11 +4871,11 @@ function App() {
                         </div>
                         <div className="entry-metrics">
                           <div className="entry-stat-cluster mb-2">
-                            <span className="score-chip-row"><span className="score-chip-label"><span aria-hidden="true" style={{ marginRight: '0.25rem' }}>🍵</span>Sip Score</span><span className="score-chip" title="Combined taste + greenness score">
+                            <span className="score-chip-row"><span className="score-chip-label">Sip Score</span><span className="score-chip" title="Combined taste + greenness score">
                               <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
                               <span className="score-chip-suffix">/100</span>
                             </span></span>
-                            <span className="greenness-inline" title="Matcha Greenness — how vibrantly green the drink reads"><span className="greenness-inline-icon" aria-hidden="true">🌿</span><span className="greenness-inline-value">{entry.greenness.toFixed(0)}%</span><span className="greenness-inline-caption">vibrant</span></span>
+                            <span className="greenness-inline" title="Matcha Greenness"><span className="greenness-inline-value">{entry.greenness.toFixed(0)}%</span><span className="greenness-inline-caption">{greennessTierLabel(entry.greenness)}</span></span>
                           </div>
                           {entry.flavorPreferences && (Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) || getBodyProfile(entry.flavorPreferences)) && (
                             <div className="entry-chip-row">
@@ -5416,11 +5424,11 @@ function App() {
                     </div>
                     <div className="entry-metrics">
                       <div className="entry-stat-cluster mb-2">
-                        <span className="score-chip-row"><span className="score-chip-label"><span aria-hidden="true" style={{ marginRight: '0.25rem' }}>🍵</span>Sip Score</span><span className="score-chip" title="Combined taste + greenness score">
+                        <span className="score-chip-row"><span className="score-chip-label">Sip Score</span><span className="score-chip" title="Combined taste + greenness score">
                           <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
                           <span className="score-chip-suffix">/100</span>
                         </span></span>
-                        <span className="greenness-inline" title="Matcha Greenness — how vibrantly green the drink reads"><span className="greenness-inline-icon" aria-hidden="true">🌿</span><span className="greenness-inline-value">{entry.greenness.toFixed(0)}%</span><span className="greenness-inline-caption">vibrant</span></span>
+                        <span className="greenness-inline" title="Matcha Greenness"><span className="greenness-inline-value">{entry.greenness.toFixed(0)}%</span><span className="greenness-inline-caption">{greennessTierLabel(entry.greenness)}</span></span>
                       </div>
                       {entry.flavorPreferences && (Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) || getBodyProfile(entry.flavorPreferences)) && (
                         <div className="entry-chip-row">
@@ -6098,11 +6106,11 @@ function App() {
                     </div>
                     <div className="entry-metrics">
                       <div className="entry-stat-cluster mb-2">
-                        <span className="score-chip-row"><span className="score-chip-label"><span aria-hidden="true" style={{ marginRight: '0.25rem' }}>🍵</span>Sip Score</span><span className="score-chip" title="Combined taste + greenness score">
+                        <span className="score-chip-row"><span className="score-chip-label">Sip Score</span><span className="score-chip" title="Combined taste + greenness score">
                           <span className="score-chip-value">{(getWeightedScore(entry.rating, entry.greenness) / 2).toFixed(1)}</span>
                           <span className="score-chip-suffix">/100</span>
                         </span></span>
-                        <span className="greenness-inline" title="Matcha Greenness — how vibrantly green the drink reads"><span className="greenness-inline-icon" aria-hidden="true">🌿</span><span className="greenness-inline-value">{entry.greenness.toFixed(0)}%</span><span className="greenness-inline-caption">vibrant</span></span>
+                        <span className="greenness-inline" title="Matcha Greenness"><span className="greenness-inline-value">{entry.greenness.toFixed(0)}%</span><span className="greenness-inline-caption">{greennessTierLabel(entry.greenness)}</span></span>
                       </div>
                       {entry.flavorPreferences && (Object.entries(entry.flavorPreferences).some(([k, v]) => v > 0 && isKnownFlavor(k)) || getBodyProfile(entry.flavorPreferences)) && (
                         <div className="entry-chip-row">
