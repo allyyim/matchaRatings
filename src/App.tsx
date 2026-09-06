@@ -1514,13 +1514,14 @@ function App() {
 
   useEffect(() => {
     if (!isUserReady) return
+    if (showOnboarding) return
     const eligible = canShowIosInstall || deferredInstallPrompt !== null
     if (!eligible) return
     const timer = setTimeout(() => {
       setIsIosInstallModalOpen(true)
     }, 600)
     return () => clearTimeout(timer)
-  }, [isUserReady, canShowIosInstall, deferredInstallPrompt])
+  }, [isUserReady, canShowIosInstall, deferredInstallPrompt, showOnboarding])
 
   useEffect(() => {
     // Handle magic link verification from URL
