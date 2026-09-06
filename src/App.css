@@ -2724,7 +2724,7 @@ main.login-page {
 .new-log-fab {
   position: fixed;
   right: 1.25rem;
-  bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  bottom: calc(7rem + env(safe-area-inset-bottom));
   width: 3.5rem;
   height: 3.5rem;
   border-radius: 50%;
