@@ -3143,9 +3143,9 @@ function App() {
                   <h2 className="onboarding-title">The Leaderboard</h2>
                   <p className="onboarding-lead">Head to the <strong className="text-success">Leaderboard</strong> tab to see:</p>
                   <ul className="onboarding-list">
-                    <li><span className="onboarding-bullet">🥇</span> <strong>Top 10 places</strong> the community loves</li>
-                    <li><span className="onboarding-bullet">🥈</span> <strong>Every sipper ranked</strong> by how many places they&apos;ve rated</li>
-                    <li><span className="onboarding-bullet">🥉</span> Tap any card to peek their reviews or hit <strong>Follow</strong> to stay in the loop</li>
+                    <li><span className="onboarding-bullet">🥇</span> <strong>Top 10 places</strong> — the community favorites</li>
+                    <li><span className="onboarding-bullet">🥈</span> <strong>Every sipper ranked</strong> — by how many places they&apos;ve rated</li>
+                    <li><span className="onboarding-bullet">🥉</span> <strong>Tap any card</strong> — peek their reviews or hit Follow to stay in the loop</li>
                   </ul>
                 </div>
               )}
