@@ -1849,6 +1849,23 @@ function App() {
     }
   }, [])
 
+  // Wake the backend on app boot with a lightweight ping so Render Free finishes
+  // spinning up in the background before the user taps Leaderboard / Community /
+  // any real endpoint. Fire-and-forget; failures are fine.
+  useEffect(() => {
+    const controller = new AbortController()
+    const timeoutId = window.setTimeout(() => controller.abort(), 60000)
+    fetch(`${API_BASE_URL}/api/health`, {
+      method: 'GET',
+      credentials: 'same-origin',
+      signal: controller.signal,
+    }).catch(() => {}).finally(() => window.clearTimeout(timeoutId))
+    return () => {
+      window.clearTimeout(timeoutId)
+      controller.abort()
+    }
+  }, [])
+
   useEffect(() => {
     if (activePage !== 'explore') return
 
