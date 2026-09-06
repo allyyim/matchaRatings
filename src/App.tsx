@@ -1419,17 +1419,25 @@ function App() {
   }, [browserId])
 
   useEffect(() => {
-    // Show onboarding ONLY for brand new accounts (first login, 0 entries)
-    // Don't show if returning user or they already dismissed it
-    if (isUserReady && myEntries.length === 0 && !localStorage.getItem('onboardingShown')) {
-      // Check if this is truly a new account by seeing if they just signed up
+    if (!isUserReady) return
+
+    // Demo account: always show onboarding on every login for testing.
+    if (isDemoAccount) {
+      setShowOnboarding(true)
+      setCurrentOnboardingSlide(0)
+      return
+    }
+
+    // Brand-new accounts: show once, right after signup, before they log anything.
+    if (myEntries.length === 0 && !localStorage.getItem('onboardingShown')) {
       const justSignedUp = sessionStorage.getItem('justSignedUp')
       if (justSignedUp) {
         setShowOnboarding(true)
+        setCurrentOnboardingSlide(0)
         sessionStorage.removeItem('justSignedUp')
       }
     }
-  }, [isUserReady, myEntries.length])
+  }, [isUserReady, isDemoAccount, myEntries.length])
 
   useEffect(() => {
     const name = pendingUserName.trim()
@@ -3092,43 +3100,82 @@ function App() {
             <div className="onboarding-slides">
               {currentOnboardingSlide === 0 && (
                 <div className="onboarding-slide">
-                  <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🍵</div>
-                  <h2 className="fw-bold text-success mb-3">Welcome to Sip & Score</h2>
-                  <p className="text-muted mb-4">Track your matcha journey, one sip at a time. Rate experiences, discover favorites, and connect with the community.</p>
+                  <div className="onboarding-emoji">🍵</div>
+                  <h2 className="onboarding-title">Welcome to Sip &amp; Score</h2>
+                  <p className="onboarding-lead">A cozy home for every matcha you try — rate it, remember it, and see how it stacks up.</p>
+                  <ul className="onboarding-list">
+                    <li><span className="onboarding-bullet">•</span> Log every sip with a photo, flavor notes, and a star rating</li>
+                    <li><span className="onboarding-bullet">•</span> Watch places climb your personal leaderboard</li>
+                    <li><span className="onboarding-bullet">•</span> Follow other sippers and swap discoveries</li>
+                  </ul>
                 </div>
               )}
               {currentOnboardingSlide === 1 && (
                 <div className="onboarding-slide">
-                  <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📝</div>
-                  <h2 className="fw-bold text-success mb-3">Log Your Ratings</h2>
-                  <p className="text-muted mb-4">Click "New Log" to rate matcha drinks. Capture photos, note flavors, and track your impressions for each location.</p>
+                  <div className="onboarding-emoji">📝</div>
+                  <h2 className="onboarding-title">Logging a sip</h2>
+                  <p className="onboarding-lead">Tap <strong className="text-success">+ New Log</strong> on the My Log tab to add a rating.</p>
+                  <ul className="onboarding-list">
+                    <li><span className="onboarding-bullet">1.</span> Search for the café or type it in</li>
+                    <li><span className="onboarding-bullet">2.</span> Snap or upload a photo — we auto-score the greenness</li>
+                    <li><span className="onboarding-bullet">3.</span> Give it stars, pick flavor chips, and jot a quick thought</li>
+                    <li><span className="onboarding-bullet">4.</span> Hit save — your Sip Score is calculated automatically</li>
+                  </ul>
                 </div>
               )}
               {currentOnboardingSlide === 2 && (
                 <div className="onboarding-slide">
-                  <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📊</div>
-                  <h2 className="fw-bold text-success mb-3">Track Your Metrics</h2>
-                  <p className="text-muted mb-4">See greenness scores, ratings, and total scores. Watch your personal statistics grow as you explore.</p>
+                  <div className="onboarding-emoji">✨</div>
+                  <h2 className="onboarding-title">What&apos;s a Sip Score?</h2>
+                  <p className="onboarding-lead">A single number out of 100 that blends how the matcha <em>tasted</em> with how <em>vibrantly green</em> it looked.</p>
+                  <ul className="onboarding-list">
+                    <li><span className="onboarding-bullet">🟢</span> <strong>85+</strong> — a stunner</li>
+                    <li><span className="onboarding-bullet">🟢</span> <strong>70–84</strong> — solid sip</li>
+                    <li><span className="onboarding-bullet">🟡</span> <strong>50–69</strong> — okay pour</li>
+                    <li><span className="onboarding-bullet">🟠</span> <strong>Below 50</strong> — noted the miss</li>
+                  </ul>
                 </div>
               )}
               {currentOnboardingSlide === 3 && (
                 <div className="onboarding-slide">
-                  <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🌍</div>
-                  <h2 className="fw-bold text-success mb-3">Explore</h2>
-                  <p className="text-muted mb-4">Check out top-rated places and leaderboards. See what other matcha enthusiasts have discovered.</p>
+                  <div className="onboarding-emoji">🏆</div>
+                  <h2 className="onboarding-title">The Leaderboard</h2>
+                  <p className="onboarding-lead">Head to the <strong className="text-success">Leaderboard</strong> tab to see:</p>
+                  <ul className="onboarding-list">
+                    <li><span className="onboarding-bullet">🥇</span> <strong>Top 10 places</strong> the community loves</li>
+                    <li><span className="onboarding-bullet">🥈</span> <strong>Every sipper ranked</strong> by how many places they&apos;ve rated</li>
+                    <li><span className="onboarding-bullet">🥉</span> Tap any card to peek their reviews or hit <strong>Follow</strong> to stay in the loop</li>
+                  </ul>
                 </div>
               )}
               {currentOnboardingSlide === 4 && (
                 <div className="onboarding-slide">
-                  <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✨</div>
-                  <h2 className="fw-bold text-success mb-3">You're Ready!</h2>
-                  <p className="text-muted mb-4">Start exploring and rating matcha. Build your collection and join the community.</p>
+                  <div className="onboarding-emoji">👥</div>
+                  <h2 className="onboarding-title">Community &amp; Recs</h2>
+                  <p className="onboarding-lead">The <strong className="text-success">Explore</strong> tab is where you connect and discover.</p>
+                  <ul className="onboarding-list">
+                    <li><span className="onboarding-bullet">🔍</span> <strong>Search Users</strong> — find friends by username</li>
+                    <li><span className="onboarding-bullet">✓</span> <strong>Following</strong> — the people you keep tabs on</li>
+                    <li><span className="onboarding-bullet">🎯</span> <strong>Recs</strong> — matcha places &amp; people with similar taste to yours</li>
+                  </ul>
+                </div>
+              )}
+              {currentOnboardingSlide === 5 && (
+                <div className="onboarding-slide">
+                  <div className="onboarding-emoji">🎉</div>
+                  <h2 className="onboarding-title">You&apos;re all set</h2>
+                  <p className="onboarding-lead">Start with your favorite matcha spot — first sip logged unlocks a little celebration 🎊</p>
+                  <ul className="onboarding-list">
+                    <li><span className="onboarding-bullet">👤</span> Tap the profile icon (top-right) for preferences, FAQ, and to install the app</li>
+                    <li><span className="onboarding-bullet">🍃</span> Set your flavor preferences to sharpen your recs</li>
+                    <li><span className="onboarding-bullet">📱</span> Add it to your home screen for the full app experience</li>
+                  </ul>
                 </div>
               )}
             </div>
 
             <div className="onboarding-dots">
-              {[0, 1, 2, 3, 4].map((i) => (
+              {[0, 1, 2, 3, 4, 5].map((i) => (
                 <button
                   key={i}
                   className={`onboarding-dot ${i === currentOnboardingSlide ? 'active' : ''}`}
@@ -3141,7 +3188,7 @@ function App() {
             <div className="onboarding-nav">
               <button
                 className="btn btn-outline-secondary"
-                onClick={() => setShowOnboarding(false)}
+                onClick={() => setCurrentOnboardingSlide(currentOnboardingSlide - 1)}
                 disabled={currentOnboardingSlide === 0}
               >
                 ← Back
@@ -3150,20 +3197,20 @@ function App() {
                 className="btn btn-link text-muted p-0"
                 onClick={() => {
                   setShowOnboarding(false)
-                  localStorage.setItem('onboardingShown', 'true')
+                  if (!isDemoAccount) localStorage.setItem('onboardingShown', 'true')
                 }}
               >
                 Skip
               </button>
-              {currentOnboardingSlide === 4 ? (
+              {currentOnboardingSlide === 5 ? (
                 <button
                   className="btn btn-success"
                   onClick={() => {
                     setShowOnboarding(false)
-                    localStorage.setItem('onboardingShown', 'true')
+                    if (!isDemoAccount) localStorage.setItem('onboardingShown', 'true')
                   }}
                 >
-                  Get Started
+                  Let&apos;s sip 🍵
                 </button>
               ) : (
                 <button
@@ -5375,14 +5422,16 @@ function App() {
 
                   {friendSuggestions.length > 0 && (
                     <div className="mt-3">
-                      <div className="row g-3">
-                        {friendSuggestions.map((friend) => (
-                          <div key={friend.userName} className="col-12 col-sm-6 col-md-4">
-                            <div
-                              className="card border-0 shadow-sm h-100"
+                      <div className="explore-users-list">
+                        {friendSuggestions.map((friend) => {
+                          const isSelf = friend.userName.toLowerCase() === (currentUserName || '').toLowerCase()
+                          const isFollowing = followingSet.has(friend.userName)
+                          return (
+                            <article
+                              key={friend.userName}
+                              className="explore-user-card"
                               role="button"
                               tabIndex={0}
-                              style={{ cursor: 'pointer' }}
                               onClick={() => void openFriendModal(friend.userName)}
                               onKeyDown={(event) => {
                                 if (event.key === 'Enter' || event.key === ' ') {
@@ -5391,15 +5440,53 @@ function App() {
                                 }
                               }}
                             >
-                              <div className="card-body">
-                                <h6 className="card-title fw-semibold text-success mb-2">
-                                  {friend.userName}
-                                </h6>
-                                <p className="text-muted small mb-0">{friend.placeCount} places rated</p>
+                              <div className="explore-place-main">
+                                <div className="explore-place-name">
+                                  <span className="explore-user-link">{friend.userName}</span>
+                                  {isSelf && <span className="explore-user-you-badge">you</span>}
+                                </div>
+                                <div className="explore-place-meta">
+                                  {friend.placeCount} {friend.placeCount === 1 ? 'place rated' : 'places rated'}
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                        ))}
+                              <div className="explore-user-actions">
+                                {!isSelf && (
+                                  <button
+                                    type="button"
+                                    className={`explore-follow-btn ${isFollowing ? 'is-following' : ''}`}
+                                    onClick={async (event) => {
+                                      event.stopPropagation()
+                                      try {
+                                        if (isFollowing) {
+                                          await apiFetch(`/follows/${friend.userName}`, { method: 'DELETE' })
+                                          followingSet.delete(friend.userName)
+                                          setSavedEntryToast({ headline: 'Unfollowed', highlight: friend.userName })
+                                        } else {
+                                          await apiFetch(`/follows/${friend.userName}`, { method: 'POST' })
+                                          followingSet.add(friend.userName)
+                                          setSavedEntryToast({ headline: 'Following — one more sipper to watch', highlight: friend.userName })
+                                        }
+                                        window.setTimeout(() => setSavedEntryToast(null), 3500)
+                                        setFollowingSet(new Set(followingSet))
+                                      } catch (error) {
+                                        console.error('Failed to update follow status:', error)
+                                        const msg = error instanceof Error ? error.message : ''
+                                        if (/your account not found/i.test(msg)) {
+                                          alert('Your session is out of date. Please sign out and sign back in to refresh your account, then try again.')
+                                        } else {
+                                          alert(msg || 'Failed to update follow status')
+                                        }
+                                      }
+                                    }}
+                                    title={isFollowing ? 'Unfollow' : 'Follow'}
+                                  >
+                                    {isFollowing ? '✓ Following' : '+ Follow'}
+                                  </button>
+                                )}
+                              </div>
+                            </article>
+                          )
+                        })}
                       </div>
                     </div>
                   )}
