@@ -166,6 +166,19 @@
 html {
   scrollbar-width: thin;
   scrollbar-color: rgba(25, 135, 84, 0.35) transparent;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 ::-webkit-scrollbar {

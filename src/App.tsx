@@ -2335,15 +2335,15 @@ function App() {
         150: { headline: '150 rated 🍵', subtext: 'The whisk masters approve.' },
         200: { headline: '200 sips! 🎊', subtext: 'Living-legend matcha status achieved.' }
       }
-      const total = updated.ratings.length
+      // Base the milestone on the client's own increment (previous + 1) rather
+      // than the server's returned length. The server occasionally reconciles
+      // duplicate rows and can return a length that jumps past the actual
+      // user-visible count, which used to trigger phantom popups (e.g. "125
+      // sips deep" firing when the user only just logged their 123rd entry).
       const previousTotal = myEntries.length
+      const total = previousTotal + 1
       const milestone = MILESTONES[total]
-      // Only celebrate when the save actually crossed the milestone threshold
-      // (i.e. previousTotal was exactly one below). Otherwise a server-side
-      // reconciliation (e.g. duplicate cleanup) could accidentally land on a
-      // milestone number and fire a bogus popup like "125 sips deep" while the
-      // user actually only has 123 entries.
-      if (milestone && total === previousTotal + 1) {
+      if (milestone && updated.ratings.length >= total) {
         setMilestoneCelebration({ count: total, headline: milestone.headline, subtext: milestone.subtext })
         window.setTimeout(() => setMilestoneCelebration(null), 5000)
       }
