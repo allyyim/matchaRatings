@@ -161,6 +161,38 @@
   100% { opacity: 0; transform: translateY(105vh) rotate(720deg); }
 }
 
+/* Slim, on-brand scrollbars (mainly visible on Windows desktop browsers;
+   macOS/iOS use native overlay bars and mostly ignore these rules). */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(25, 135, 84, 0.35) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(25, 135, 84, 0.35);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(25, 135, 84, 0.55);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Global Styles */
 * {
   box-sizing: border-box;
