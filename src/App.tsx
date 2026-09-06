@@ -1473,6 +1473,20 @@ function App() {
     }
   }, [isUserReady, isDemoAccount, myEntries.length])
 
+  // Reset per-tab search/filter state when the user switches tabs so opening a
+  // tab always starts fresh (no lingering search query or sort from before).
+  useEffect(() => {
+    setMyLogsSearchTerm('')
+    setMyRatingsSort('highest')
+    setIsMyRatingsFilterOpen(false)
+    setMyLogsVisibleCount(10)
+    setFriendQuery('')
+    setFriendLogsSearchTerm('')
+    setFriendSort('highest')
+    setIsFriendFilterOpen(false)
+    setIsFriendSearchOpen(false)
+  }, [activePage])
+
   useEffect(() => {
     const name = pendingUserName.trim()
     if (!name) {
@@ -2322,8 +2336,14 @@ function App() {
         200: { headline: '200 sips! 🎊', subtext: 'Living-legend matcha status achieved.' }
       }
       const total = updated.ratings.length
+      const previousTotal = myEntries.length
       const milestone = MILESTONES[total]
-      if (milestone) {
+      // Only celebrate when the save actually crossed the milestone threshold
+      // (i.e. previousTotal was exactly one below). Otherwise a server-side
+      // reconciliation (e.g. duplicate cleanup) could accidentally land on a
+      // milestone number and fire a bogus popup like "125 sips deep" while the
+      // user actually only has 123 entries.
+      if (milestone && total === previousTotal + 1) {
         setMilestoneCelebration({ count: total, headline: milestone.headline, subtext: milestone.subtext })
         window.setTimeout(() => setMilestoneCelebration(null), 5000)
       }
