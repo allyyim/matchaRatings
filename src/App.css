@@ -1543,10 +1543,16 @@ textarea.form-control {
 
 .greenness-inline-caption {
   font-weight: 500;
-  color: #6c757d;
+  color: #5a6268;
   font-size: 0.75rem;
   letter-spacing: 0.01em;
   font-style: italic;
+}
+
+#star-rating:focus-visible {
+  outline: 2px solid rgba(25, 135, 84, 0.55);
+  outline-offset: 6px;
+  border-radius: 12px;
 }
 
 /* Cluster wrapper — keeps score + greenness on the same row on wider

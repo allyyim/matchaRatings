@@ -4890,7 +4890,7 @@ function App() {
                     <article key={`friend-modal-${entry.id}`} className="card border-0 shadow-sm">
                       <div className="card-body py-2">
                         <div className="d-flex gap-2 align-items-start mb-1">
-                          <div className={`entry-rank-circle${rank >= 100 ? ' is-long' : ''}`}>#{rank}</div>
+                          <div className={`entry-rank-circle${rank >= 100 ? ' is-long' : ''}`} role="img" aria-label={`Rank ${rank}`}>#{rank}</div>
                           <div className="flex-grow-1">
                             <div className="d-flex justify-content-between flex-wrap gap-2">
                               <strong>{entry.location || 'Unknown location'}</strong>
@@ -5223,9 +5223,34 @@ function App() {
               </div>
 
               <div className="mb-3">
-                <label className="form-label fw-semibold d-block">How do you rate this matcha?</label>
-                <div className="small text-muted mb-2 text-center">Half-star and 0-star ratings are allowed. Tap on a star to set a value.</div>
-                <div id="star-rating" className="d-flex gap-2 rating-star-row justify-content-center">
+                <label className="form-label fw-semibold d-block" id="star-rating-label">How do you rate this matcha?</label>
+                <div className="small text-muted mb-2 text-center">Half-star and 0-star ratings are allowed. Tap a star to set a value; use ← / → arrows to adjust by half a star.</div>
+                <div
+                  id="star-rating"
+                  className="d-flex gap-2 rating-star-row justify-content-center"
+                  role="slider"
+                  aria-labelledby="star-rating-label"
+                  aria-valuemin={0}
+                  aria-valuemax={5}
+                  aria-valuenow={currentRating}
+                  aria-valuetext={`${currentRating} out of 5 stars`}
+                  tabIndex={0}
+                  onKeyDown={(event) => {
+                    let handled = true
+                    if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
+                      setCurrentRating((r) => Math.min(5, +(r + 0.5).toFixed(1)))
+                    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
+                      setCurrentRating((r) => Math.max(0, +(r - 0.5).toFixed(1)))
+                    } else if (event.key === 'Home') {
+                      setCurrentRating(0)
+                    } else if (event.key === 'End') {
+                      setCurrentRating(5)
+                    } else {
+                      handled = false
+                    }
+                    if (handled) event.preventDefault()
+                  }}
+                >
                   {Array.from({ length: 5 }, (_, idx) => {
                     const starIndex = idx + 1
                     const fillAmount = Math.max(0, Math.min(1, currentRating - idx))
@@ -5237,6 +5262,7 @@ function App() {
                         onClick={(event) => updateRatingFromClick(starIndex, event)}
                         onContextMenu={(event) => event.preventDefault()}
                         aria-label={`Rate ${starIndex} stars`}
+                        tabIndex={-1}
                       >
                         <img className="star-base" src={pixelStarUrl} alt="" draggable={false} />
                         <span className="star-fill-clip" style={{ width: `${fillAmount * 100}%` }}>
@@ -5410,7 +5436,7 @@ function App() {
                   <div className="card-body">
                     <div className="d-flex gap-2 align-items-start justify-content-between mb-2">
                       <div className="d-flex align-items-center gap-2 flex-grow-1">
-                        <div className={`entry-rank-circle${rank >= 100 ? ' is-long' : ''}`}>#{rank}</div>
+                        <div className={`entry-rank-circle${rank >= 100 ? ' is-long' : ''}`} role="img" aria-label={`Rank ${rank}`}>#{rank}</div>
                         <div className="flex-grow-1">
                           <div className="d-flex justify-content-between flex-wrap gap-2">
                             <strong>{entry.location || 'Unknown location'}</strong>
@@ -6109,7 +6135,7 @@ function App() {
                   <div className="card-body">
                     <div className="d-flex gap-2 align-items-start justify-content-between mb-2">
                       <div className="d-flex align-items-center gap-2 flex-grow-1">
-                        <div className={`entry-rank-circle${rank >= 100 ? ' is-long' : ''}`}>#{rank}</div>
+                        <div className={`entry-rank-circle${rank >= 100 ? ' is-long' : ''}`} role="img" aria-label={`Rank ${rank}`}>#{rank}</div>
                         <div className="flex-grow-1">
                           <div className="d-flex justify-content-between flex-wrap gap-2">
                             <strong>{entry.location || 'Unknown location'}</strong>
