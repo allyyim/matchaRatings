@@ -964,7 +964,10 @@ function App() {
   const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser' | 'confirm-account' | 'magic-link' | 'magic-link-username'>('choice')
   const [welcomeMessage, setWelcomeMessage] = useState('')
   const [savedEntryToast, setSavedEntryToast] = useState<{ headline: string; highlight: string; connector?: string } | null>(null)
-  const [milestoneCelebration, setMilestoneCelebration] = useState<{ count: number; headline: string; subtext: string } | null>(null)
+  // Milestone celebration popups are disabled for now (see saveEntry). State is
+  // retained (read-only) so the render portal keeps compiling; setter is aliased
+  // to void to silence the unused-setter lint until we bring the feature back.
+  const [milestoneCelebration] = useState<{ count: number; headline: string; subtext: string } | null>(null)
   const [potentialAccounts, setPotentialAccounts] = useState<string[]>([])
   const [selectedPotentialAccount, setSelectedPotentialAccount] = useState<string | null>(null)
   const [verifiedAccountName, setVerifiedAccountName] = useState<string | null>(null)
@@ -2332,34 +2335,12 @@ function App() {
       setSavedEntryToast({ headline, highlight: placeLabel })
       window.setTimeout(() => setSavedEntryToast(null), 3500)
 
-      // Milestone celebration: check the new total against a fixed set of
-      // milestones and fire a confetti burst + special toast if we hit one.
-      const MILESTONES: Record<number, { headline: string; subtext: string }> = {
-        1:   { headline: 'First sip logged 🍵', subtext: 'Welcome to Sip & Score — your matcha journey begins!' },
-        10:  { headline: '10 sips in the books 🎉', subtext: 'You\'re officially building a matcha log.' },
-        25:  { headline: '25 matchas rated 🍵', subtext: 'That\'s a serious sipping streak.' },
-        50:  { headline: '50 sips whisked ✨', subtext: 'You\'re in the top tier of tasters now.' },
-        100: { headline: '100 matchas 🎉🍵', subtext: 'Certified sipper status: unlocked.' },
-        125: { headline: '125 sips deep 🍃', subtext: 'Nothing green escapes your review.' },
-        150: { headline: '150 rated 🍵', subtext: 'The whisk masters approve.' },
-        200: { headline: '200 sips! 🎊', subtext: 'Living-legend matcha status achieved.' }
-      }
-      // Base the milestone on the client's own increment (previous + 1) rather
-      // than the server's returned length. The server occasionally reconciles
-      // duplicate rows and can return a length that jumps past the actual
-      // user-visible count, which used to trigger phantom popups (e.g. "125
-      // sips deep" firing when the user only just logged their 123rd entry).
-      // Require the server's post-save count to match EXACTLY as an extra guard.
-      const previousTotal = myEntries.length
-      const total = previousTotal + 1
-      const milestone = MILESTONES[total]
-      if (milestone && updated.ratings.length === total) {
-        setMilestoneCelebration({ count: total, headline: milestone.headline, subtext: milestone.subtext })
-        window.setTimeout(() => setMilestoneCelebration(null), 5000)
-      }
-
-      // Milestone popups intentionally disabled — saved for a future feature.
-      // See git history for the previous count-based confetti/toast logic.
+      // Milestone celebration popups intentionally disabled — client-side and
+      // server-side counts occasionally drift (duplicate rows, tombstoned
+      // entries, reconciliation) which caused wrong milestone numbers to fire
+      // ("125 sips deep" while the user only logged their 123rd). Confetti-
+      // style celebration can be reintroduced once we have a durable,
+      // user-visible sip counter to key off of.
 
       setCurrentRating(0)
       setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, mellow: 0, bitter: 0 })
