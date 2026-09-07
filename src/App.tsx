@@ -268,6 +268,15 @@ function writeCache(userName: string, kind: string, value: unknown): void {
   } catch { /* quota exceeded / private mode — ignore */ }
 }
 
+function normalizeForSearch(value: string) {
+  // Fold accents (café → cafe, crème → creme) and lowercase so search
+  // matches regardless of diacritic marks the user typed.
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+}
+
 function getWeightedScore(rating: number, greenness: number) {
   const greennessWeight = rating >= 4 ? FULL_GREENNESS_WEIGHT : LOW_RATING_GREENNESS_WEIGHT
   return rating * 20 + greenness * greennessWeight
@@ -1134,12 +1143,12 @@ function App() {
   }, [rankedMine])
 
   const sortedMine = useMemo(() => {
-    const trimmedSearch = myLogsSearchTerm.trim().toLowerCase()
+    const trimmedSearch = normalizeForSearch(myLogsSearchTerm.trim())
     if (!trimmedSearch) return rankedMine
 
     return rankedMine.filter((entry) =>
-      entry.location.toLowerCase().includes(trimmedSearch) ||
-      entry.thoughts.toLowerCase().includes(trimmedSearch)
+      normalizeForSearch(entry.location).includes(trimmedSearch) ||
+      normalizeForSearch(entry.thoughts).includes(trimmedSearch)
     )
   }, [rankedMine, myLogsSearchTerm])
 
@@ -1180,10 +1189,10 @@ function App() {
     let filtered = rankedFriendEntries
     
     if (friendLogsSearchTerm.trim()) {
-      const searchLower = friendLogsSearchTerm.toLowerCase()
+      const searchLower = normalizeForSearch(friendLogsSearchTerm)
       filtered = rankedFriendEntries.filter((entry) =>
-        entry.location.toLowerCase().includes(searchLower) ||
-        entry.thoughts.toLowerCase().includes(searchLower)
+        normalizeForSearch(entry.location).includes(searchLower) ||
+        normalizeForSearch(entry.thoughts).includes(searchLower)
       )
     }
 

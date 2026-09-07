@@ -173,6 +173,18 @@ html {
 body {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
+  /* Hint the compositor to prep GPU layers so long scrolls stay at 60fps */
+  will-change: scroll-position;
+  transform: translateZ(0);
+}
+
+.modal-overlay,
+.new-log-modal,
+.friend-modal,
+.explore-place-modal,
+.preferences-modal {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1085,6 +1097,10 @@ textarea.form-control {
   overflow: visible;
   border: 1px solid var(--border-subtle);
   background: white;
+  /* Skip layout/paint for off-screen cards — huge win when scrolling
+     a long log without changing appearance. */
+  content-visibility: auto;
+  contain-intrinsic-size: 280px;
 }
 
 .entry-card:hover {
