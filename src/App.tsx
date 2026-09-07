@@ -2324,33 +2324,46 @@ function App() {
       // wording tuned to the rating so it feels alive without being cheesy.
       const sipScore = Number((getWeightedScore(currentRating, resolvedGreenness) / 2).toFixed(1))
       const placeLabel = trimmedLocation
-      let headline = `Sip logged · Sip Score ${sipScore}`
-      if (sipScore >= 85) headline = `A stunner — Sip Score ${sipScore}`
-      else if (sipScore >= 70) headline = `Solid sip logged · Sip Score ${sipScore}`
-      else if (sipScore >= 50) headline = `Sip logged · Sip Score ${sipScore}`
-      else headline = `Noted the miss · Sip Score ${sipScore}`
+      let toastPrefix = 'Sip logged'
+      if (sipScore >= 85) toastPrefix = 'A stunner'
+      else if (sipScore >= 70) toastPrefix = 'Solid sip'
+      else if (sipScore >= 50) toastPrefix = 'Sip logged'
+      else toastPrefix = 'Noted the miss'
+      const headline = `${toastPrefix} · Sip Score of ${sipScore} at`
       setSavedEntryToast({ headline, highlight: placeLabel })
       window.setTimeout(() => setSavedEntryToast(null), 3500)
 
-      // Milestone celebration: server has already been deduped above, so
-      // updated.ratings.length is authoritative. Base the milestone key off
-      // the server's count directly.
-      const MILESTONES: Record<number, { headline: string; subtext: string }> = {
-        1:   { headline: 'First sip logged 🍵', subtext: 'Welcome to Sip & Score — your matcha journey begins!' },
-        10:  { headline: '10 sips in the books 🎉', subtext: 'You\'re officially building a matcha log.' },
-        25:  { headline: '25 matchas rated 🍵', subtext: 'That\'s a serious sipping streak.' },
-        50:  { headline: '50 sips whisked ✨', subtext: 'You\'re in the top tier of tasters now.' },
-        100: { headline: '100 matchas 🎉🍵', subtext: 'Certified sipper status: unlocked.' },
-        125: { headline: '125 sips deep 🍃', subtext: 'Nothing green escapes your review.' },
-        150: { headline: '150 rated 🍵', subtext: 'The whisk masters approve.' },
-        200: { headline: '200 sips! 🎊', subtext: 'Living-legend matcha status achieved.' }
+      // Milestone celebration is based on UNIQUE PLACES rated (case-insensitive
+      // by location name), not raw entry count. Users think of milestones as
+      // "how many distinct matcha spots have I visited" rather than "how many
+      // taps of Save have I made" (which would inflate whenever they re-rate
+      // the same place). This also naturally sidesteps the earlier 125/123
+      // drift caused by re-logged entries counting toward the total.
+      const MILESTONES: Record<number, { headline: string; subtext: (place: string) => string }> = {
+        1:   { headline: 'First sip logged 🍵',   subtext: (p) => `${p} kicked off your matcha journey.` },
+        10:  { headline: '10 places rated 🎉',    subtext: (p) => `${p} makes it 10 — your log is officially rolling.` },
+        25:  { headline: '25 spots scored 🍵',    subtext: (p) => `${p} is #25 on your matcha map.` },
+        50:  { headline: '50 places whisked ✨',  subtext: (p) => `Half a hundred — ${p} lands you at 50.` },
+        100: { headline: '100 places rated 🎉🍵', subtext: (p) => `Certified sipper status unlocked at ${p}.` },
+        125: { headline: '125 places deep 🍃',    subtext: (p) => `${p} rounds you out at 125 spots.` },
+        150: { headline: '150 places rated 🍵',   subtext: (p) => `The whisk masters approve — ${p} is #150.` },
+        200: { headline: '200 places! 🎊',        subtext: (p) => `Living-legend status. ${p} is your 200th.` }
       }
-      const total = updated.ratings.length
-      const previousTotal = myEntries.length
-      const milestone = MILESTONES[total]
-      // Only fire when the save actually crossed the threshold on this action.
-      if (milestone && total === previousTotal + 1) {
-        setMilestoneCelebration({ count: total, headline: milestone.headline, subtext: milestone.subtext })
+      const normalizePlace = (loc: string) => loc.trim().toLowerCase().replace(/\s+/g, ' ')
+      const previousPlaces = new Set(myEntries.map((e) => normalizePlace(e.location || '')).filter(Boolean))
+      const currentPlaces = new Set(updated.ratings.map((e) => normalizePlace(e.location || '')).filter(Boolean))
+      const previousPlaceCount = previousPlaces.size
+      const currentPlaceCount = currentPlaces.size
+      const milestone = MILESTONES[currentPlaceCount]
+      // Only celebrate when this save actually added a brand-new place AND that
+      // pushed us onto a milestone number. Guarantees the popup can never fire
+      // when you're re-rating a place you've already logged.
+      if (milestone && currentPlaceCount === previousPlaceCount + 1) {
+        setMilestoneCelebration({
+          count: currentPlaceCount,
+          headline: milestone.headline,
+          subtext: milestone.subtext(placeLabel)
+        })
         window.setTimeout(() => setMilestoneCelebration(null), 5000)
       }
 
