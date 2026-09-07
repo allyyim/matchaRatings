@@ -1060,10 +1060,6 @@ function App() {
     return [...friendModalEntries].sort(compareEntriesForRank)
   }, [friendModalEntries])
 
-  const friendModalRankById = useMemo(() => {
-    return new Map(rankedFriendModalEntries.map((entry, index) => [entry.id, index + 1]))
-  }, [rankedFriendModalEntries])
-
   const sortedFriendModalEntries = useMemo(() => {
     const next = [...rankedFriendModalEntries]
     switch (friendModalSort) {
@@ -1138,10 +1134,6 @@ function App() {
     return [...myEntries].sort(compareEntriesForRank)
   }, [myEntries])
 
-  const myRankById = useMemo(() => {
-    return new Map(rankedMine.map((entry, index) => [entry.id, index + 1]))
-  }, [rankedMine])
-
   const sortedMine = useMemo(() => {
     const trimmedSearch = normalizeForSearch(myLogsSearchTerm.trim())
     if (!trimmedSearch) return rankedMine
@@ -1180,10 +1172,6 @@ function App() {
   const rankedFriendEntries = useMemo(() => {
     return [...friendEntries].sort(compareEntriesForRank)
   }, [friendEntries])
-
-  const friendRankById = useMemo(() => {
-    return new Map(rankedFriendEntries.map((entry, index) => [entry.id, index + 1]))
-  }, [rankedFriendEntries])
 
   const filteredFriendEntries = useMemo(() => {
     let filtered = rankedFriendEntries
@@ -4882,8 +4870,8 @@ function App() {
                     </div>
                   </div>
                   <div className="d-flex flex-column gap-2">
-                  {sortedFriendModalEntries.map((entry) => {
-                    const rank = friendModalRankById.get(entry.id) || 0
+                  {sortedFriendModalEntries.map((entry, index) => {
+                    const rank = index + 1
                     return (
                     <article key={`friend-modal-${entry.id}`} className="card border-0 shadow-sm">
                       <div className="card-body py-2">
@@ -5401,12 +5389,14 @@ function App() {
                   : <div className="alert alert-light border">Your matcha journey starts here 🍵</div>
               )}
 
-              {filteredMine.slice(0, myLogsVisibleCount).map((entry) => (
+              {filteredMine.slice(0, myLogsVisibleCount).map((entry, index) => {
+                const rank = index + 1
+                return (
                 <article key={entry.id} data-entry-id={entry.id} className="card border-0 shadow-sm entry-card">
                   <div className="card-body">
                     <div className="d-flex gap-2 align-items-start justify-content-between mb-2">
                       <div className="d-flex align-items-center gap-2 flex-grow-1">
-                        <div className="entry-rank-circle">#{myRankById.get(entry.id) || 0}</div>
+                        <div className={`entry-rank-circle${rank >= 100 ? ' is-long' : ''}`}>#{rank}</div>
                         <div className="flex-grow-1">
                           <div className="d-flex justify-content-between flex-wrap gap-2">
                             <strong>{entry.location || 'Unknown location'}</strong>
@@ -5534,7 +5524,8 @@ function App() {
                     </div>
                   )}
                 </article>
-              ))}
+                )
+              })}
               {filteredMine.length > myLogsVisibleCount && (
                 <button
                   type="button"
@@ -6097,12 +6088,14 @@ function App() {
                 <div className="alert alert-light border">No ratings found for this friend.</div>
               )}
 
-              {(isFriendLogsExpanded || !selectedFriend ? filteredFriendEntries : filteredFriendEntries.slice(0, 3)).map((entry) => (
+              {(isFriendLogsExpanded || !selectedFriend ? filteredFriendEntries : filteredFriendEntries.slice(0, 3)).map((entry, index) => {
+                const rank = index + 1
+                return (
                 <article key={entry.id} className="card border-0 shadow-sm">
                   <div className="card-body">
                     <div className="d-flex gap-2 align-items-start justify-content-between mb-2">
                       <div className="d-flex align-items-center gap-2 flex-grow-1">
-                        <div className="entry-rank-circle">#{friendRankById.get(entry.id) || 0}</div>
+                        <div className={`entry-rank-circle${rank >= 100 ? ' is-long' : ''}`}>#{rank}</div>
                         <div className="flex-grow-1">
                           <div className="d-flex justify-content-between flex-wrap gap-2">
                             <strong>{entry.location || 'Unknown location'}</strong>
@@ -6176,7 +6169,8 @@ function App() {
                     />
                   </div>
                 </article>
-              ))}
+                )
+              })}
               {selectedFriend && filteredFriendEntries.length > 3 && !isFriendLogsExpanded && (
                 <button
                   type="button"
