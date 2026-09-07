@@ -1321,9 +1321,9 @@ app.get('/api/friends/search', async (req, res) => {
       `
         SELECT
           a.user_name,
-          COUNT(DISTINCT r.location) as place_count
+          COUNT(r.id) as place_count
         FROM accounts a
-        LEFT JOIN ratings r ON a.user_name = r.user_name AND r.location IS NOT NULL AND r.location != ''
+        LEFT JOIN ratings r ON LOWER(r.user_name) = LOWER(a.user_name) AND r.location IS NOT NULL AND r.location != ''
         WHERE LOWER(a.user_name) LIKE LOWER($1)
           AND LOWER(a.user_name) <> 'demo'
         GROUP BY a.user_name
@@ -1492,12 +1492,14 @@ app.get('/api/explore/users', async (req, res) => {
   try {
     const result = await pool.query(
       `
-        SELECT user_name, COUNT(DISTINCT location) as place_count
+        SELECT
+          MIN(user_name) AS user_name,
+          COUNT(*) AS place_count
         FROM ratings
         WHERE TRIM(location) <> ''
           AND LOWER(user_name) <> 'demo'
-        GROUP BY user_name
-        ORDER BY place_count DESC, user_name ASC
+        GROUP BY LOWER(user_name)
+        ORDER BY place_count DESC, MIN(user_name) ASC
         LIMIT $1
       `,
       [limit * 2]

@@ -269,12 +269,14 @@ function writeCache(userName: string, kind: string, value: unknown): void {
 }
 
 function normalizeForSearch(value: string) {
-  // Fold accents (café → cafe, crème → creme) and lowercase so search
-  // matches regardless of diacritic marks the user typed.
+  // Fold accents (café → cafe, crème → creme), lowercase, AND strip
+  // non-alphanumerics so 'hey tea' matches 'HEYTEA', 'Blue Bottle' matches
+  // 'bluebottle', 'St-Kilda' matches 'st kilda', etc.
   return value
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
 }
 
 function getWeightedScore(rating: number, greenness: number) {
@@ -1038,12 +1040,10 @@ function App() {
   }, [friendModalUser, exploreUsers])
 
   const friendModalPlaceCount = useMemo(() => {
-    const set = new Set<string>()
-    friendModalEntries.forEach((e) => {
-      const l = (e.location || '').trim().toLowerCase()
-      if (l) set.add(l)
-    })
-    return set.size
+    // Show total entries so this matches the user's log (which lists every
+    // rating). Using distinct locations here would undercount when someone
+    // has multiple rows at the same-named place.
+    return friendModalEntries.length
   }, [friendModalEntries])
 
   const friendModalPrefs = useMemo(() => {
