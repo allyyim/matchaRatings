@@ -4036,16 +4036,17 @@ function App() {
             style={{
               position: 'fixed',
               left: '50%',
-              bottom: '1.25rem',
-              transform: 'translateX(-50%)',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
               width: 'calc(100vw - 2rem)',
               maxWidth: '380px',
+              maxHeight: 'calc(100vh - 2rem)',
+              overflowY: 'auto',
               backgroundColor: 'white',
               borderRadius: '16px',
               boxShadow: '0 20px 48px rgba(15, 23, 42, 0.18), 0 4px 12px rgba(15, 23, 42, 0.08)',
               border: '1px solid rgba(0,0,0,0.06)',
-              zIndex: 1060,
-              overflow: 'hidden'
+              zIndex: 1060
             }}
           >
             <div style={{ padding: '1.25rem 1.25rem 0.5rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -4884,7 +4885,7 @@ function App() {
                   </div>
                   <div className="d-flex flex-column gap-2">
                   {sortedFriendModalEntries.map((entry, index) => {
-                    const rank = index + 1
+                    const rank = friendModalSort === 'lowest' ? sortedFriendModalEntries.length - index : index + 1
                     return (
                     <article key={`friend-modal-${entry.id}`} className="card border-0 shadow-sm">
                       <div className="card-body py-2">
@@ -5403,7 +5404,7 @@ function App() {
               )}
 
               {filteredMine.slice(0, myLogsVisibleCount).map((entry, index) => {
-                const rank = index + 1
+                const rank = myRatingsSort === 'lowest' ? filteredMine.length - index : index + 1
                 return (
                 <article key={entry.id} data-entry-id={entry.id} className="card border-0 shadow-sm entry-card">
                   <div className="card-body">
@@ -6102,7 +6103,7 @@ function App() {
               )}
 
               {(isFriendLogsExpanded || !selectedFriend ? filteredFriendEntries : filteredFriendEntries.slice(0, 3)).map((entry, index) => {
-                const rank = index + 1
+                const rank = friendSort === 'lowest' ? filteredFriendEntries.length - index : index + 1
                 return (
                 <article key={entry.id} className="card border-0 shadow-sm">
                   <div className="card-body">
