@@ -2349,10 +2349,11 @@ function App() {
       // duplicate rows and can return a length that jumps past the actual
       // user-visible count, which used to trigger phantom popups (e.g. "125
       // sips deep" firing when the user only just logged their 123rd entry).
+      // Require the server's post-save count to match EXACTLY as an extra guard.
       const previousTotal = myEntries.length
       const total = previousTotal + 1
       const milestone = MILESTONES[total]
-      if (milestone && updated.ratings.length >= total) {
+      if (milestone && updated.ratings.length === total) {
         setMilestoneCelebration({ count: total, headline: milestone.headline, subtext: milestone.subtext })
         window.setTimeout(() => setMilestoneCelebration(null), 5000)
       }
