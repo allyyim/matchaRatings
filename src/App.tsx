@@ -3169,8 +3169,18 @@ function App() {
       )}
 
       {savedEntryToast && createPortal(
-        <div className="welcome-toast" role="status" aria-live="polite">
-          <div>{savedEntryToast.headline}{savedEntryToast.highlight ? <>{savedEntryToast.connector ?? ' at '}<span style={{ color: '#20c997' }}>{savedEntryToast.highlight}</span></> : null}</div>
+        <div className="save-confirmation" role="status" aria-live="polite">
+          <div className="save-confirmation-check" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+          </div>
+          <div className="save-confirmation-copy">
+            <div className="save-confirmation-headline">
+              {savedEntryToast.headline}
+              {savedEntryToast.highlight ? <>{savedEntryToast.connector ?? ' at '}<span className="save-confirmation-highlight">{savedEntryToast.highlight}</span></> : null}
+            </div>
+          </div>
         </div>,
         document.body
       )}
@@ -3306,15 +3316,20 @@ function App() {
               )}
             </div>
 
-            <div className="onboarding-dots">
-              {[0, 1, 2, 3, 4, 5].map((i) => (
-                <button
-                  key={i}
-                  className={`onboarding-dot ${i === currentOnboardingSlide ? 'active' : ''}`}
-                  onClick={() => setCurrentOnboardingSlide(i)}
-                  aria-label={`Slide ${i + 1}`}
-                />
-              ))}
+            <div className="onboarding-progress" aria-live="polite">
+              <span className="onboarding-progress-label">Slide {currentOnboardingSlide + 1} of 6</span>
+              <div className="onboarding-dots" role="tablist" aria-label="Onboarding progress">
+                {[0, 1, 2, 3, 4, 5].map((i) => (
+                  <button
+                    key={i}
+                    role="tab"
+                    aria-selected={i === currentOnboardingSlide}
+                    className={`onboarding-dot ${i === currentOnboardingSlide ? 'active' : ''} ${i < currentOnboardingSlide ? 'complete' : ''}`}
+                    onClick={() => setCurrentOnboardingSlide(i)}
+                    aria-label={`Go to slide ${i + 1} of 6`}
+                  />
+                ))}
+              </div>
             </div>
 
             <div className="onboarding-nav">

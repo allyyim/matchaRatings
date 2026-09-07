@@ -2716,11 +2716,27 @@ h1, h2, h3, h4, h5, h6 {
   min-width: 1.2rem;
 }
 
+.onboarding-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+}
+
+.onboarding-progress-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5a6268;
+}
+
 .onboarding-dots {
   display: flex;
   justify-content: center;
   gap: 0.75rem;
-  margin-bottom: 2rem;
+  margin-bottom: 0;
 }
 
 .onboarding-dot {
@@ -2734,10 +2750,79 @@ h1, h2, h3, h4, h5, h6 {
   padding: 0;
 }
 
+.onboarding-dot.complete {
+  background: rgba(25, 135, 84, 0.4);
+}
+
 .onboarding-dot.active {
   background: var(--primary-green);
   width: 24px;
   border-radius: 6px;
+}
+
+/* Centered save confirmation card — subtler than milestone celebration but
+   more substantial than the old top-of-viewport toast. */
+.save-confirmation {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: min(340px, calc(100vw - 2rem));
+  padding: 1rem 1.15rem;
+  background: white;
+  border: 1px solid rgba(25, 135, 84, 0.18);
+  border-radius: 16px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18), 0 4px 10px rgba(15, 23, 42, 0.08);
+  animation: saveConfirmationPop 3.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: none;
+}
+
+.save-confirmation-check {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #20c997, #198754);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(25, 135, 84, 0.28);
+}
+
+.save-confirmation-copy {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.save-confirmation-headline {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.35;
+  color: #212529;
+}
+
+.save-confirmation-highlight {
+  color: #20c997;
+  font-weight: 700;
+}
+
+@keyframes saveConfirmationPop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+  10%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  85%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.98); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .save-confirmation {
+    animation: none;
+    opacity: 1;
+  }
 }
 
 .onboarding-nav {
