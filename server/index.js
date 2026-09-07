@@ -1228,6 +1228,58 @@ app.delete('/api/ratings/:id', requireSession, async (req, res) => {
   return res.json({ deletedId: Number(deleted.rows[0].id) })
 })
 
+// Dedupe near-identical ratings for the caller. Two rows are considered the
+// same log if they share (user_name, location, rating, greenness) AND their
+// created_at values fall within 10 seconds of each other — the common
+// double-submit case where a network retry inserted a second copy of the same
+// tap. We keep the earliest id in each cluster and delete the rest.
+app.post('/api/ratings/dedupe', requireSession, async (req, res) => {
+  const userName = sanitizeUserName(String(req.body?.userName || req.query.userName || '').trim())
+
+  if (!userName) {
+    return res.status(400).json({ error: 'userName is required' })
+  }
+
+  if (userName.toLowerCase() !== req.session.userName.toLowerCase()) {
+    return res.status(403).json({ error: 'Forbidden: user ownership mismatch' })
+  }
+
+  try {
+    const result = await pool.query(
+      `
+        WITH clusters AS (
+          SELECT
+            id,
+            MIN(id) OVER (
+              PARTITION BY LOWER(user_name), LOWER(COALESCE(location, '')), rating, greenness,
+                           (EXTRACT(EPOCH FROM created_at)::bigint / 10)
+            ) AS keeper_id
+          FROM ratings
+          WHERE LOWER(user_name) = LOWER($1)
+        )
+        DELETE FROM ratings
+        WHERE id IN (SELECT id FROM clusters WHERE id <> keeper_id)
+        RETURNING id
+      `,
+      [userName]
+    )
+
+    const remaining = await pool.query(
+      'SELECT COUNT(*)::int AS c FROM ratings WHERE LOWER(user_name) = LOWER($1)',
+      [userName]
+    )
+
+    return res.json({
+      removed: result.rowCount,
+      removedIds: result.rows.map((r) => Number(r.id)),
+      remaining: Number(remaining.rows[0]?.c || 0)
+    })
+  } catch (error) {
+    console.error('Dedupe failed:', error)
+    return res.status(500).json({ error: 'Dedupe failed' })
+  }
+})
+
 app.get('/api/ratings', async (req, res) => {
   const userName = sanitizeUserName(String(req.query.userName || '').trim())
   if (!userName) {

@@ -964,10 +964,7 @@ function App() {
   const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser' | 'confirm-account' | 'magic-link' | 'magic-link-username'>('choice')
   const [welcomeMessage, setWelcomeMessage] = useState('')
   const [savedEntryToast, setSavedEntryToast] = useState<{ headline: string; highlight: string; connector?: string } | null>(null)
-  // Milestone celebration popups are disabled for now (see saveEntry). State is
-  // retained (read-only) so the render portal keeps compiling; setter is aliased
-  // to void to silence the unused-setter lint until we bring the feature back.
-  const [milestoneCelebration] = useState<{ count: number; headline: string; subtext: string } | null>(null)
+  const [milestoneCelebration, setMilestoneCelebration] = useState<{ count: number; headline: string; subtext: string } | null>(null)
   const [potentialAccounts, setPotentialAccounts] = useState<string[]>([])
   const [selectedPotentialAccount, setSelectedPotentialAccount] = useState<string | null>(null)
   const [verifiedAccountName, setVerifiedAccountName] = useState<string | null>(null)
@@ -2320,6 +2317,18 @@ function App() {
         })
       })
 
+      // Best-effort dedupe: remove any near-duplicates (same place + rating +
+      // greenness within a 10-second window) before we refetch, so the log
+      // count reflects what the user actually sees.
+      try {
+        await apiFetch<{ removed: number; remaining: number }>('/ratings/dedupe', {
+          method: 'POST',
+          body: JSON.stringify({ userName: currentUserName })
+        })
+      } catch (dedupeError) {
+        console.warn('Rating dedupe skipped:', dedupeError)
+      }
+
       const updated = await apiFetch<{ ratings: RatingEntry[] }>(`/ratings?userName=${encodeURIComponent(currentUserName)}`)
       setMyEntries(updated.ratings)
 
@@ -2335,12 +2344,27 @@ function App() {
       setSavedEntryToast({ headline, highlight: placeLabel })
       window.setTimeout(() => setSavedEntryToast(null), 3500)
 
-      // Milestone celebration popups intentionally disabled — client-side and
-      // server-side counts occasionally drift (duplicate rows, tombstoned
-      // entries, reconciliation) which caused wrong milestone numbers to fire
-      // ("125 sips deep" while the user only logged their 123rd). Confetti-
-      // style celebration can be reintroduced once we have a durable,
-      // user-visible sip counter to key off of.
+      // Milestone celebration: server has already been deduped above, so
+      // updated.ratings.length is authoritative. Base the milestone key off
+      // the server's count directly.
+      const MILESTONES: Record<number, { headline: string; subtext: string }> = {
+        1:   { headline: 'First sip logged 🍵', subtext: 'Welcome to Sip & Score — your matcha journey begins!' },
+        10:  { headline: '10 sips in the books 🎉', subtext: 'You\'re officially building a matcha log.' },
+        25:  { headline: '25 matchas rated 🍵', subtext: 'That\'s a serious sipping streak.' },
+        50:  { headline: '50 sips whisked ✨', subtext: 'You\'re in the top tier of tasters now.' },
+        100: { headline: '100 matchas 🎉🍵', subtext: 'Certified sipper status: unlocked.' },
+        125: { headline: '125 sips deep 🍃', subtext: 'Nothing green escapes your review.' },
+        150: { headline: '150 rated 🍵', subtext: 'The whisk masters approve.' },
+        200: { headline: '200 sips! 🎊', subtext: 'Living-legend matcha status achieved.' }
+      }
+      const total = updated.ratings.length
+      const previousTotal = myEntries.length
+      const milestone = MILESTONES[total]
+      // Only fire when the save actually crossed the threshold on this action.
+      if (milestone && total === previousTotal + 1) {
+        setMilestoneCelebration({ count: total, headline: milestone.headline, subtext: milestone.subtext })
+        window.setTimeout(() => setMilestoneCelebration(null), 5000)
+      }
 
       setCurrentRating(0)
       setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, mellow: 0, bitter: 0 })
