@@ -2659,6 +2659,18 @@ function App() {
       const eligible = milestoneKeys.filter((k) => k <= effectiveCount && !shownSet.has(k))
       const crossedMilestone = eligible[eligible.length - 1]
 
+      // Debug snapshot — surface these in DevTools so we can prove whether
+      // the miss is a state issue vs the user's true DB count being lower
+      // than the "@N" rank badge shown on the log entry.
+      console.log('[milestone]', {
+        rawCurrentCount,
+        uniquePlacesCount: currentPlaces.size,
+        effectiveCount,
+        shownMilestones,
+        eligible,
+        firing: crossedMilestone
+      })
+
       if (crossedMilestone) {
         const milestone = MILESTONES[crossedMilestone]
         setMilestoneCelebration({
