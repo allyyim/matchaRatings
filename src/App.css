@@ -3146,3 +3146,99 @@ main#main-content {
   border-color: rgba(108, 117, 125, 0.3);
   color: #495057;
 }
+
+
+/* ============ Feed tab =============================================== */
+.feed-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.feed-item {
+  display: flex;
+  gap: 0.85rem;
+  padding: 0.9rem 1rem;
+  background: #fff;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.feed-item-icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  background: var(--bg-strong);
+}
+
+.feed-item-milestone .feed-item-icon { background: linear-gradient(135deg, #fff3c4, #ffd66b); }
+.feed-item-friend .feed-item-icon    { background: linear-gradient(135deg, #d4f4f1, #a7e5dc); }
+.feed-item-rec .feed-item-icon       { background: linear-gradient(135deg, #dfeecf, #b7d99e); }
+
+.feed-item-body { flex-grow: 1; min-width: 0; }
+
+.feed-item-headline {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #212529;
+  line-height: 1.35;
+  word-wrap: break-word;
+}
+
+.feed-item-sub {
+  font-size: 0.85rem;
+  color: #5a6268;
+  margin-top: 0.15rem;
+}
+
+.feed-greenness { font-style: italic; }
+
+.feed-item-thought {
+  font-size: 0.85rem;
+  color: #495057;
+  font-style: italic;
+  margin-top: 0.35rem;
+  padding-left: 0.6rem;
+  border-left: 3px solid var(--border-light);
+}
+
+.feed-item-meta {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #7a8388;
+  margin-top: 0.4rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.feed-place {
+  color: var(--primary-green);
+  font-weight: 700;
+}
+
+.feed-user-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--primary-green);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(31, 95, 52, 0.25);
+  text-underline-offset: 2px;
+}
+
+.feed-user-link:hover,
+.feed-user-link:focus-visible {
+  text-decoration-color: var(--primary-green);
+}

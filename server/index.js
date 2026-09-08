@@ -1662,6 +1662,47 @@ app.get('/api/follows/list', async (req, res) => {
   return res.json({ following: result.rows.map(r => r.user_name) })
 })
 
+// Returns recent ratings from every user the current session follows,
+// newest first. Powers the Feed tab's "friend activity" row.
+app.get('/api/feed/following', async (req, res) => {
+  const email = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session?.userName])).rows[0]?.email
+  if (!email) return res.status(404).json({ error: 'Your account not found' })
+
+  const limit = Math.min(Math.max(parseInt(String(req.query.limit || '30'), 10) || 30, 1), 100)
+  try {
+    const result = await pool.query(
+      `SELECT r.id, r.user_name, r.photo, r.rating, r.greenness, r.location, r.thoughts,
+              r.date, r.created_at, r.combo_score, r.flavor_preferences
+         FROM ratings r
+         JOIN accounts followed_acct ON LOWER(followed_acct.user_name) = LOWER(r.user_name)
+         JOIN follows f ON f.following_email = followed_acct.email
+        WHERE f.follower_email = $1
+          AND LOWER(followed_acct.user_name) <> $2
+        ORDER BY r.created_at DESC
+        LIMIT $3`,
+      [email, DEMO_USER_NAME, limit]
+    )
+    return res.json({
+      ratings: result.rows.map(r => ({
+        id: r.id,
+        userName: r.user_name,
+        photo: r.photo,
+        rating: r.rating,
+        greenness: r.greenness,
+        location: r.location,
+        thoughts: r.thoughts,
+        date: r.date,
+        createdAt: r.created_at,
+        comboScore: r.combo_score,
+        flavorPreferences: r.flavor_preferences
+      }))
+    })
+  } catch (error) {
+    console.error('feed/following error', error)
+    return res.status(500).json({ error: 'Failed to load feed' })
+  }
+})
+
 // Fetch another user's saved matcha preferences (canonical flavors + body).
 // Used by the friend modal so we show what a user *actually set* in their
 // profile drawer instead of aggregating over their ratings.

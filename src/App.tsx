@@ -171,7 +171,7 @@ function BodyInfoIcon() {
   )
 }
 
-type Page = 'home' | 'friends' | 'explore'
+type Page = 'home' | 'feed' | 'friends' | 'explore'
 type ExplorePlace = {
   rank: number
   placeName: string
@@ -187,6 +187,191 @@ type ExploreUser = {
 type ExplorePlaceRatingsResponse = {
   placeName: string
   ratings: RatingEntry[]
+}
+
+// Thresholds that trigger a milestone card in the Feed's "Milestone recap"
+// row. Kept in sync with the identically-shaped map inside saveEntry() so the
+// feed replays the exact same celebrations the user saw when they first hit
+// each threshold.
+const FEED_MILESTONE_THRESHOLDS: Array<{ count: number; headline: string; subtext: (place: string) => string }> = [
+  { count: 1,   headline: 'First sip logged 🍵',   subtext: (p) => `${p} kicked off your matcha journey.` },
+  { count: 10,  headline: '10 places rated 🎉',    subtext: (p) => `${p} makes it 10 — your log was officially rolling.` },
+  { count: 25,  headline: '25 spots scored 🍵',    subtext: (p) => `${p} became #25 on your matcha map.` },
+  { count: 50,  headline: '50 places whisked ✨',  subtext: (p) => `Half a hundred — ${p} landed you at 50.` },
+  { count: 100, headline: '100 places rated 🎉🍵', subtext: (p) => `Certified sipper status unlocked at ${p}.` },
+  { count: 125, headline: '125 places deep 🍃',    subtext: (p) => `${p} rounded you out at 125 spots.` },
+  { count: 150, headline: '150 places rated 🍵',   subtext: (p) => `The whisk masters approve — ${p} was #150.` },
+  { count: 200, headline: '200 places! 🎊',        subtext: (p) => `Living-legend status. ${p} was your 200th.` }
+]
+
+function feedRelativeTime(iso: string): string {
+  const t = new Date(iso).getTime()
+  if (!Number.isFinite(t)) return ''
+  const diffMs = Date.now() - t
+  const diffMin = Math.round(diffMs / 60000)
+  if (diffMin < 1) return 'just now'
+  if (diffMin < 60) return `${diffMin} min ago`
+  const diffHr = Math.round(diffMin / 60)
+  if (diffHr < 24) return `${diffHr} hr${diffHr === 1 ? '' : 's'} ago`
+  const diffDay = Math.round(diffHr / 24)
+  if (diffDay < 30) return `${diffDay} day${diffDay === 1 ? '' : 's'} ago`
+  const diffMo = Math.round(diffDay / 30)
+  if (diffMo < 12) return `${diffMo} month${diffMo === 1 ? '' : 's'} ago`
+  const diffYr = Math.round(diffMo / 12)
+  return `${diffYr} year${diffYr === 1 ? '' : 's'} ago`
+}
+
+type FeedEvent =
+  | { kind: 'milestone'; ts: number; headline: string; subtext: string; count: number }
+  | { kind: 'friend'; ts: number; entry: RatingEntry }
+  | { kind: 'rec'; ts: number; location: string; matchScore: number; flavors: string[] }
+
+function FeedPage(props: {
+  myEntries: RatingEntry[]
+  friendRatings: RatingEntry[]
+  recPlaces: Array<{ location: string; flavors: string[]; body?: string; matchScore: number }>
+  isLoading: boolean
+  isDemoAccount: boolean
+  onOpenFriend: (userName: string) => void
+}) {
+  const { myEntries, friendRatings, recPlaces, isLoading, isDemoAccount, onOpenFriend } = props
+
+  const events = useMemo<FeedEvent[]>(() => {
+    const out: FeedEvent[] = []
+
+    // 1) Milestone recap — walk the user's log chronologically (earliest first)
+    // and record the entry that pushed each unique-place count onto a threshold.
+    const sortedForMilestones = [...myEntries].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
+    const seenPlaces = new Set<string>()
+    const normalize = (loc: string) => loc.trim().toLowerCase().replace(/\s+/g, ' ')
+    for (const entry of sortedForMilestones) {
+      const key = normalize(entry.location || '')
+      if (!key || seenPlaces.has(key)) continue
+      seenPlaces.add(key)
+      const count = seenPlaces.size
+      const threshold = FEED_MILESTONE_THRESHOLDS.find((m) => m.count === count)
+      if (!threshold) continue
+      out.push({
+        kind: 'milestone',
+        ts: new Date(entry.createdAt).getTime(),
+        headline: threshold.headline,
+        subtext: threshold.subtext(entry.location || 'that spot'),
+        count
+      })
+    }
+
+    // 2) Friend activity
+    for (const entry of friendRatings) {
+      const ts = new Date(entry.createdAt).getTime()
+      if (!Number.isFinite(ts)) continue
+      out.push({ kind: 'friend', ts, entry })
+    }
+
+    // 3) Recs — no server timestamp; assume "just refreshed" so they sit at
+    // the top of the feed as the freshest signal the user has right now.
+    const nowTs = Date.now()
+    for (const place of recPlaces.slice(0, 5)) {
+      out.push({
+        kind: 'rec',
+        ts: nowTs,
+        location: place.location,
+        matchScore: place.matchScore,
+        flavors: place.flavors || []
+      })
+    }
+
+    return out.sort((a, b) => b.ts - a.ts)
+  }, [myEntries, friendRatings, recPlaces])
+
+  if (isDemoAccount) {
+    return (
+      <section className="card border-0 shadow-sm matcha-shell mb-4">
+        <div className="card-body p-4">
+          <h2 className="h3 fw-bold text-success mb-2">Feed</h2>
+          <p className="text-muted mb-0">Sign up to see milestones, friend activity, and new place recs as they happen.</p>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section className="card border-0 shadow-sm matcha-shell mb-4">
+      <div className="card-body p-3 p-md-4">
+        <div className="d-flex align-items-center justify-content-between mb-3">
+          <h2 className="h3 fw-bold text-success mb-0">Feed</h2>
+          {isLoading && <span className="text-muted small">Refreshing…</span>}
+        </div>
+        <p className="text-muted small mb-4">Milestones you've hit, friends' newest sips, and fresh recs picked for your palate.</p>
+
+        {events.length === 0 ? (
+          <div className="text-center py-5">
+            <div style={{ fontSize: '3rem' }} aria-hidden="true">🍵</div>
+            <p className="text-muted mt-3 mb-1"><strong>Your feed is warming up.</strong></p>
+            <p className="text-muted small mb-0">Log a sip, follow another matcha nerd, or refresh your recs to see updates here.</p>
+          </div>
+        ) : (
+          <ul className="feed-list" role="list">
+            {events.map((event, index) => {
+              if (event.kind === 'milestone') {
+                return (
+                  <li key={`m-${event.count}-${index}`} className="feed-item feed-item-milestone">
+                    <div className="feed-item-icon" aria-hidden="true">🏆</div>
+                    <div className="feed-item-body">
+                      <div className="feed-item-headline">{event.headline}</div>
+                      <div className="feed-item-sub">{event.subtext}</div>
+                      <div className="feed-item-meta">{feedRelativeTime(new Date(event.ts).toISOString())}</div>
+                    </div>
+                  </li>
+                )
+              }
+              if (event.kind === 'friend') {
+                const { entry } = event
+                return (
+                  <li key={`f-${entry.id}`} className="feed-item feed-item-friend">
+                    <div className="feed-item-icon" aria-hidden="true">👥</div>
+                    <div className="feed-item-body">
+                      <div className="feed-item-headline">
+                        <button
+                          type="button"
+                          className="feed-user-link"
+                          onClick={() => onOpenFriend(entry.userName)}
+                        >
+                          {entry.userName}
+                        </button>
+                        {' '}logged{' '}
+                        <span className="feed-place">{entry.location || 'a matcha'}</span>
+                      </div>
+                      <div className="feed-item-sub">
+                        Sip Score <strong>{entry.comboScore != null ? entry.comboScore.toFixed(1) : '—'}</strong>
+                        {typeof entry.greenness === 'number' ? <> · <span className="feed-greenness">{Math.round(entry.greenness)}% matcha greenness</span></> : null}
+                      </div>
+                      {entry.thoughts ? <div className="feed-item-thought">"{entry.thoughts}"</div> : null}
+                      <div className="feed-item-meta">{feedRelativeTime(entry.createdAt)}</div>
+                    </div>
+                  </li>
+                )
+              }
+              return (
+                <li key={`r-${event.location}-${index}`} className="feed-item feed-item-rec">
+                  <div className="feed-item-icon" aria-hidden="true">🌟</div>
+                  <div className="feed-item-body">
+                    <div className="feed-item-headline">
+                      <span className="feed-place">{event.location}</span> matches your top-rated profile
+                    </div>
+                    <div className="feed-item-sub">
+                      <strong>{Math.round(event.matchScore)}% match</strong>
+                      {event.flavors.length > 0 ? <> · {event.flavors.slice(0, 3).join(', ')}</> : null}
+                    </div>
+                    <div className="feed-item-meta">Fresh rec</div>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </div>
+    </section>
+  )
 }
 
 type DrinkRegion = {
@@ -1122,6 +1307,9 @@ function App() {
   })
   const [likedRatingsSet, setLikedRatingsSet] = useState<Set<number>>(new Set())
   const [followingSet, setFollowingSet] = useState<Set<string>>(new Set())
+  const [feedFollowingRatings, setFeedFollowingRatings] = useState<RatingEntry[]>([])
+  const [isLoadingFeed, setIsLoadingFeed] = useState(false)
+  const [feedLastLoadedAt, setFeedLastLoadedAt] = useState<number>(0)
 
   const showLoadingOverlay = isSavingEntry || isLoadingFriendRatings || isLoadingExplorePlaces
   const loadingOverlayText = isSavingEntry
@@ -1483,6 +1671,34 @@ function App() {
     setIsFriendFilterOpen(false)
     setIsFriendSearchOpen(false)
   }, [activePage])
+
+  // Load Feed data (recent ratings from followed users) whenever the user
+  // opens the Feed tab, throttled to at most once every 30 seconds so tab
+  // switching doesn't hammer the API.
+  useEffect(() => {
+    if (activePage !== 'feed') return
+    if (!currentUserName) return
+    if (isDemoAccount) return
+    const now = Date.now()
+    if (now - feedLastLoadedAt < 30000 && feedFollowingRatings.length > 0) return
+    let cancelled = false
+    setIsLoadingFeed(true)
+    apiFetch<{ ratings: RatingEntry[] }>(`/feed/following?limit=30`)
+      .then((res) => {
+        if (cancelled) return
+        setFeedFollowingRatings(res.ratings || [])
+        setFeedLastLoadedAt(Date.now())
+      })
+      .catch(() => {
+        if (cancelled) return
+        // Silent failure — feed simply shows without friend activity.
+      })
+      .finally(() => {
+        if (cancelled) return
+        setIsLoadingFeed(false)
+      })
+    return () => { cancelled = true }
+  }, [activePage, currentUserName, isDemoAccount])
 
   useEffect(() => {
     const name = pendingUserName.trim()
@@ -5604,6 +5820,19 @@ function App() {
         </main>
       )}
 
+      {activePage === 'feed' && (
+        <main id="main-content" className="container py-3 py-md-5 px-3 px-md-4" tabIndex={-1}>
+          <FeedPage
+            myEntries={myEntries}
+            friendRatings={feedFollowingRatings}
+            recPlaces={similarPlaces}
+            isLoading={isLoadingFeed}
+            isDemoAccount={isDemoAccount}
+            onOpenFriend={(name) => { void openFriendModal(name) }}
+          />
+        </main>
+      )}
+
       {activePage === 'friends' && (
         <main id="main-content" className="container py-3 py-md-5 px-3 px-md-4" tabIndex={-1}>
           <section className="card border-0 shadow-sm matcha-shell mb-4">
@@ -6444,6 +6673,17 @@ function App() {
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
           </svg>
           <span className="label">My Log</span>
+        </button>
+        <button
+          type="button"
+          className={`bottom-nav-btn ${activePage === 'feed' ? 'active' : ''}`}
+          onClick={() => setActivePage('feed')}
+          title="Feed"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2l2.5 5.5L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5L12 2z"/>
+          </svg>
+          <span className="label">Feed</span>
         </button>
         <button
           type="button"
