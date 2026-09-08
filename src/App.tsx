@@ -1733,11 +1733,22 @@ function App() {
       if (cancelled) return
       if (isInitial) setIsLoadingFeed(true)
       try {
-        const res = await apiFetch<{ ratings: RatingEntry[] }>(`/feed/following?limit=30`)
+        const [res, follows] = await Promise.all([
+          apiFetch<{ ratings: RatingEntry[] }>(`/feed/following?limit=30`),
+          apiFetch<{ following: string[] }>(`/follows/list`).catch(() => ({ following: [] as string[] }))
+        ])
         if (cancelled) return
         setFeedFollowingRatings(res.ratings || [])
         setFeedLastLoadedAt(Date.now())
-      } catch {
+        console.log('[feed]', {
+          following: follows.following,
+          followingCount: follows.following.length,
+          feedRatingsReturned: res.ratings?.length ?? 0,
+          userNamesInFeed: Array.from(new Set((res.ratings || []).map(r => r.userName))),
+          newest: (res.ratings || []).slice(0, 5).map(r => ({ user: r.userName, place: r.location, createdAt: r.createdAt }))
+        })
+      } catch (err) {
+        console.warn('[feed] fetch failed', err)
         // Silent — keep the previous snapshot instead of clearing the feed on a
         // transient network blip.
       } finally {
