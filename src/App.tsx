@@ -2623,12 +2623,15 @@ function App() {
       setSavedEntryToast({ headline, highlight: placeLabel })
       window.setTimeout(() => setSavedEntryToast(null), 3500)
 
-      // Milestones fire when the user's log crosses a milestone threshold
-      // AND this save added a brand-new location. The crossing logic — rather
-      // than requiring rawCurrentCount === milestone exactly — handles the
-      // real-world case where the raw count jumps (dedupe cleanup, legacy
-      // duplicates that dedupe can't merge because timestamps are >10s apart,
-      // or backfilled ratings), so the popup never gets silently skipped.
+      // Milestones use localStorage as the source of truth so they can never
+      // be "silently missed" by a race condition, a bad refetch, or a legacy
+      // duplicate that inflates counts weirdly. Rules:
+      //   - Every milestone key is celebrated at most ONCE per user, ever.
+      //   - Any un-celebrated milestone whose value <= current count is
+      //     eligible; we pick the highest.
+      //   - No new-place guard here — if you're at 125 in the log but the
+      //     125 popup never fired, you deserve to see it on your next save
+      //     regardless of whether that specific save added a new location.
       const MILESTONES: Record<number, { headline: string; subtext: (place: string) => string }> = {
         1:   { headline: 'First sip logged 🍵',   subtext: (p) => `${p} kicked off your matcha journey.` },
         10:  { headline: '10 places rated 🎉',    subtext: (p) => `${p} makes it 10 — your log is officially rolling.` },
@@ -2640,22 +2643,23 @@ function App() {
         200: { headline: '200 places! 🎊',        subtext: (p) => `Living-legend status. ${p} is your 200th.` }
       }
       const normalizePlace = (loc: string) => loc.trim().toLowerCase().replace(/\s+/g, ' ')
-      const previousPlaces = new Set(myEntries.map((e) => normalizePlace(e.location || '')).filter(Boolean))
       const currentPlaces = new Set(updated.ratings.map((e) => normalizePlace(e.location || '')).filter(Boolean))
-      const rawPreviousCount = myEntries.length
       const rawCurrentCount = updated.ratings.length
-      const isNewPlace = currentPlaces.size > previousPlaces.size
+      const effectiveCount = Math.max(rawCurrentCount, currentPlaces.size)
 
-      // Find the highest milestone strictly greater than previous and <=
-      // current. Also honor unique-place count as a fallback so users whose
-      // raw-vs-unique counts differ still see milestones on the same visible
-      // "@N" event they just witnessed.
+      const milestoneStorageKey = `milestonesShown:${currentUserName.toLowerCase()}`
+      let shownMilestones: number[] = []
+      try {
+        const raw = localStorage.getItem(milestoneStorageKey)
+        if (raw) shownMilestones = JSON.parse(raw)
+      } catch { /* corrupt storage — treat as empty */ }
+      const shownSet = new Set(shownMilestones)
+
       const milestoneKeys = Object.keys(MILESTONES).map(Number).sort((a, b) => a - b)
-      const crossedByRaw = milestoneKeys.filter((k) => k > rawPreviousCount && k <= rawCurrentCount).pop()
-      const crossedByUnique = milestoneKeys.filter((k) => k > previousPlaces.size && k <= currentPlaces.size).pop()
-      const crossedMilestone = crossedByRaw ?? crossedByUnique
+      const eligible = milestoneKeys.filter((k) => k <= effectiveCount && !shownSet.has(k))
+      const crossedMilestone = eligible[eligible.length - 1]
 
-      if (crossedMilestone && isNewPlace) {
+      if (crossedMilestone) {
         const milestone = MILESTONES[crossedMilestone]
         setMilestoneCelebration({
           count: crossedMilestone,
@@ -2663,7 +2667,18 @@ function App() {
           subtext: milestone.subtext(placeLabel)
         })
         window.setTimeout(() => setMilestoneCelebration(null), 5000)
+        // Persist every eligible milestone up to and including the one we
+        // just celebrated so we never re-fire an older one on a later save.
+        try {
+          const nextShown = Array.from(new Set([...shownMilestones, ...eligible]))
+          localStorage.setItem(milestoneStorageKey, JSON.stringify(nextShown))
+        } catch { /* storage full or blocked — best-effort only */ }
       }
+
+      // Warm the leaderboard cache in the background so the user's own place
+      // count on the community leaderboard reflects the save without needing
+      // a hard refresh. Fire-and-forget — no UI blocking.
+      void fetchExploreData(false).catch(() => { /* silent */ })
 
       setCurrentRating(0)
       setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, mellow: 0, bitter: 0 })
