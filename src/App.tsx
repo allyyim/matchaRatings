@@ -226,6 +226,34 @@ type FeedEvent =
   | { kind: 'friend'; ts: number; entry: RatingEntry }
   | { kind: 'rec'; ts: number; location: string; matchScore: number; flavors: string[] }
 
+function FeedThought({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const CHAR_LIMIT = 140
+  const trimmed = text.trim()
+  const needsTruncation = trimmed.length > CHAR_LIMIT
+  if (!needsTruncation) {
+    return <div className="feed-item-thought">"{trimmed}"</div>
+  }
+  // Word-boundary truncation: cut at the last space before CHAR_LIMIT so we
+  // don't split mid-word.
+  const slice = trimmed.slice(0, CHAR_LIMIT)
+  const lastSpace = slice.lastIndexOf(' ')
+  const preview = (lastSpace > 60 ? slice.slice(0, lastSpace) : slice).replace(/[,\s]+$/, '')
+  return (
+    <div className="feed-item-thought">
+      "{expanded ? trimmed : `${preview}…`}"
+      {' '}
+      <button
+        type="button"
+        className="feed-see-more"
+        onClick={() => setExpanded((v) => !v)}
+      >
+        {expanded ? 'See less' : 'See more'}
+      </button>
+    </div>
+  )
+}
+
 function FeedPage(props: {
   myEntries: RatingEntry[]
   friendRatings: RatingEntry[]
@@ -367,6 +395,7 @@ function FeedPage(props: {
               if (event.kind === 'friend') {
                 const { entry } = event
                 const placeLabel = entry.location || 'a matcha'
+                const displayScore = entry.comboScore != null ? (entry.comboScore / 2).toFixed(1) : '—'
                 return (
                   <li key={`f-${entry.id}`} className={`feed-item feed-item-friend ${freshIds.has(entry.id) ? 'feed-item-fresh' : ''}`.trim()}>
                     <div className="feed-item-icon" aria-hidden="true">👥</div>
@@ -394,9 +423,10 @@ function FeedPage(props: {
                         )}
                       </div>
                       <div className="feed-item-sub">
-                        Sip Score <strong>{entry.comboScore != null ? entry.comboScore.toFixed(1) : '—'}</strong>
+                        Sip Score <strong>{displayScore}</strong>
                         {typeof entry.greenness === 'number' ? <> · <span className="feed-greenness">{Math.round(entry.greenness)}% matcha greenness</span></> : null}
                       </div>
+                      {entry.thoughts ? <FeedThought text={entry.thoughts} /> : null}
                       <div className="feed-item-meta">{feedRelativeTime(entry.createdAt)}</div>
                     </div>
                   </li>
