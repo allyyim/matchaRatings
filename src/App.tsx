@@ -3460,11 +3460,11 @@ function App() {
                 <div className="onboarding-slide">
                   <div className="onboarding-emoji">🍵</div>
                   <h2 className="onboarding-title">Welcome to Sip &amp; Score</h2>
-                  <p className="onboarding-lead">A cozy home for every matcha you try — rate it, remember it, and see how it stacks up.</p>
+                  <p className="onboarding-lead">Rate every matcha you try. Watch your map fill in.</p>
                   <ul className="onboarding-list">
-                    <li><span className="onboarding-bullet">•</span> Log every sip with a photo, flavor notes, and a star rating</li>
-                    <li><span className="onboarding-bullet">•</span> Watch places climb your personal leaderboard</li>
-                    <li><span className="onboarding-bullet">•</span> Follow other sippers and swap discoveries</li>
+                    <li><span className="onboarding-bullet">•</span> Log a sip in seconds</li>
+                    <li><span className="onboarding-bullet">•</span> Follow other sippers</li>
+                    <li><span className="onboarding-bullet">•</span> Climb your personal leaderboard</li>
                   </ul>
                 </div>
               )}
@@ -3472,12 +3472,11 @@ function App() {
                 <div className="onboarding-slide">
                   <div className="onboarding-emoji">📝</div>
                   <h2 className="onboarding-title">Logging a sip</h2>
-                  <p className="onboarding-lead">Tap <strong className="text-success">+ New Log</strong> on the My Log tab to add a rating.</p>
+                  <p className="onboarding-lead">Tap <strong className="text-success">+</strong> on the My Log tab.</p>
                   <ul className="onboarding-list">
-                    <li><span className="onboarding-bullet">1.</span> Search for the café or type it in</li>
-                    <li><span className="onboarding-bullet">2.</span> Snap or upload a photo — we auto-score the greenness</li>
-                    <li><span className="onboarding-bullet">3.</span> Give it stars, pick flavor chips, and jot a quick thought</li>
-                    <li><span className="onboarding-bullet">4.</span> Hit save — your Sip Score is calculated automatically</li>
+                    <li><span className="onboarding-bullet">1.</span> Snap or upload a photo — we auto-score the greenness</li>
+                    <li><span className="onboarding-bullet">2.</span> Give it stars &amp; pick flavor chips</li>
+                    <li><span className="onboarding-bullet">3.</span> Save — your Sip Score is calculated for you</li>
                   </ul>
                 </div>
               )}
@@ -3485,36 +3484,35 @@ function App() {
                 <div className="onboarding-slide">
                   <div className="onboarding-emoji">✨</div>
                   <h2 className="onboarding-title">What&apos;s a Sip Score?</h2>
-                  <p className="onboarding-lead">A single number out of 100 that blends how the matcha <em>tasted</em> with how <em>vibrantly green</em> it looked.</p>
+                  <p className="onboarding-lead">One number out of 100 — how it <em>tasted</em> plus how <em>green</em> it looked.</p>
                   <ul className="onboarding-list">
                     <li><span className="onboarding-bullet">🟢</span> <strong>85+</strong> — a stunner</li>
                     <li><span className="onboarding-bullet">🟢</span> <strong>70–84</strong> — solid sip</li>
-                    <li><span className="onboarding-bullet">🟡</span> <strong>50–69</strong> — okay pour</li>
-                    <li><span className="onboarding-bullet">🟠</span> <strong>Below 50</strong> — noted the miss</li>
+                    <li><span className="onboarding-bullet">🟡</span> <strong>Below 70</strong> — noted</li>
                   </ul>
                 </div>
               )}
               {currentOnboardingSlide === 3 && (
                 <div className="onboarding-slide">
-                  <div className="onboarding-emoji">🏆</div>
-                  <h2 className="onboarding-title">The Leaderboard</h2>
-                  <p className="onboarding-lead">Head to the <strong className="text-success">Leaderboard</strong> tab to see:</p>
+                  <div className="onboarding-emoji">📬</div>
+                  <h2 className="onboarding-title">Your Feed</h2>
+                  <p className="onboarding-lead">The <strong className="text-success">Feed</strong> tab is your matcha newsfeed.</p>
                   <ul className="onboarding-list">
-                    <li><span className="onboarding-bullet">🥇</span> <strong>Top 10 places</strong> — the community favorites</li>
-                    <li><span className="onboarding-bullet">🥈</span> <strong>Every sipper ranked</strong> — by how many places they&apos;ve rated</li>
-                    <li><span className="onboarding-bullet">🥉</span> <strong>Tap any card</strong> — peek their reviews or hit Follow to stay in the loop</li>
+                    <li><span className="onboarding-bullet">🏆</span> Milestones you&apos;ve hit — with dates</li>
+                    <li><span className="onboarding-bullet">👥</span> Fresh sips from people you follow</li>
+                    <li><span className="onboarding-bullet">🌟</span> New places picked for your palate</li>
                   </ul>
                 </div>
               )}
               {currentOnboardingSlide === 4 && (
                 <div className="onboarding-slide">
-                  <div className="onboarding-emoji">👥</div>
-                  <h2 className="onboarding-title">Community &amp; Recs</h2>
-                  <p className="onboarding-lead">The <strong className="text-success">Explore</strong> tab is where you connect and discover.</p>
+                  <div className="onboarding-emoji">🌍</div>
+                  <h2 className="onboarding-title">Explore &amp; Leaderboard</h2>
+                  <p className="onboarding-lead">Find your people. Find your places.</p>
                   <ul className="onboarding-list">
-                    <li><span className="onboarding-bullet">🔍</span> <strong>Search Users</strong> — find friends by username</li>
-                    <li><span className="onboarding-bullet">✓</span> <strong>Following</strong> — the people you keep tabs on</li>
-                    <li><span className="onboarding-bullet">🎯</span> <strong>Recs</strong> — matcha places &amp; people with similar taste to yours</li>
+                    <li><span className="onboarding-bullet">🔍</span> <strong>Explore</strong> — search users, browse recs</li>
+                    <li><span className="onboarding-bullet">🏆</span> <strong>Leaderboard</strong> — top 10 places &amp; every sipper ranked</li>
+                    <li><span className="onboarding-bullet">👉</span> Tap any card to peek their reviews or Follow</li>
                   </ul>
                 </div>
               )}
@@ -3522,11 +3520,10 @@ function App() {
                 <div className="onboarding-slide">
                   <div className="onboarding-emoji">🎉</div>
                   <h2 className="onboarding-title">You&apos;re all set</h2>
-                  <p className="onboarding-lead">Start with your favorite matcha spot — first sip logged unlocks a little celebration 🎊</p>
+                  <p className="onboarding-lead">Log your favorite spot first — the first sip unlocks a little celebration 🎊</p>
                   <ul className="onboarding-list">
-                    <li><span className="onboarding-bullet">👤</span> Tap the profile icon (top-right) for preferences, FAQ, and to install the app</li>
-                    <li><span className="onboarding-bullet">🍃</span> Set your flavor preferences to sharpen your recs</li>
-                    <li><span className="onboarding-bullet">📱</span> Add it to your home screen for the full app experience</li>
+                    <li><span className="onboarding-bullet">👤</span> Profile icon (top-right) — preferences, FAQ, install</li>
+                    <li><span className="onboarding-bullet">📱</span> Add to home screen for the full app feel</li>
                   </ul>
                 </div>
               )}
@@ -4520,6 +4517,11 @@ function App() {
               <details className="faq-item">
                 <summary className="faq-question">How are recommendations chosen?</summary>
                 <div className="faq-answer">Every cup you log teaches Sip &amp; Score what you love. We match your flavor profile and preferred matcha body against the community&apos;s ratings to surface places and taste-twins you&apos;ll actually enjoy.</div>
+              </details>
+
+              <details className="faq-item">
+                <summary className="faq-question">What&apos;s the Feed tab?</summary>
+                <div className="faq-answer">Your matcha newsfeed — sorted newest first. It surfaces three things: the milestones you&apos;ve hit (with how long ago they happened), fresh sips from anyone you follow, and new places picked for your palate. Auto-refreshes every time you open the tab.</div>
               </details>
 
               <details className="faq-item">
