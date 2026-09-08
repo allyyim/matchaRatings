@@ -3242,3 +3242,18 @@ main#main-content {
 .feed-user-link:focus-visible {
   text-decoration-color: var(--primary-green);
 }
+
+.feed-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  background: #f8f9fa;
+  border: 1px dashed var(--border-subtle);
+  border-radius: 12px;
+  color: #5a6268;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin-bottom: 0.75rem;
+}
+.feed-notice strong { color: var(--primary-green); }

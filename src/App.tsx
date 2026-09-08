@@ -310,6 +310,13 @@ function FeedPage(props: {
             <p className="text-muted small mb-0">Log a sip, follow another matcha nerd, or refresh your recs to see updates here.</p>
           </div>
         ) : (
+          <>
+            {friendRatings.length === 0 && !isLoading && (
+              <div className="feed-notice" role="status">
+                <span aria-hidden="true">👥</span>
+                <span>No new sips from the folks you follow yet. Head to <strong>Explore</strong> to follow more sippers.</span>
+              </div>
+            )}
           <ul className="feed-list" role="list">
             {events.map((event, index) => {
               if (event.kind === 'milestone') {
@@ -338,7 +345,7 @@ function FeedPage(props: {
                         >
                           {entry.userName}
                         </button>
-                        {' '}logged{' '}
+                        {' '}just logged{' '}
                         <span className="feed-place">{entry.location || 'a matcha'}</span>
                       </div>
                       <div className="feed-item-sub">
@@ -359,7 +366,7 @@ function FeedPage(props: {
                       <span className="feed-place">{event.location}</span> matches your top-rated profile
                     </div>
                     <div className="feed-item-sub">
-                      <strong>{Math.round(event.matchScore)}% match</strong>
+                      <strong>{Math.round(event.matchScore * 100)}% match</strong>
                       {event.flavors.length > 0 ? <> · {event.flavors.slice(0, 3).join(', ')}</> : null}
                     </div>
                     <div className="feed-item-meta">Fresh rec</div>
@@ -368,6 +375,7 @@ function FeedPage(props: {
               )
             })}
           </ul>
+          </>
         )}
       </div>
     </section>
