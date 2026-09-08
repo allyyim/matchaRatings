@@ -30,6 +30,7 @@ type RatingEntry = {
   createdAt: string
   comboScore: number
   flavorPreferences?: Record<string, number>
+  userAvatarUrl?: string | null
 }
 
 const FLAVOR_LIST = ['Chocolatey', 'nutty', 'sweet', 'sugary', 'creamy', 'umami', 'earthy', 'vegetal', 'floral', 'astringent', 'bitter', 'mellow'] as const
@@ -398,7 +399,13 @@ function FeedPage(props: {
                 const displayScore = entry.comboScore != null ? (entry.comboScore / 2).toFixed(1) : '—'
                 return (
                   <li key={`f-${entry.id}`} className={`feed-item feed-item-friend ${freshIds.has(entry.id) ? 'feed-item-fresh' : ''}`.trim()}>
-                    <div className="feed-item-icon" aria-hidden="true">👥</div>
+                    {entry.userAvatarUrl ? (
+                      <div className="feed-item-icon feed-item-avatar" aria-hidden="true">
+                        <img src={entry.userAvatarUrl} alt="" />
+                      </div>
+                    ) : (
+                      <div className="feed-item-icon" aria-hidden="true">👥</div>
+                    )}
                     <div className="feed-item-body">
                       <div className="feed-item-headline">
                         <button
@@ -1306,7 +1313,7 @@ function App() {
   const [friendModalEntries, setFriendModalEntries] = useState<RatingEntry[]>([])
   const [isFriendModalOpen, setIsFriendModalOpen] = useState(false)
   const [isLoadingFriendModal, setIsLoadingFriendModal] = useState(false)
-  const [friendModalUserPrefs, setFriendModalUserPrefs] = useState<{ flavors: string[]; body: string }>({ flavors: [], body: '' })
+  const [friendModalUserPrefs, setFriendModalUserPrefs] = useState<{ flavors: string[]; body: string; avatarUrl: string | null }>({ flavors: [], body: '', avatarUrl: null })
 
   const friendModalRank = useMemo(() => {
     if (!friendModalUser) return null
@@ -1325,6 +1332,7 @@ function App() {
     return {
       flavors: sortFlavorsByColor(friendModalUserPrefs.flavors.filter(isKnownFlavor)),
       body: friendModalUserPrefs.body,
+      avatarUrl: friendModalUserPrefs.avatarUrl,
     }
   }, [friendModalUserPrefs])
 
@@ -1380,6 +1388,13 @@ function App() {
   const [isPrivacyPolicyModalOpen, setIsPrivacyPolicyModalOpen] = useState(false)
   const [isFaqModalOpen, setIsFaqModalOpen] = useState(false)
   const [isContactSupportModalOpen, setIsContactSupportModalOpen] = useState(false)
+  const [isChangeUsernameOpen, setIsChangeUsernameOpen] = useState(false)
+  const [changeUsernameInput, setChangeUsernameInput] = useState('')
+  const [changeUsernameError, setChangeUsernameError] = useState<string | null>(null)
+  const [isChangeUsernameSaving, setIsChangeUsernameSaving] = useState(false)
+  const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null)
+  const [isAvatarSaving, setIsAvatarSaving] = useState(false)
+  const avatarFileInputRef = useRef<HTMLInputElement | null>(null)
   const [isIosInstallModalOpen, setIsIosInstallModalOpen] = useState(false)
   const [canShowIosInstall, setCanShowIosInstall] = useState(false)
   const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<{ prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> } | null>(null)
@@ -1960,7 +1975,21 @@ function App() {
     setRequiresManualName(false)
     setIsUserReady(false)
     setAuthMode('choice')
+    setCurrentAvatarUrl(null)
   }
+
+  // Load the signed-in user's avatar_url once the session is ready so the
+  // profile drawer can show it and we can pass it to feed / friend surfaces.
+  useEffect(() => {
+    if (!isUserReady) return
+    if (!currentUserName) return
+    if (isDemoAccount) { setCurrentAvatarUrl(null); return }
+    let cancelled = false
+    apiFetch<{ avatarUrl: string | null }>('/account/me')
+      .then((res) => { if (!cancelled) setCurrentAvatarUrl(res.avatarUrl || null) })
+      .catch(() => { /* silent — avatar is optional */ })
+    return () => { cancelled = true }
+  }, [isUserReady, currentUserName, isDemoAccount])
 
   async function handleNewUserNameSubmit() {
     const userName = pendingUserName.trim()
@@ -2909,7 +2938,7 @@ function App() {
     setFriendEntries([])
     setFriendModalUser(friendName)
     setFriendModalEntries([])
-    setFriendModalUserPrefs({ flavors: [], body: '' })
+    setFriendModalUserPrefs({ flavors: [], body: '', avatarUrl: null })
     setFriendModalSort('highest')
     setIsFriendModalFilterOpen(false)
     setIsFriendModalOpen(true)
@@ -2925,13 +2954,13 @@ function App() {
     try {
       const [ratingsResp, prefsResp] = await Promise.all([
         apiFetch<{ friendName: string; ratings: RatingEntry[] }>(`/friends/${encodeURIComponent(friendName)}/ratings`),
-        apiFetch<{ userName: string; flavors: string[]; body: string }>(`/users/${encodeURIComponent(friendName)}/preferences`).catch(() => ({ userName: friendName, flavors: [], body: '' })),
+        apiFetch<{ userName: string; flavors: string[]; body: string; avatarUrl: string | null }>(`/users/${encodeURIComponent(friendName)}/preferences`).catch(() => ({ userName: friendName, flavors: [], body: '', avatarUrl: null })),
       ])
       setFriendModalEntries(ratingsResp.ratings)
-      setFriendModalUserPrefs({ flavors: prefsResp.flavors || [], body: prefsResp.body || '' })
+      setFriendModalUserPrefs({ flavors: prefsResp.flavors || [], body: prefsResp.body || '', avatarUrl: prefsResp.avatarUrl || null })
     } catch {
       setFriendModalEntries([])
-      setFriendModalUserPrefs({ flavors: [], body: '' })
+      setFriendModalUserPrefs({ flavors: [], body: '', avatarUrl: null })
     } finally {
       setIsLoadingFriendModal(false)
     }
@@ -4182,7 +4211,33 @@ function App() {
             }}
           >
             <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h6 className="fw-bold text-success mb-0">{currentUserName}</h6>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0 }}>
+                <div
+                  aria-hidden="true"
+                  style={{
+                    width: '2.4rem',
+                    height: '2.4rem',
+                    borderRadius: '50%',
+                    background: currentAvatarUrl ? '#f5f5f5' : 'var(--accent-teal-subtle, #d9f0e5)',
+                    color: 'var(--accent-teal, #1f5f34)',
+                    fontWeight: 700,
+                    fontSize: '0.9rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                    overflow: 'hidden',
+                    border: '1px solid var(--border-light, #e9ecef)'
+                  }}
+                >
+                  {currentAvatarUrl ? (
+                    <img src={currentAvatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    (currentUserName || '?').charAt(0).toUpperCase()
+                  )}
+                </div>
+                <h6 className="fw-bold text-success mb-0 text-truncate" title={currentUserName}>{currentUserName}</h6>
+              </div>
               <button
                 type="button"
                 className="close-btn"
@@ -4192,6 +4247,81 @@ function App() {
                 ✕
               </button>
             </div>
+
+            {!isDemoAccount && (
+              <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0, display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <input
+                  ref={avatarFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={async (ev) => {
+                    const file = ev.target.files?.[0]
+                    if (ev.target) ev.target.value = ''
+                    if (!file) return
+                    if (file.size > 5 * 1024 * 1024) {
+                      alert('Please pick an image under 5MB.')
+                      return
+                    }
+                    setIsAvatarSaving(true)
+                    try {
+                      const dataUrl: string = await new Promise((resolve, reject) => {
+                        const reader = new FileReader()
+                        reader.onload = () => resolve(String(reader.result || ''))
+                        reader.onerror = () => reject(reader.error)
+                        reader.readAsDataURL(file)
+                      })
+                      const uploadRes = await apiFetch<{ url: string }>('/upload-image', {
+                        method: 'POST',
+                        body: JSON.stringify({ image: dataUrl })
+                      })
+                      await apiFetch<{ avatarUrl: string | null }>('/account/avatar', {
+                        method: 'POST',
+                        body: JSON.stringify({ avatarUrl: uploadRes.url })
+                      })
+                      setCurrentAvatarUrl(uploadRes.url)
+                      setSavedEntryToast({ headline: 'Profile picture', connector: ' ', highlight: 'updated' })
+                    } catch (err) {
+                      console.error('Avatar upload failed:', err)
+                      alert(err instanceof Error ? err.message : 'Could not update profile picture')
+                    } finally {
+                      setIsAvatarSaving(false)
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn btn-outline-success btn-sm"
+                  onClick={() => avatarFileInputRef.current?.click()}
+                  disabled={isAvatarSaving}
+                >
+                  {isAvatarSaving ? 'Saving…' : (currentAvatarUrl ? 'Change photo' : 'Add photo')}
+                </button>
+                {currentAvatarUrl && (
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm"
+                    onClick={async () => {
+                      setIsAvatarSaving(true)
+                      try {
+                        await apiFetch('/account/avatar', {
+                          method: 'POST',
+                          body: JSON.stringify({ avatarUrl: null })
+                        })
+                        setCurrentAvatarUrl(null)
+                      } catch (err) {
+                        alert(err instanceof Error ? err.message : 'Could not remove profile picture')
+                      } finally {
+                        setIsAvatarSaving(false)
+                      }
+                    }}
+                    disabled={isAvatarSaving}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            )}
 
             <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
               <button
@@ -4256,6 +4386,23 @@ function App() {
                 style={{ textDecoration: 'none', color: '#198754' }}
               >
                 Share App
+              </button>
+            </div>
+
+            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
+              <button
+                type="button"
+                className="btn btn-link btn-sm text-start p-0 w-100"
+                onClick={() => {
+                  setChangeUsernameInput(currentUserName)
+                  setChangeUsernameError(null)
+                  setIsChangeUsernameOpen(true)
+                }}
+                style={{ textDecoration: 'none', color: '#198754' }}
+                disabled={isDemoAccount}
+                title={isDemoAccount ? 'Not available on the demo account' : undefined}
+              >
+                Change Username
               </button>
             </div>
 
@@ -4757,6 +4904,112 @@ function App() {
         document.body
       )}
 
+      {isChangeUsernameOpen && createPortal(
+        <>
+          <div
+            className="modal-overlay"
+            onClick={() => { if (!isChangeUsernameSaving) setIsChangeUsernameOpen(false) }}
+            style={{ zIndex: 1040 }}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="change-username-title"
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 'min(400px, calc(100vw - 2rem))',
+              backgroundColor: 'white',
+              borderRadius: '14px',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.18)',
+              zIndex: 1050,
+              padding: '1.25rem'
+            }}
+          >
+            <div className="d-flex align-items-center justify-content-between mb-2">
+              <h5 id="change-username-title" className="fw-bold text-success mb-0">Change Username</h5>
+              <button
+                type="button"
+                className="close-btn"
+                onClick={() => setIsChangeUsernameOpen(false)}
+                aria-label="Close"
+                disabled={isChangeUsernameSaving}
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-muted small mb-3">
+              Your existing sips and follows stay with you. 2–40 characters: letters, numbers, and <code>. _ -</code> only.
+            </p>
+            <form
+              onSubmit={async (ev) => {
+                ev.preventDefault()
+                const nextName = changeUsernameInput.trim()
+                if (!nextName) { setChangeUsernameError('Username is required'); return }
+                if (nextName.toLowerCase() === currentUserName.toLowerCase() && nextName === currentUserName) {
+                  setChangeUsernameError('That is already your username'); return
+                }
+                if (!/^[a-zA-Z0-9._-]{2,40}$/.test(nextName)) {
+                  setChangeUsernameError('2–40 characters: letters, numbers, . _ -'); return
+                }
+                setChangeUsernameError(null)
+                setIsChangeUsernameSaving(true)
+                try {
+                  const res = await apiFetch<{ userName: string }>('/account/username', {
+                    method: 'POST',
+                    body: JSON.stringify({ newUserName: nextName })
+                  })
+                  const finalName = res.userName || nextName
+                  setCurrentUserName(finalName)
+                  localStorage.setItem('matchaUserName', finalName)
+                  setSavedEntryToast({ headline: 'Username updated', connector: ' to ', highlight: `@${finalName}` })
+                  setIsChangeUsernameOpen(false)
+                } catch (err) {
+                  const message = err instanceof Error ? err.message : 'Could not update username'
+                  setChangeUsernameError(message)
+                } finally {
+                  setIsChangeUsernameSaving(false)
+                }
+              }}
+            >
+              <input
+                type="text"
+                className="form-control mb-2"
+                value={changeUsernameInput}
+                onChange={(e) => setChangeUsernameInput(e.target.value)}
+                autoFocus
+                maxLength={40}
+                disabled={isChangeUsernameSaving}
+                aria-label="New username"
+              />
+              {changeUsernameError && (
+                <div className="text-danger small mb-2" role="alert">{changeUsernameError}</div>
+              )}
+              <div className="d-flex gap-2 justify-content-end mt-3">
+                <button
+                  type="button"
+                  className="btn btn-outline-secondary btn-sm"
+                  onClick={() => setIsChangeUsernameOpen(false)}
+                  disabled={isChangeUsernameSaving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-success btn-sm"
+                  disabled={isChangeUsernameSaving}
+                >
+                  {isChangeUsernameSaving ? 'Saving…' : 'Save'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </>,
+        document.body
+      )}
+
       {isContactSupportModalOpen && createPortal(
         <>
           <div
@@ -5170,20 +5423,46 @@ function App() {
           >
             <div className="card-header bg-white border-bottom p-3">
               <div className="d-flex align-items-start justify-content-between gap-2 mb-2">
-                <div className="flex-grow-1">
-                  <h5 className="mb-1 text-success fw-bold">{friendModalUser}</h5>
-                  <div className="small text-muted d-flex flex-wrap gap-2 align-items-center">
-                    {isLoadingFriendModal ? (
-                      <span className="fst-italic">Loading profile…</span>
+                <div className="d-flex align-items-center gap-2 flex-grow-1" style={{ minWidth: 0 }}>
+                  <div
+                    aria-hidden="true"
+                    style={{
+                      width: '2.6rem',
+                      height: '2.6rem',
+                      borderRadius: '50%',
+                      background: friendModalPrefs.avatarUrl ? '#f5f5f5' : 'var(--accent-teal-subtle, #d9f0e5)',
+                      color: 'var(--accent-teal, #1f5f34)',
+                      fontWeight: 700,
+                      fontSize: '1rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      overflow: 'hidden',
+                      border: '1px solid var(--border-light, #e9ecef)'
+                    }}
+                  >
+                    {friendModalPrefs.avatarUrl ? (
+                      <img src={friendModalPrefs.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
-                      <>
-                        {friendModalRank !== null && (
-                          <span>Rank <strong className="text-success">#{friendModalRank}</strong></span>
-                        )}
-                        {friendModalRank !== null && <span aria-hidden="true">•</span>}
-                        <span><strong className="text-success">{friendModalPlaceCount}</strong> places rated</span>
-                      </>
+                      (friendModalUser || '?').charAt(0).toUpperCase()
                     )}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <h5 className="mb-1 text-success fw-bold text-truncate">{friendModalUser}</h5>
+                    <div className="small text-muted d-flex flex-wrap gap-2 align-items-center">
+                      {isLoadingFriendModal ? (
+                        <span className="fst-italic">Loading profile…</span>
+                      ) : (
+                        <>
+                          {friendModalRank !== null && (
+                            <span>Rank <strong className="text-success">#{friendModalRank}</strong></span>
+                          )}
+                          {friendModalRank !== null && <span aria-hidden="true">•</span>}
+                          <span><strong className="text-success">{friendModalPlaceCount}</strong> places rated</span>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="d-flex align-items-center gap-2">

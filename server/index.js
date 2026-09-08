@@ -1493,13 +1493,15 @@ app.get('/api/explore/users', async (req, res) => {
     const result = await pool.query(
       `
         SELECT
-          MIN(user_name) AS user_name,
-          COUNT(*) AS place_count
-        FROM ratings
-        WHERE TRIM(location) <> ''
-          AND LOWER(user_name) <> 'demo'
-        GROUP BY LOWER(user_name)
-        ORDER BY place_count DESC, MIN(user_name) ASC
+          MIN(r.user_name) AS user_name,
+          COUNT(*) AS place_count,
+          MAX(a.avatar_url) AS avatar_url
+        FROM ratings r
+        LEFT JOIN accounts a ON LOWER(a.user_name) = LOWER(r.user_name)
+        WHERE TRIM(r.location) <> ''
+          AND LOWER(r.user_name) <> 'demo'
+        GROUP BY LOWER(r.user_name)
+        ORDER BY place_count DESC, MIN(r.user_name) ASC
         LIMIT $1
       `,
       [limit * 2]
@@ -1508,7 +1510,8 @@ app.get('/api/explore/users', async (req, res) => {
     const users = result.rows
       .map((row) => ({
         userName: String(row.user_name || '').trim(),
-        placeCount: Number(row.place_count)
+        placeCount: Number(row.place_count),
+        avatarUrl: row.avatar_url || null
       }))
       .filter((u) => u.userName)
       .slice(0, limit)
@@ -1595,6 +1598,101 @@ app.post('/account/email', async (req, res) => {
   }
 })
 
+// Change the current session's user_name. Cascades the new value into the
+// ratings table so leaderboards / friend modals continue to attribute prior
+// logs to this user. follows table is keyed by email so it needs no update.
+// Reserved names (demo) and already-taken names (case-insensitive) are
+// rejected.
+app.post('/api/account/username', async (req, res) => {
+  if (!req.session?.userName) return res.status(401).json({ error: 'Not signed in' })
+  const currentUserName = req.session.userName
+  const rawIncoming = String(req.body?.newUserName || '').trim()
+  const newUserName = sanitizeUserName(rawIncoming)
+
+  if (!newUserName || newUserName.length < 2) {
+    return res.status(400).json({ error: 'Username must be at least 2 characters (letters, numbers, . _ -)' })
+  }
+  if (newUserName.length > 40) {
+    return res.status(400).json({ error: 'Username must be 40 characters or fewer' })
+  }
+  if (newUserName.toLowerCase() === DEMO_USER_NAME) {
+    return res.status(400).json({ error: 'That username is reserved' })
+  }
+  if (newUserName.toLowerCase() === currentUserName.toLowerCase()) {
+    // Same name (possibly different casing) — accept as a no-op rename so
+    // the client can still update its display casing.
+    try {
+      await pool.query('UPDATE accounts SET user_name = $1 WHERE LOWER(user_name) = LOWER($2)', [newUserName, currentUserName])
+      await pool.query('UPDATE ratings SET user_name = $1 WHERE LOWER(user_name) = LOWER($2)', [newUserName, currentUserName])
+      req.session.userName = newUserName
+      return res.json({ ok: true, userName: newUserName })
+    } catch (error) {
+      console.error('Failed to update casing on username:', error)
+      return res.status(500).json({ error: 'Failed to update username' })
+    }
+  }
+
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    const taken = await client.query('SELECT 1 FROM accounts WHERE LOWER(user_name) = LOWER($1)', [newUserName])
+    if (taken.rowCount > 0) {
+      await client.query('ROLLBACK')
+      return res.status(409).json({ error: 'That username is already taken' })
+    }
+    await client.query('UPDATE accounts SET user_name = $1 WHERE LOWER(user_name) = LOWER($2)', [newUserName, currentUserName])
+    await client.query('UPDATE ratings SET user_name = $1 WHERE LOWER(user_name) = LOWER($2)', [newUserName, currentUserName])
+    await client.query('COMMIT')
+    req.session.userName = newUserName
+    return res.json({ ok: true, userName: newUserName })
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {})
+    console.error('Failed to rename user:', error)
+    return res.status(500).json({ error: 'Failed to update username' })
+  } finally {
+    client.release()
+  }
+})
+
+// Set (or clear) the profile picture URL for the current session's user.
+// The URL should already have been uploaded to Cloudinary via
+// /api/upload-image on the client — we only persist the resulting URL here.
+app.post('/api/account/avatar', async (req, res) => {
+  if (!req.session?.userName) return res.status(401).json({ error: 'Not signed in' })
+  const rawUrl = req.body?.avatarUrl
+  const avatarUrl = rawUrl === null || rawUrl === '' ? null : String(rawUrl || '').trim()
+  if (avatarUrl !== null) {
+    if (avatarUrl.length > 500) return res.status(400).json({ error: 'Avatar URL too long' })
+    if (!/^https:\/\//i.test(avatarUrl)) return res.status(400).json({ error: 'Avatar must be an https URL' })
+  }
+  try {
+    await pool.query(
+      'UPDATE accounts SET avatar_url = $1 WHERE LOWER(user_name) = LOWER($2)',
+      [avatarUrl, req.session.userName]
+    )
+    return res.json({ ok: true, avatarUrl })
+  } catch (error) {
+    console.error('Failed to update avatar:', error)
+    return res.status(500).json({ error: 'Failed to update avatar' })
+  }
+})
+
+// Returns the current session user's account-level profile fields we render
+// in the drawer (right now: avatar_url). Kept separate from /link-status so
+// callers can grab this without needing to know linkage state.
+app.get('/api/account/me', async (req, res) => {
+  if (!req.session?.userName) return res.status(401).json({ error: 'Not signed in' })
+  const result = await pool.query(
+    'SELECT user_name, avatar_url FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+    [req.session.userName]
+  )
+  const row = result.rows[0]
+  return res.json({
+    userName: row?.user_name || req.session.userName,
+    avatarUrl: row?.avatar_url || null
+  })
+})
+
 // Follow/unfollow endpoints
 app.post('/api/follows/:targetUserName', async (req, res) => {
   // Prevent normal users from following/social-linking the demo account.
@@ -1672,7 +1770,7 @@ app.get('/api/feed/following', async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT r.id, r.user_name, r.photo, r.rating, r.greenness, r.location, r.thoughts,
-              r.created_at, r.flavor_preferences
+              r.created_at, r.flavor_preferences, followed_acct.avatar_url
          FROM ratings r
          JOIN accounts followed_acct ON LOWER(followed_acct.user_name) = LOWER(r.user_name)
          JOIN follows f ON f.following_email = followed_acct.email
@@ -1697,7 +1795,8 @@ app.get('/api/feed/following', async (req, res) => {
           date: r.created_at,
           createdAt: r.created_at,
           comboScore: Number(getWeightedScore(rating, greenness).toFixed(2)),
-          flavorPreferences: r.flavor_preferences || {}
+          flavorPreferences: r.flavor_preferences || {},
+          userAvatarUrl: r.avatar_url || null
         }
       })
     })
@@ -1728,6 +1827,14 @@ app.get('/api/users/:userName/preferences', async (req, res) => {
       'creamy', 'floral', 'earthy', 'chocolatey', 'mellow', 'bitter'
     ])
 
+    // Fetch the account's avatar_url alongside preferences so the friend
+    // modal can render a profile picture without a second round-trip.
+    const avatarResult = await pool.query(
+      'SELECT avatar_url FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+      [userName]
+    )
+    const avatarUrl = avatarResult.rows[0]?.avatar_url || null
+
     const result = await pool.query(
       `SELECT up.flavors
          FROM user_preferences up
@@ -1738,7 +1845,7 @@ app.get('/api/users/:userName/preferences', async (req, res) => {
     )
 
     if (result.rowCount === 0) {
-      return res.json({ userName, flavors: [], body: '' })
+      return res.json({ userName, flavors: [], body: '', avatarUrl })
     }
 
     const raw = result.rows[0].flavors
@@ -1759,7 +1866,7 @@ app.get('/api/users/:userName/preferences', async (req, res) => {
       for (const [k, v] of Object.entries(raw)) takeKey(k, v)
     }
 
-    return res.json({ userName, flavors, body })
+    return res.json({ userName, flavors, body, avatarUrl })
   } catch (error) {
     console.error('Fetch user preferences failed:', error)
     return res.status(500).json({ error: 'Failed to load user preferences' })

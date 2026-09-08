@@ -108,6 +108,21 @@ export async function initDb() {
   `)
 
   await pool.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'accounts'
+          AND column_name = 'avatar_url'
+      ) THEN
+        ALTER TABLE accounts ADD COLUMN avatar_url TEXT;
+      END IF;
+    END $$;
+  `)
+
+  await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_accounts_google_id
     ON accounts (google_id);
   `)
