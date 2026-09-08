@@ -2557,12 +2557,12 @@ function App() {
       setSavedEntryToast({ headline, highlight: placeLabel })
       window.setTimeout(() => setSavedEntryToast(null), 3500)
 
-      // Milestone celebration is based on UNIQUE PLACES rated (case-insensitive
-      // by location name), not raw entry count. Users think of milestones as
-      // "how many distinct matcha spots have I visited" rather than "how many
-      // taps of Save have I made" (which would inflate whenever they re-rate
-      // the same place). This also naturally sidesteps the earlier 125/123
-      // drift caused by re-logged entries counting toward the total.
+      // Milestones fire based on RAW entry count (what the user sees in their
+      // log's "@N" ranks and in the leaderboard's place count), so hitting
+      // "125" on save actually pops a 125 celebration. We still guard against
+      // false positives from re-rating an already-logged place: the popup
+      // requires that (a) the raw count landed on a milestone, and (b) this
+      // save added a brand-new location (case-insensitive), not a re-rate.
       const MILESTONES: Record<number, { headline: string; subtext: (place: string) => string }> = {
         1:   { headline: 'First sip logged 🍵',   subtext: (p) => `${p} kicked off your matcha journey.` },
         10:  { headline: '10 places rated 🎉',    subtext: (p) => `${p} makes it 10 — your log is officially rolling.` },
@@ -2576,15 +2576,13 @@ function App() {
       const normalizePlace = (loc: string) => loc.trim().toLowerCase().replace(/\s+/g, ' ')
       const previousPlaces = new Set(myEntries.map((e) => normalizePlace(e.location || '')).filter(Boolean))
       const currentPlaces = new Set(updated.ratings.map((e) => normalizePlace(e.location || '')).filter(Boolean))
-      const previousPlaceCount = previousPlaces.size
-      const currentPlaceCount = currentPlaces.size
-      const milestone = MILESTONES[currentPlaceCount]
-      // Only celebrate when this save actually added a brand-new place AND that
-      // pushed us onto a milestone number. Guarantees the popup can never fire
-      // when you're re-rating a place you've already logged.
-      if (milestone && currentPlaceCount === previousPlaceCount + 1) {
+      const rawPreviousCount = myEntries.length
+      const rawCurrentCount = updated.ratings.length
+      const milestone = MILESTONES[rawCurrentCount]
+      const isNewPlace = currentPlaces.size > previousPlaces.size
+      if (milestone && rawCurrentCount > rawPreviousCount && isNewPlace) {
         setMilestoneCelebration({
-          count: currentPlaceCount,
+          count: rawCurrentCount,
           headline: milestone.headline,
           subtext: milestone.subtext(placeLabel)
         })
