@@ -233,8 +233,9 @@ function FeedPage(props: {
   isLoading: boolean
   isDemoAccount: boolean
   onOpenFriend: (userName: string) => void
+  onOpenPlace: (placeName: string) => void
 }) {
-  const { myEntries, friendRatings, recPlaces, isLoading, isDemoAccount, onOpenFriend } = props
+  const { myEntries, friendRatings, recPlaces, isLoading, isDemoAccount, onOpenFriend, onOpenPlace } = props
 
   // Track which friend ratings are brand new relative to the previous poll so
   // we can flash a soft "just now" highlight when they arrive.
@@ -365,6 +366,7 @@ function FeedPage(props: {
               }
               if (event.kind === 'friend') {
                 const { entry } = event
+                const placeLabel = entry.location || 'a matcha'
                 return (
                   <li key={`f-${entry.id}`} className={`feed-item feed-item-friend ${freshIds.has(entry.id) ? 'feed-item-fresh' : ''}`.trim()}>
                     <div className="feed-item-icon" aria-hidden="true">👥</div>
@@ -378,13 +380,23 @@ function FeedPage(props: {
                           {entry.userName}
                         </button>
                         {' '}just logged{' '}
-                        <span className="feed-place">{entry.location || 'a matcha'}</span>
+                        {entry.location ? (
+                          <button
+                            type="button"
+                            className="feed-place-link"
+                            onClick={() => onOpenPlace(entry.location)}
+                            aria-label={`See all ratings for ${entry.location}`}
+                          >
+                            {entry.location}
+                          </button>
+                        ) : (
+                          <span className="feed-place">{placeLabel}</span>
+                        )}
                       </div>
                       <div className="feed-item-sub">
                         Sip Score <strong>{entry.comboScore != null ? entry.comboScore.toFixed(1) : '—'}</strong>
                         {typeof entry.greenness === 'number' ? <> · <span className="feed-greenness">{Math.round(entry.greenness)}% matcha greenness</span></> : null}
                       </div>
-                      {entry.thoughts ? <div className="feed-item-thought">"{entry.thoughts}"</div> : null}
                       <div className="feed-item-meta">{feedRelativeTime(entry.createdAt)}</div>
                     </div>
                   </li>
@@ -395,7 +407,15 @@ function FeedPage(props: {
                   <div className="feed-item-icon" aria-hidden="true">🌟</div>
                   <div className="feed-item-body">
                     <div className="feed-item-headline">
-                      <span className="feed-place">{event.location}</span> matches your top-rated profile
+                      <button
+                        type="button"
+                        className="feed-place-link"
+                        onClick={() => onOpenPlace(event.location)}
+                        aria-label={`See all ratings for ${event.location}`}
+                      >
+                        {event.location}
+                      </button>
+                      {' '}matches your top-rated profile
                     </div>
                     <div className="feed-item-sub">
                       <strong>{Math.round(event.matchScore * 100)}% match</strong>
@@ -5969,6 +5989,7 @@ function App() {
             isLoading={isLoadingFeed}
             isDemoAccount={isDemoAccount}
             onOpenFriend={(name) => { void openFriendModal(name) }}
+            onOpenPlace={(place) => { void openExplorePlaceRatings(place) }}
           />
         </main>
       )}

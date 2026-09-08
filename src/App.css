@@ -3243,6 +3243,24 @@ main#main-content {
   text-decoration-color: var(--primary-green);
 }
 
+.feed-place-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--primary-green);
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: rgba(31, 95, 52, 0.25);
+  text-underline-offset: 2px;
+}
+
+.feed-place-link:hover,
+.feed-place-link:focus-visible {
+  text-decoration-color: var(--primary-green);
+}
+
 .feed-notice {
   display: flex;
   align-items: flex-start;
