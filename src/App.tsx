@@ -345,16 +345,10 @@ function FeedPage(props: {
     return out.sort((a, b) => b.ts - a.ts)
   }, [myEntries, friendRatings, recPlaces])
 
-  if (isDemoAccount) {
-    return (
-      <section className="card border-0 shadow-sm matcha-shell mb-4">
-        <div className="card-body p-4">
-          <h2 className="h3 fw-bold text-success mb-2">Feed</h2>
-          <p className="text-muted mb-0">Sign up to see milestones, friend activity, and new place recs as they happen.</p>
-        </div>
-      </section>
-    )
-  }
+  // Note: demo previously short-circuited here with an upsell; we now let
+  // demo see the Feed so the auto-follow of the maintainer account gives
+  // reviewers real friend activity to browse.
+  void isDemoAccount
 
   return (
     <section className="card border-0 shadow-sm matcha-shell mb-4">
@@ -1789,7 +1783,9 @@ function App() {
   useEffect(() => {
     if (activePage !== 'feed') return
     if (!currentUserName) return
-    if (isDemoAccount) return
+    // Demo used to be excluded to save Render Free requests, but demo now
+    // auto-follows the maintainer account on login so the Feed has real
+    // activity to showcase for hackathon reviewers — keep polling on.
 
     let cancelled = false
     let pollTimer: number | null = null

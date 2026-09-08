@@ -1031,6 +1031,30 @@ app.post('/api/auth/demo', authRateLimiter, async (req, res) => {
     if (ratingCount.rows[0].c === 0) {
       await seedDemoData(DEMO_USER)
     }
+    // Auto-follow the maintainer account (allyyim) from the demo account so
+    // the Feed tab always has fresh friend activity to show visitors. Uses
+    // ON CONFLICT to stay idempotent across repeated demo logins.
+    try {
+      const allyRow = await pool.query(
+        "SELECT email FROM accounts WHERE LOWER(user_name) = LOWER('allyyim')"
+      )
+      const demoRow = await pool.query(
+        'SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)',
+        [DEMO_USER]
+      )
+      const allyEmail = allyRow.rows[0]?.email
+      const demoEmail = demoRow.rows[0]?.email
+      if (allyEmail && demoEmail && allyEmail !== demoEmail) {
+        await pool.query(
+          `INSERT INTO follows (follower_email, following_email)
+           VALUES ($1, $2)
+           ON CONFLICT DO NOTHING`,
+          [demoEmail, allyEmail]
+        )
+      }
+    } catch (followErr) {
+      console.warn('[demo login] auto-follow allyyim failed (non-fatal):', followErr)
+    }
     const browserId = String(req.body?.browserId || crypto.randomUUID()).slice(0, 128)
     const token = generateToken(DEMO_USER, browserId)
     return res.json({ userName: DEMO_USER, token })
