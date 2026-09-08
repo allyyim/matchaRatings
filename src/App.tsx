@@ -236,6 +236,38 @@ function FeedPage(props: {
 }) {
   const { myEntries, friendRatings, recPlaces, isLoading, isDemoAccount, onOpenFriend } = props
 
+  // Track which friend ratings are brand new relative to the previous poll so
+  // we can flash a soft "just now" highlight when they arrive.
+  const seenIdsRef = useRef<Set<number>>(new Set())
+  const [freshIds, setFreshIds] = useState<Set<number>>(new Set())
+  useEffect(() => {
+    const currentIds = new Set(friendRatings.map((r) => r.id))
+    if (seenIdsRef.current.size === 0) {
+      // First load — everything is "already known", no highlight.
+      seenIdsRef.current = currentIds
+      return
+    }
+    const newlyArrived: number[] = []
+    currentIds.forEach((id) => {
+      if (!seenIdsRef.current.has(id)) newlyArrived.push(id)
+    })
+    seenIdsRef.current = currentIds
+    if (newlyArrived.length === 0) return
+    setFreshIds((prev) => {
+      const next = new Set(prev)
+      newlyArrived.forEach((id) => next.add(id))
+      return next
+    })
+    const timeout = window.setTimeout(() => {
+      setFreshIds((prev) => {
+        const next = new Set(prev)
+        newlyArrived.forEach((id) => next.delete(id))
+        return next
+      })
+    }, 6000)
+    return () => window.clearTimeout(timeout)
+  }, [friendRatings])
+
   const events = useMemo<FeedEvent[]>(() => {
     const out: FeedEvent[] = []
 
@@ -334,7 +366,7 @@ function FeedPage(props: {
               if (event.kind === 'friend') {
                 const { entry } = event
                 return (
-                  <li key={`f-${entry.id}`} className="feed-item feed-item-friend">
+                  <li key={`f-${entry.id}`} className={`feed-item feed-item-friend ${freshIds.has(entry.id) ? 'feed-item-fresh' : ''}`.trim()}>
                     <div className="feed-item-icon" aria-hidden="true">👥</div>
                     <div className="feed-item-body">
                       <div className="feed-item-headline">
@@ -1317,7 +1349,7 @@ function App() {
   const [followingSet, setFollowingSet] = useState<Set<string>>(new Set())
   const [feedFollowingRatings, setFeedFollowingRatings] = useState<RatingEntry[]>([])
   const [isLoadingFeed, setIsLoadingFeed] = useState(false)
-  const [feedLastLoadedAt, setFeedLastLoadedAt] = useState<number>(0)
+  const [, setFeedLastLoadedAt] = useState<number>(0)
 
   const showLoadingOverlay = isSavingEntry || isLoadingFriendRatings || isLoadingExplorePlaces
   const loadingOverlayText = isSavingEntry
@@ -1668,6 +1700,8 @@ function App() {
 
   // Reset per-tab search/filter state when the user switches tabs so opening a
   // tab always starts fresh (no lingering search query or sort from before).
+  // Also dismisses transient toasts so they don't stick around on a page the
+  // user has intentionally left.
   useEffect(() => {
     setMyLogsSearchTerm('')
     setMyRatingsSort('highest')
@@ -1678,34 +1712,66 @@ function App() {
     setFriendSort('highest')
     setIsFriendFilterOpen(false)
     setIsFriendSearchOpen(false)
+    setSavedEntryToast(null)
   }, [activePage])
 
-  // Load Feed data (recent ratings from followed users) whenever the user
-  // opens the Feed tab, throttled to at most once every 30 seconds so tab
-  // switching doesn't hammer the API.
+  // Feed live updates.
+  // Initial fetch fires when the user opens the Feed tab. While the tab
+  // stays foreground, we poll every 30 seconds so newly-logged sips from
+  // people you follow slide in without a manual refresh. Polling stops the
+  // moment the user leaves the Feed tab, backgrounds the app, or drops
+  // network — no wasted requests on Render's free tier.
   useEffect(() => {
     if (activePage !== 'feed') return
     if (!currentUserName) return
     if (isDemoAccount) return
-    const now = Date.now()
-    if (now - feedLastLoadedAt < 30000 && feedFollowingRatings.length > 0) return
+
     let cancelled = false
-    setIsLoadingFeed(true)
-    apiFetch<{ ratings: RatingEntry[] }>(`/feed/following?limit=30`)
-      .then((res) => {
+    let pollTimer: number | null = null
+
+    const fetchFeed = async (isInitial: boolean) => {
+      if (cancelled) return
+      if (isInitial) setIsLoadingFeed(true)
+      try {
+        const res = await apiFetch<{ ratings: RatingEntry[] }>(`/feed/following?limit=30`)
         if (cancelled) return
         setFeedFollowingRatings(res.ratings || [])
         setFeedLastLoadedAt(Date.now())
-      })
-      .catch(() => {
+      } catch {
+        // Silent — keep the previous snapshot instead of clearing the feed on a
+        // transient network blip.
+      } finally {
+        if (!cancelled && isInitial) setIsLoadingFeed(false)
+      }
+    }
+
+    void fetchFeed(true)
+
+    const scheduleNextPoll = () => {
+      pollTimer = window.setTimeout(async () => {
         if (cancelled) return
-        // Silent failure — feed simply shows without friend activity.
-      })
-      .finally(() => {
-        if (cancelled) return
-        setIsLoadingFeed(false)
-      })
-    return () => { cancelled = true }
+        if (document.visibilityState !== 'visible') {
+          scheduleNextPoll()
+          return
+        }
+        await fetchFeed(false)
+        if (!cancelled) scheduleNextPoll()
+      }, 30000)
+    }
+    scheduleNextPoll()
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void fetchFeed(false)
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+
+    return () => {
+      cancelled = true
+      if (pollTimer) window.clearTimeout(pollTimer)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [activePage, currentUserName, isDemoAccount])
 
   useEffect(() => {
