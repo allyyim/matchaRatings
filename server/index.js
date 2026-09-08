@@ -2328,10 +2328,15 @@ app.use((_req, res) => {
   res.sendFile('dist/index.html', { root: '.' })
 })
 
-async function start() {
-  await initDb()
+async function initBackground() {
+  try {
+    await initDb()
+    console.log('✓ Database schema ready')
+  } catch (error) {
+    console.error('initDb failed (will retry on next request):', error)
+    return
+  }
 
-  // Link users to emails (one-time initialization)
   try {
     const usersToLink = [
       { userName: 'daniella', email: 'daniella.choy@gmail.com' },
@@ -2350,13 +2355,11 @@ async function start() {
   } catch (error) {
     console.error('Error linking users:', error)
   }
-
-  app.listen(port, () => {
-    console.log(`API server running on http://localhost:${port}`)
-  })
 }
 
-start().catch((error) => {
-  console.error('Failed to start API server:', error)
-  process.exit(1)
+app.listen(port, () => {
+  console.log(`API server running on http://localhost:${port}`)
+  initBackground().catch((error) => {
+    console.error('Background init failed:', error)
+  })
 })
