@@ -1672,7 +1672,7 @@ app.get('/api/feed/following', async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT r.id, r.user_name, r.photo, r.rating, r.greenness, r.location, r.thoughts,
-              r.date, r.created_at, r.combo_score, r.flavor_preferences
+              r.created_at, r.flavor_preferences
          FROM ratings r
          JOIN accounts followed_acct ON LOWER(followed_acct.user_name) = LOWER(r.user_name)
          JOIN follows f ON f.following_email = followed_acct.email
@@ -1683,19 +1683,23 @@ app.get('/api/feed/following', async (req, res) => {
       [email, DEMO_USER_NAME, limit]
     )
     return res.json({
-      ratings: result.rows.map(r => ({
-        id: r.id,
-        userName: r.user_name,
-        photo: r.photo,
-        rating: r.rating,
-        greenness: r.greenness,
-        location: r.location,
-        thoughts: r.thoughts,
-        date: r.date,
-        createdAt: r.created_at,
-        comboScore: r.combo_score,
-        flavorPreferences: r.flavor_preferences
-      }))
+      ratings: result.rows.map(r => {
+        const rating = Number(r.rating)
+        const greenness = Number(r.greenness)
+        return {
+          id: r.id,
+          userName: r.user_name,
+          photo: r.photo,
+          rating,
+          greenness,
+          location: r.location,
+          thoughts: r.thoughts,
+          date: r.created_at,
+          createdAt: r.created_at,
+          comboScore: Number(getWeightedScore(rating, greenness).toFixed(2)),
+          flavorPreferences: r.flavor_preferences || {}
+        }
+      })
     })
   } catch (error) {
     console.error('feed/following error', error)
