@@ -2557,12 +2557,12 @@ function App() {
       setSavedEntryToast({ headline, highlight: placeLabel })
       window.setTimeout(() => setSavedEntryToast(null), 3500)
 
-      // Milestones fire based on RAW entry count (what the user sees in their
-      // log's "@N" ranks and in the leaderboard's place count), so hitting
-      // "125" on save actually pops a 125 celebration. We still guard against
-      // false positives from re-rating an already-logged place: the popup
-      // requires that (a) the raw count landed on a milestone, and (b) this
-      // save added a brand-new location (case-insensitive), not a re-rate.
+      // Milestones fire when the user's log crosses a milestone threshold
+      // AND this save added a brand-new location. The crossing logic — rather
+      // than requiring rawCurrentCount === milestone exactly — handles the
+      // real-world case where the raw count jumps (dedupe cleanup, legacy
+      // duplicates that dedupe can't merge because timestamps are >10s apart,
+      // or backfilled ratings), so the popup never gets silently skipped.
       const MILESTONES: Record<number, { headline: string; subtext: (place: string) => string }> = {
         1:   { headline: 'First sip logged 🍵',   subtext: (p) => `${p} kicked off your matcha journey.` },
         10:  { headline: '10 places rated 🎉',    subtext: (p) => `${p} makes it 10 — your log is officially rolling.` },
@@ -2578,11 +2578,21 @@ function App() {
       const currentPlaces = new Set(updated.ratings.map((e) => normalizePlace(e.location || '')).filter(Boolean))
       const rawPreviousCount = myEntries.length
       const rawCurrentCount = updated.ratings.length
-      const milestone = MILESTONES[rawCurrentCount]
       const isNewPlace = currentPlaces.size > previousPlaces.size
-      if (milestone && rawCurrentCount > rawPreviousCount && isNewPlace) {
+
+      // Find the highest milestone strictly greater than previous and <=
+      // current. Also honor unique-place count as a fallback so users whose
+      // raw-vs-unique counts differ still see milestones on the same visible
+      // "@N" event they just witnessed.
+      const milestoneKeys = Object.keys(MILESTONES).map(Number).sort((a, b) => a - b)
+      const crossedByRaw = milestoneKeys.filter((k) => k > rawPreviousCount && k <= rawCurrentCount).pop()
+      const crossedByUnique = milestoneKeys.filter((k) => k > previousPlaces.size && k <= currentPlaces.size).pop()
+      const crossedMilestone = crossedByRaw ?? crossedByUnique
+
+      if (crossedMilestone && isNewPlace) {
+        const milestone = MILESTONES[crossedMilestone]
         setMilestoneCelebration({
-          count: rawCurrentCount,
+          count: crossedMilestone,
           headline: milestone.headline,
           subtext: milestone.subtext(placeLabel)
         })

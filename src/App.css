@@ -2764,15 +2764,15 @@ h1, h2, h3, h4, h5, h6 {
    more substantial than the old top-of-viewport toast. */
 .save-confirmation {
   position: fixed;
-  top: 50%;
+  top: max(1rem, env(safe-area-inset-top));
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, 0);
   z-index: 2000;
   display: flex;
   align-items: center;
   gap: 0.85rem;
   width: min(340px, calc(100vw - 2rem));
-  padding: 1rem 1.15rem;
+  padding: 0.85rem 1.1rem;
   background: white;
   border: 1px solid rgba(25, 135, 84, 0.18);
   border-radius: 16px;
@@ -2812,10 +2812,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @keyframes saveConfirmationPop {
-  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
-  10%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  85%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.98); }
+  0%   { opacity: 0; transform: translate(-50%, -20px) scale(0.96); }
+  10%  { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  85%  { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -8px) scale(0.98); }
 }
 
 @media (prefers-reduced-motion: reduce) {
