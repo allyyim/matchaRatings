@@ -3168,6 +3168,27 @@ main#main-content {
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
 }
 
+.feed-item-clickable {
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+.feed-item-clickable:hover {
+  border-color: rgba(31, 95, 52, 0.35);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+  transform: translateY(-1px);
+}
+
+.feed-item-clickable:focus-visible {
+  outline: 2px solid var(--primary-green);
+  outline-offset: 2px;
+}
+
+.feed-item-clickable .feed-place {
+  color: var(--primary-green);
+  font-weight: 700;
+}
+
 .feed-item-icon {
   flex-shrink: 0;
   width: 36px;

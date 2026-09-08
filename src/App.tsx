@@ -391,8 +391,21 @@ function FeedPage(props: {
                 const { entry } = event
                 const placeLabel = entry.location || 'a matcha'
                 const displayScore = entry.comboScore != null ? (entry.comboScore / 2).toFixed(1) : '—'
+                const handleCardActivate = () => {
+                  if (entry.location) onOpenPlace(entry.location)
+                }
                 return (
-                  <li key={`f-${entry.id}`} className={`feed-item feed-item-friend ${freshIds.has(entry.id) ? 'feed-item-fresh' : ''}`.trim()}>
+                  <li
+                    key={`f-${entry.id}`}
+                    className={`feed-item feed-item-friend feed-item-clickable ${freshIds.has(entry.id) ? 'feed-item-fresh' : ''}`.trim()}
+                    role={entry.location ? 'button' : undefined}
+                    tabIndex={entry.location ? 0 : undefined}
+                    onClick={entry.location ? handleCardActivate : undefined}
+                    onKeyDown={entry.location ? (e) => {
+                      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleCardActivate() }
+                    } : undefined}
+                    aria-label={entry.location ? `See all ratings for ${entry.location}` : undefined}
+                  >
                     {entry.userAvatarUrl ? (
                       <div className="feed-item-icon feed-item-avatar" aria-hidden="true">
                         <img src={entry.userAvatarUrl} alt="" />
@@ -405,47 +418,43 @@ function FeedPage(props: {
                         <button
                           type="button"
                           className="feed-user-link"
-                          onClick={() => onOpenFriend(entry.userName)}
+                          onClick={(e) => { e.stopPropagation(); onOpenFriend(entry.userName) }}
                         >
                           {entry.userName}
                         </button>
                         {' '}just logged{' '}
-                        {entry.location ? (
-                          <button
-                            type="button"
-                            className="feed-place-link"
-                            onClick={() => onOpenPlace(entry.location)}
-                            aria-label={`See all ratings for ${entry.location}`}
-                          >
-                            {entry.location}
-                          </button>
-                        ) : (
-                          <span className="feed-place">{placeLabel}</span>
-                        )}
+                        <span className="feed-place">{entry.location || placeLabel}</span>
                       </div>
                       <div className="feed-item-sub">
                         Sip Score <strong>{displayScore}</strong>
                         {typeof entry.greenness === 'number' ? <> · <span className="feed-greenness">{Math.round(entry.greenness)}% matcha greenness</span></> : null}
                       </div>
-                      {entry.thoughts ? <FeedThought text={entry.thoughts} /> : null}
+                      {entry.thoughts ? (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <FeedThought text={entry.thoughts} />
+                        </div>
+                      ) : null}
                       <div className="feed-item-meta">{feedRelativeTime(entry.createdAt)}</div>
                     </div>
                   </li>
                 )
               }
               return (
-                <li key={`r-${event.location}-${index}`} className="feed-item feed-item-rec">
+                <li
+                  key={`r-${event.location}-${index}`}
+                  className="feed-item feed-item-rec feed-item-clickable"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => onOpenPlace(event.location)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenPlace(event.location) }
+                  }}
+                  aria-label={`See all ratings for ${event.location}`}
+                >
                   <div className="feed-item-icon" aria-hidden="true">🌟</div>
                   <div className="feed-item-body">
                     <div className="feed-item-headline">
-                      <button
-                        type="button"
-                        className="feed-place-link"
-                        onClick={() => onOpenPlace(event.location)}
-                        aria-label={`See all ratings for ${event.location}`}
-                      >
-                        {event.location}
-                      </button>
+                      <span className="feed-place">{event.location}</span>
                       {' '}matches your top-rated profile
                     </div>
                     <div className="feed-item-sub">

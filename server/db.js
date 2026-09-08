@@ -123,6 +123,11 @@ export async function initDb() {
   `)
 
   await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_ratings_lower_user_name
+    ON ratings (LOWER(user_name));
+  `)
+
+  await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_accounts_google_id
     ON accounts (google_id);
   `)
