@@ -1979,6 +1979,24 @@ function App() {
         setMyEntries(response.ratings)
         writeCache(currentUserName, 'ratings', response.ratings)
 
+        // Milestone backfill: if this user has never had a shown-set stored
+        // (i.e. they're arriving on the v4 milestone system for the first
+        // time, or on a new device), assume every milestone at or below
+        // their current count has already been celebrated in the old
+        // system so we don't surprise them with a re-fire on their next
+        // save. New milestones crossed after this point still fire normally.
+        try {
+          const key = `milestonesShown:${currentUserName.toLowerCase()}`
+          if (!localStorage.getItem(key)) {
+            const normalize = (loc: string) => loc.trim().toLowerCase().replace(/\s+/g, ' ')
+            const uniqueCount = new Set(response.ratings.map((e) => normalize(e.location || '')).filter(Boolean)).size
+            const effective = Math.max(response.ratings.length, uniqueCount)
+            const knownMilestoneKeys = [1, 10, 25, 50, 100, 125, 150, 200]
+            const backfill = knownMilestoneKeys.filter((k) => k <= effective)
+            localStorage.setItem(key, JSON.stringify(backfill))
+          }
+        } catch { /* storage blocked — best-effort */ }
+
         const refreshKey = getGreennessRefreshKey(currentUserName)
         const hasRefreshed = localStorage.getItem(refreshKey) === '1'
         if (!hasRefreshed) {
