@@ -521,6 +521,12 @@ const noPhotoPlaceholderUrl = `data:image/svg+xml;charset=UTF-8,${encodeURICompo
   </svg>
 `)}`
 
+const hasEntryPhoto = (photo?: string | null): boolean => {
+  if (!photo) return false
+  if (photo === noPhotoPlaceholderUrl) return false
+  return true
+}
+
 const FULL_GREENNESS_WEIGHT = 1
 const LOW_RATING_GREENNESS_WEIGHT = 0.8
 const API_REQUEST_TIMEOUT_MS = 45000
@@ -2676,7 +2682,7 @@ function App() {
     setIsSavingEntry(true)
     const overlayShownAt = Date.now()
     try {
-      const resolvedPhoto = photoDataUrl || noPhotoPlaceholderUrl
+      const resolvedPhoto = photoDataUrl && photoDataUrl !== noPhotoPlaceholderUrl ? photoDataUrl : ''
       const resolvedGreenness = matchaGreenness ?? 0
 
       let photoUrl = resolvedPhoto
@@ -2690,8 +2696,8 @@ function App() {
           photoUrl = uploadRes.url
         } catch (error) {
           console.error('Image upload failed:', error)
-          alert('Image upload failed. Using placeholder instead.')
-          photoUrl = noPhotoPlaceholderUrl
+          alert('Image upload failed. Saving without a photo.')
+          photoUrl = ''
         }
       }
 
@@ -3893,7 +3899,9 @@ function App() {
                           )}
                         </div>
                         {entry.thoughts && <p className="mt-1 mb-0">{entry.thoughts}</p>}
-                        <img src={entry.photo || noPhotoPlaceholderUrl} alt="" className="entry-hero-photo" loading="lazy" decoding="async" onError={(e) => { const img = e.currentTarget; if (img.src !== noPhotoPlaceholderUrl) img.src = noPhotoPlaceholderUrl }} />
+                        {hasEntryPhoto(entry.photo) && (
+                          <img src={entry.photo} alt="" className="entry-hero-photo" loading="lazy" decoding="async" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                        )}
                       </div>
                     </article>
                   ))}
@@ -5275,12 +5283,18 @@ function App() {
               <div style={{ marginBottom: '1.5rem' }}>
                 <label className="form-label fw-semibold mb-2 text-success">Photo</label>
                 <div className="d-flex flex-column align-items-center gap-2">
-                  <img
-                    src={editEntryPhoto || noPhotoPlaceholderUrl}
-                    alt="Current entry photo"
-                    className="entry-hero-photo"
-                    onError={(e) => { const img = e.currentTarget; if (img.src !== noPhotoPlaceholderUrl) img.src = noPhotoPlaceholderUrl }}
-                  />
+                  {hasEntryPhoto(editEntryPhoto) ? (
+                    <img
+                      src={editEntryPhoto}
+                      alt="Current entry photo"
+                      className="entry-hero-photo"
+                      onError={(e) => { e.currentTarget.style.display = 'none' }}
+                    />
+                  ) : (
+                    <div className="entry-hero-photo d-flex align-items-center justify-content-center text-muted small" style={{ background: '#f8f9fa', border: '1px dashed #d0e3c3', borderRadius: '12px', minHeight: '160px', width: '100%' }}>
+                      No photo
+                    </div>
+                  )}
                   <div className="d-flex gap-2 w-100">
                     <button
                       type="button"
@@ -5638,14 +5652,16 @@ function App() {
                           )}
                         </div>
                         {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
-                        <img
-                          src={entry.photo || noPhotoPlaceholderUrl}
-                          alt=""
-                          className="entry-hero-photo"
-                          loading="lazy"
-                          decoding="async"
-                          onError={(e) => { const img = e.currentTarget; if (img.src !== noPhotoPlaceholderUrl) img.src = noPhotoPlaceholderUrl }}
-                        />
+                        {hasEntryPhoto(entry.photo) && (
+                          <img
+                            src={entry.photo}
+                            alt=""
+                            className="entry-hero-photo"
+                            loading="lazy"
+                            decoding="async"
+                            onError={(e) => { e.currentTarget.style.display = 'none' }}
+                          />
+                        )}
                       </div>
                     </article>
                     )
@@ -5801,15 +5817,15 @@ function App() {
                     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
                     <circle cx="12" cy="13" r="4"></circle>
                   </svg>
-                  <span>{photoDataUrl && photoDataUrl !== noPhotoPlaceholderUrl ? 'Change photo' : 'Add photo'}</span>
+                  <span>{hasEntryPhoto(photoDataUrl) ? 'Change photo' : 'Add photo (optional)'}</span>
                   <span className="text-muted">›</span>
                 </button>
-                {photoDataUrl && photoDataUrl !== noPhotoPlaceholderUrl && (
+                {hasEntryPhoto(photoDataUrl) && (
                   <div className="small text-muted mt-1">Only one photo per log. Choosing another will replace this one.</div>
                 )}
               </div>
 
-              {photoDataUrl && photoDataUrl !== noPhotoPlaceholderUrl && (
+              {hasEntryPhoto(photoDataUrl) && (
                 <div className="mb-3">
                   <div className="preview-wrap mb-2">
                     <img src={photoDataUrl} alt="Matcha preview" className="preview-image" loading="lazy" decoding="async" />
@@ -5826,7 +5842,7 @@ function App() {
                       type="button"
                       className="btn btn-sm btn-outline-danger flex-grow-1"
                       onClick={() => {
-                        setPhotoDataUrl(noPhotoPlaceholderUrl)
+                        setPhotoDataUrl('')
                         setMatchaGreenness(null)
                       }}
                     >
@@ -6219,14 +6235,16 @@ function App() {
                       )}
                     </div>
                     {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
-                    <img
-                      src={entry.photo || noPhotoPlaceholderUrl}
-                      alt=""
-                      className="entry-hero-photo"
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => { const img = e.currentTarget; if (img.src !== noPhotoPlaceholderUrl) img.src = noPhotoPlaceholderUrl }}
-                    />
+                    {hasEntryPhoto(entry.photo) && (
+                      <img
+                        src={entry.photo}
+                        alt=""
+                        className="entry-hero-photo"
+                        loading="lazy"
+                        decoding="async"
+                        onError={(e) => { e.currentTarget.style.display = 'none' }}
+                      />
+                    )}
                   </div>
 
                   {false && selectedEntryId === entry.id && !isEditingEntry && (
@@ -6918,14 +6936,16 @@ function App() {
                       )}
                     </div>
                     {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
-                    <img
-                      src={entry.photo || noPhotoPlaceholderUrl}
-                      alt=""
-                      className="entry-hero-photo"
-                      loading="lazy"
-                      decoding="async"
-                      onError={(e) => { const img = e.currentTarget; if (img.src !== noPhotoPlaceholderUrl) img.src = noPhotoPlaceholderUrl }}
-                    />
+                    {hasEntryPhoto(entry.photo) && (
+                      <img
+                        src={entry.photo}
+                        alt=""
+                        className="entry-hero-photo"
+                        loading="lazy"
+                        decoding="async"
+                        onError={(e) => { e.currentTarget.style.display = 'none' }}
+                      />
+                    )}
                   </div>
                 </article>
                 )
