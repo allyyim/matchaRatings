@@ -5467,17 +5467,19 @@ function App() {
                       (friendModalUser || '?').charAt(0).toUpperCase()
                     )}
                   </div>
-                  <div style={{ minWidth: 0 }}>
-                    <h5 className="mb-1 text-success fw-bold text-truncate">{friendModalUser}</h5>
-                    <div className="small text-muted d-flex flex-wrap gap-2 align-items-center">
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <h5 className="mb-1 text-success fw-bold" style={{ wordBreak: 'break-word', lineHeight: 1.2 }}>{friendModalUser}</h5>
+                    <div className="small text-muted" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {isLoadingFriendModal ? (
                         <span className="fst-italic">Loading profile…</span>
                       ) : (
                         <>
                           {friendModalRank !== null && (
-                            <span>Rank <strong className="text-success">#{friendModalRank}</strong></span>
+                            <>
+                              <span>Rank <strong className="text-success">#{friendModalRank}</strong></span>
+                              <span aria-hidden="true"> • </span>
+                            </>
                           )}
-                          {friendModalRank !== null && <span aria-hidden="true">•</span>}
                           <span><strong className="text-success">{friendModalPlaceCount}</strong> places rated</span>
                         </>
                       )}
