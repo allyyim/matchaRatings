@@ -1099,7 +1099,7 @@ app.post('/api/ratings', requireSession, async (req, res) => {
   const thoughts = sanitizeText(req.body?.thoughts || '', 800)
   const flavorPreferences = typeof req.body?.flavorPreferences === 'object' ? req.body.flavorPreferences : {}
 
-  if (!userName || !photo || Number.isNaN(rating) || Number.isNaN(greenness)) {
+  if (!userName || Number.isNaN(rating) || Number.isNaN(greenness)) {
     return res.status(400).json({ error: 'Missing required rating fields' })
   }
 
