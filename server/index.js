@@ -364,6 +364,48 @@ app.get('/api/warm', async (_req, res) => {
   }
 })
 
+// In-process TTL cache for expensive read endpoints (similar-users,
+// similar-places). Recs don't need to be second-fresh — one 5-minute
+// aggregation is plenty for a hackathon-scale app, and it takes a scan of
+// ~5000 rating rows off the DB on every Explore mount. Safe to lose on
+// process restart; NOT shared across dynos (fine — Render free tier is 1).
+const RECS_CACHE_TTL_MS = 5 * 60 * 1000
+const recsCache = new Map()
+function recsCacheGet(key) {
+  const hit = recsCache.get(key)
+  if (!hit) return null
+  if (Date.now() - hit.at > RECS_CACHE_TTL_MS) {
+    recsCache.delete(key)
+    return null
+  }
+  return hit.value
+}
+function recsCacheSet(key, value) {
+  recsCache.set(key, { at: Date.now(), value })
+  // Cap the cache so a scripted attack can't grow it unbounded.
+  if (recsCache.size > 500) {
+    const oldest = recsCache.keys().next().value
+    if (oldest !== undefined) recsCache.delete(oldest)
+  }
+}
+// Wipe cache entries touching a specific userName whenever they change
+// prefs or add a rating, so recs still feel live.
+function recsCacheInvalidate(userName) {
+  if (!userName) return
+  const needle = String(userName).toLowerCase()
+  for (const key of recsCache.keys()) {
+    if (key.startsWith(`u:${needle}|`)) recsCache.delete(key)
+  }
+}
+
+// Periodic cleanup of expired magic-link tokens. Without this the
+// login_tokens table grows forever (every sign-in adds a row). Runs once
+// an hour and only touches rows whose expiry is already in the past.
+setInterval(() => {
+  pool.query(`DELETE FROM login_tokens WHERE expires_at < NOW() - INTERVAL '1 day'`)
+    .catch((err) => console.warn('login_tokens cleanup failed:', err.message))
+}, 60 * 60 * 1000).unref?.()
+
 const authRateLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 5,
@@ -1170,6 +1212,7 @@ app.post('/api/ratings', requireSession, async (req, res) => {
     [userName, photo, rating, greenness, location, thoughts, JSON.stringify(flavorPreferences)]
   )
 
+  recsCacheInvalidate(userName)
   return res.status(201).json({ rating: mapRatingRow(inserted.rows[0]) })
 })
 
@@ -1270,6 +1313,7 @@ app.put('/api/ratings/:id', requireSession, async (req, res) => {
     return res.status(404).json({ error: 'Rating not found for this user' })
   }
 
+  recsCacheInvalidate(userName)
   return res.json({ rating: mapRatingRow(updated.rows[0]) })
 })
 
@@ -1382,18 +1426,12 @@ app.get('/api/ratings', async (req, res) => {
 
 app.get('/api/friends/search', async (req, res) => {
   const q = sanitizeText(String(req.query.q || '').trim(), 40)
-  console.log('Raw query param:', req.query.q)
-  console.log('Sanitized query:', q)
 
   if (!q || q.length < 1) {
     return res.json({ friends: [] })
   }
 
   try {
-    // First check if accounts table has any data
-    const allAccounts = await pool.query('SELECT user_name FROM accounts LIMIT 5')
-    console.log('Sample accounts in DB:', allAccounts.rows.map(r => r.user_name))
-
     const result = await pool.query(
       `
         SELECT
@@ -1410,7 +1448,6 @@ app.get('/api/friends/search', async (req, res) => {
       [`%${q}%`]
     )
 
-    console.log('Search query:', q, 'Results found:', result.rows.length, 'Rows:', result.rows.map(r => r.user_name))
     return res.json({ friends: result.rows.map((r) => ({ userName: r.user_name, placeCount: Number(r.place_count) })) })
   } catch (error) {
     console.error('Search failed:', error)
@@ -1534,14 +1571,32 @@ app.get('/api/explore/places/:placeName/ratings', async (req, res) => {
     return res.json({ placeName: rawPlaceName, ratings: [] })
   }
 
-  const result = await pool.query(
-    `
-      SELECT *
-      FROM ratings
-      WHERE TRIM(location) <> ''
-        AND LOWER(user_name) <> 'demo'
-    `
-  )
+  // Pre-filter on the DB side using the longest distinctive token of the
+  // canonical key. This turns a full-table scan into an index probe against
+  // idx_ratings_lower_location. Fall back to a broad scan if the canonical
+  // key had no useful token (rare — mostly happens for single-char names).
+  const distinctiveToken = String(canonicalKey)
+    .split(/\s+/)
+    .filter((t) => t.length >= 3)
+    .sort((a, b) => b.length - a.length)[0] || ''
+
+  const result = distinctiveToken
+    ? await pool.query(
+        `SELECT id, user_name, photo, rating, greenness, location, thoughts, created_at, flavor_preferences
+           FROM ratings
+          WHERE TRIM(location) <> ''
+            AND LOWER(user_name) <> 'demo'
+            AND LOWER(location) LIKE '%' || $1 || '%'
+          LIMIT 3000`,
+        [distinctiveToken]
+      )
+    : await pool.query(
+        `SELECT id, user_name, photo, rating, greenness, location, thoughts, created_at, flavor_preferences
+           FROM ratings
+          WHERE TRIM(location) <> ''
+            AND LOWER(user_name) <> 'demo'
+          LIMIT 3000`
+      )
 
   const ratings = result.rows
     .map((row) => ({
@@ -1656,6 +1711,8 @@ app.post('/api/preferences', async (req, res) => {
   } catch (error) {
     console.error('Failed to save preferences:', error)
     return res.status(500).json({ error: 'Failed to save preferences' })
+  } finally {
+    recsCacheInvalidate(req.session.userName)
   }
 })
 
@@ -1957,6 +2014,10 @@ app.get('/api/similar-users', async (req, res) => {
     return res.status(400).json({ error: 'userName is required' })
   }
 
+  const cacheKey = `u:${userName.toLowerCase()}|similar-users`
+  const cached = recsCacheGet(cacheKey)
+  if (cached) return res.json(cached)
+
   try {
     // Canonical flavor allowlist - keep in sync with client + similar-places
     const KNOWN_FLAVORS = new Set([
@@ -2078,7 +2139,9 @@ app.get('/api/similar-users', async (req, res) => {
       .sort((a, b) => b.matchScore - a.matchScore)
 
     console.log(`[similar-users] ${userName} → evaluated ${result.rowCount} candidates, returning ${similarUsers.length}`)
-    return res.json({ similarUsers })
+    const payload = { similarUsers }
+    recsCacheSet(cacheKey, payload)
+    return res.json(payload)
   } catch (error) {
     console.error('Similar users lookup failed:', error)
     return res.status(500).json({ error: 'Failed to find similar users' })
@@ -2098,6 +2161,10 @@ app.get('/api/similar-places', async (req, res) => {
   if (!flavorsParam && !userBody) {
     return res.status(400).json({ error: 'flavors parameter is required' })
   }
+
+  const cacheKey = `u:${userName.toLowerCase()}|similar-places|f:${flavorsParam}|b:${userBody}|s:${userShade}`
+  const cached = recsCacheGet(cacheKey)
+  if (cached) return res.json(cached)
 
   try {
     const userFlavorsRaw = flavorsParam.split(',').map(f => f.trim()).filter(f => f)
@@ -2307,7 +2374,9 @@ app.get('/api/similar-places', async (req, res) => {
 
     similarPlaces.sort((a, b) => b.matchScore - a.matchScore || b.ratingCount - a.ratingCount)
 
-    return res.json({ similarPlaces: similarPlaces.slice(0, 20) })
+    const payload = { similarPlaces: similarPlaces.slice(0, 20) }
+    recsCacheSet(cacheKey, payload)
+    return res.json(payload)
   } catch (error) {
     console.error('Similar places lookup failed:', error)
     return res.status(500).json({ error: 'Failed to find similar places' })
