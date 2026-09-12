@@ -3111,6 +3111,25 @@ function App() {
     const overlayShownAt = Date.now()
     try {
       let photoUrl = editEntryPhoto
+      // If the recruiter/user swapped in a new photo, re-run the greenness
+      // analyzer against the fresh data URL before uploading. Without this,
+      // the server's COALESCE keeps the OLD greenness score even though the
+      // photo it's scoring has changed — which is why some edited logs were
+      // showing a stale/mismatched matcha greenness %.
+      let refreshedGreenness: number | null = null
+      const photoChanged = editEntryPhoto && editEntryPhoto !== originalEntryPhoto
+      if (photoChanged && editEntryPhoto.startsWith('data:image/')) {
+        try {
+          const { score } = await Promise.race([
+            analyzeGreennessFromDataUrl(editEntryPhoto),
+            new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Greenness analysis timed out.')), IMAGE_PROCESS_TIMEOUT_MS))
+          ])
+          refreshedGreenness = score
+        } catch (err) {
+          console.warn('Greenness re-analysis failed on edit; keeping prior score:', err)
+        }
+      }
+
       if (editEntryPhoto.startsWith('data:image/')) {
         try {
           const uploadRes = await apiFetch<{ url: string }>('/upload-image', {
@@ -3133,6 +3152,7 @@ function App() {
           location: editLocation.trim(),
           thoughts: editThoughts.trim(),
           photo: photoUrl,
+          greenness: refreshedGreenness,
           flavorPreferences: editFlavorPrefs
         })
       })
