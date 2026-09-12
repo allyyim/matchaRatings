@@ -348,6 +348,22 @@ app.get('/api/health', async (_req, res) => {
   res.json({ ok: true })
 })
 
+// Cheap warmup route. External cron pings this every ~10 minutes to keep both
+// the Render dyno awake AND the Supabase pooler connection primed, so the
+// first user request after opening the app doesn't have to eat a cold start.
+// It intentionally does one trivial query so a paused DB gets nudged too.
+app.get('/api/warm', async (_req, res) => {
+  try {
+    await pool.query('SELECT 1')
+    return res.json({ ok: true, warm: true })
+  } catch (err) {
+    // Even on DB error we return 200 so the cron doesn't page us; the point
+    // is just to keep the process running.
+    console.warn('warm probe: db not reachable yet:', err.message)
+    return res.json({ ok: true, warm: false })
+  }
+})
+
 const authRateLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 5,
@@ -1196,6 +1212,13 @@ app.put('/api/ratings/:id', requireSession, async (req, res) => {
 
   if (rating < 0 || rating > 5 || (greenness !== null && (greenness < 0 || greenness > 100))) {
     return res.status(400).json({ error: 'rating and greenness must be in valid ranges' })
+  }
+
+  // Same guard as POST /api/ratings: photos must be short URLs (Cloudinary),
+  // never base64 data-URLs. Historical rows may still have blobs, but no NEW
+  // write is allowed to reintroduce them — that's how storage stays flat.
+  if (photo !== null && typeof photo === 'string' && photo.length > 500) {
+    return res.status(413).json({ error: 'Photo URL is too long' })
   }
 
   const updated = await pool.query(

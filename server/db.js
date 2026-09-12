@@ -7,7 +7,20 @@ const { Pool } = pg
 
 export const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.PGSSLMODE === 'disable' ? false : process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: process.env.PGSSLMODE === 'disable' ? false : process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  // Sizing for Supabase pooler on a single Render web dyno:
+  //   - max 8 leaves headroom under the free-tier pooler's per-project cap so
+  //     other services (migrations, admin scripts) can still open a connection.
+  //   - Short connectionTimeout so a paused DB fails fast instead of leaving
+  //     the whole request queue wedged for 30s+ (the "have to kill and reopen
+  //     the app" symptom).
+  //   - statement_timeout guards against a single bad query holding a pool
+  //     slot forever and starving the feed / recs endpoints.
+  max: 8,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 8_000,
+  statement_timeout: 15_000,
+  query_timeout: 15_000
 })
 
 export async function initDb() {
@@ -233,5 +246,20 @@ export async function initDb() {
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_rating_likes_email
     ON rating_likes (email);
+  `)
+
+  // Extra indexes to speed the two hottest read paths:
+  //   - Feed + similar-places both ORDER BY / scan on created_at, so a
+  //     top-level DESC index lets Postgres skip a large sort.
+  //   - Explore + visited-set lookups filter by LOWER(TRIM(location)); a
+  //     functional index on LOWER(location) turns that scan into an index probe.
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_ratings_created_at_desc
+    ON ratings (created_at DESC);
+  `)
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_ratings_lower_location
+    ON ratings (LOWER(location));
   `)
 }
