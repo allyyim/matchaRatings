@@ -6836,12 +6836,12 @@ function App() {
                                         </div>
                                         <span className="badge" style={{
                                           fontSize: '0.75rem',
-                                          background: 'linear-gradient(90deg, #FF6B35 0%, #FFA500 25%, #FFD700 50%, #90EE90 75%, #20B2AA 100%)',
-                                          color: 'white',
+                                          background: 'linear-gradient(90deg, #E8A085 0%, #F0C389 25%, #E8D689 50%, #B8D9B3 75%, #7FD1C1 100%)',
+                                          color: '#4a5c5a',
                                           fontWeight: 'bold',
                                           padding: '0.35rem 0.65rem',
                                           borderRadius: '0.375rem',
-                                          boxShadow: '0 2px 8px rgba(255, 107, 53, 0.2)'
+                                          boxShadow: '0 2px 8px rgba(200, 150, 130, 0.15)'
                                         }}>
                                           {(place.matchScore * 100).toFixed(0)}% match
                                         </span>
