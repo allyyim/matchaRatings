@@ -1013,8 +1013,8 @@ async function seedDemoData(userName) {
   ]
   for (const s of seeds) {
     await pool.query(
-      `INSERT INTO ratings (user_name, photo, rating, greenness, location, thoughts, flavor_preferences)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      `INSERT INTO ratings (user_name, photo, rating, greenness, location, thoughts, flavor_preferences, is_seed)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)`,
       [userName, '', s.rating, s.greenness, s.location, s.thoughts, JSON.stringify(s.flavors)]
     )
   }
@@ -1077,6 +1077,36 @@ app.post('/api/auth/demo', authRateLimiter, async (req, res) => {
   } catch (err) {
     console.error('[demo login] failed:', err)
     return res.status(500).json({ error: 'Demo login failed' })
+  }
+})
+
+// Called from the client when a recruiter logs out of the demo account.
+// Drops every rating the demo user added during their session (is_seed = false)
+// so the pre-populated logs (is_seed = true) remain pristine for the next
+// visitor. Also clears any likes on those deleted ratings, and resets demo's
+// user_preferences to the curated defaults so shade / flavor picks don't leak
+// to the next demo session.
+// Deliberately does NOT require a session: recruiters may already have their
+// token cleared client-side before this fires. Instead we hard-scope to the
+// demo account server-side so the endpoint can't be abused against real users.
+app.post('/api/auth/demo/cleanup', async (_req, res) => {
+  try {
+    const del = await pool.query(
+      `DELETE FROM ratings
+         WHERE LOWER(user_name) = LOWER($1)
+           AND is_seed = FALSE`,
+      [DEMO_USER_NAME]
+    )
+    await pool.query(
+      `UPDATE user_preferences
+         SET flavors = $2::jsonb, updated_at = NOW()
+       WHERE email = $1`,
+      [`${DEMO_USER_NAME}@sipandscore.local`, JSON.stringify(['umami', 'vegetal', 'creamy', 'sweet', '__body:medium'])]
+    )
+    return res.json({ ok: true, deleted: del.rowCount })
+  } catch (err) {
+    console.error('[demo cleanup] failed:', err)
+    return res.status(500).json({ error: 'Demo cleanup failed' })
   }
 })
 

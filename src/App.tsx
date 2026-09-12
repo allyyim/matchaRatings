@@ -2011,6 +2011,14 @@ function App() {
   }, [browserId])
 
   function signOut() {
+    // For demo/recruiter sessions, wipe any ratings the visitor added so the
+    // next demo login sees the pristine seeded set of pre-populated logs.
+    // Fire-and-forget; the local session is cleared immediately either way.
+    if (isDemoAccount) {
+      apiFetch('/auth/demo/cleanup', { method: 'POST' }).catch((err) => {
+        console.warn('demo cleanup on signOut failed (non-fatal):', err)
+      })
+    }
     setSessionToken('')
     localStorage.removeItem('matchaUserName')
     setCurrentUserName('')
@@ -3801,7 +3809,8 @@ function App() {
                   <h2 className="onboarding-title">You&apos;re all set</h2>
                   <p className="onboarding-lead">Log your favorite spot first — the first sip unlocks a little celebration 🎊</p>
                   <ul className="onboarding-list">
-                    <li><span className="onboarding-bullet">👤</span> Profile icon (top-right) — preferences, FAQ, install</li>
+                    <li><span className="onboarding-bullet">👤</span> Profile icon (top-right) — flavors, ideal shade &amp; FAQ</li>
+                    <li><span className="onboarding-bullet">🎯</span> Pick a favorite matcha shade to sharpen your recs</li>
                     <li><span className="onboarding-bullet">📱</span> Add to home screen for the full app feel</li>
                   </ul>
                 </div>

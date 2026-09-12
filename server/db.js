@@ -85,6 +85,42 @@ export async function initDb() {
     ON ratings (user_name, created_at DESC);
   `)
 
+  // Tag rows so we can distinguish demo-account seed data (the curated
+  // pre-populated logs that ship with a fresh demo login) from ratings a
+  // recruiter added during their session. The logout cleanup route deletes
+  // the recruiter rows and leaves the seeds alone so the next demo login
+  // still sees the pristine sample data.
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'ratings'
+          AND column_name = 'is_seed'
+      ) THEN
+        ALTER TABLE ratings ADD COLUMN is_seed BOOLEAN NOT NULL DEFAULT false;
+      END IF;
+    END $$;
+  `)
+
+  // One-time backfill: any demo-account rows that already exist BEFORE this
+  // column shipped were presumed prepopulated (they were the only demo rows
+  // ever inserted by the old seed path). Mark them so the logout cleanup
+  // route treats them as seeds instead of erasing them on first run. The
+  // guard "no demo row has is_seed = TRUE yet" makes this idempotent across
+  // restarts and safe if a recruiter has since added rows.
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF EXISTS (SELECT 1 FROM ratings WHERE LOWER(user_name) = 'demo')
+         AND NOT EXISTS (SELECT 1 FROM ratings WHERE LOWER(user_name) = 'demo' AND is_seed = TRUE) THEN
+        UPDATE ratings SET is_seed = TRUE WHERE LOWER(user_name) = 'demo';
+      END IF;
+    END $$;
+  `)
+
   // Stable accounts identified by email, decoupled from any single browser/device.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS accounts (
