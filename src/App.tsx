@@ -6507,7 +6507,7 @@ function App() {
                       {Array.from(followingSet).map((friend, index) => (
                         <article
                           key={friend}
-                          className="explore-user-card"
+                          className="explore-user-card explore-user-card--ranked"
                           role="button"
                           tabIndex={0}
                           onClick={() => void openFriendModal(friend)}
