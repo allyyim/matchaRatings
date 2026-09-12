@@ -5681,22 +5681,21 @@ function App() {
         document.body
       )}
 
-      <nav className="navbar navbar-expand-lg navbar-light sticky-top soft-nav minimal-nav" aria-label="Main navigation" style={{ paddingLeft: 0, paddingRight: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#1f5f34' }}>SIP</span>
-            <span style={{ fontSize: '1rem', fontWeight: '700', color: '#6c757d' }}>&</span>
-            <span style={{ fontSize: '1.1rem', fontWeight: '700', color: '#20c997' }}>SCORE</span>
+      <nav className="sticky-top soft-nav minimal-nav app-header" aria-label="Main navigation">
+        <div className="app-header-inner">
+          <div className="app-header-brand">
+            <span className="app-header-brand-sip">SIP</span>
+            <span className="app-header-brand-amp">&amp;</span>
+            <span className="app-header-brand-score">SCORE</span>
           </div>
           <button
             type="button"
-            className="btn btn-link text-dark p-0 d-flex align-items-center gap-2"
+            className="app-header-profile"
             onClick={() => setIsProfileDrawerOpen(true)}
             title="My Profile"
-            style={{ textDecoration: 'none', padding: 0, margin: 0 }}
           >
-            <span style={{ fontSize: '0.875rem', color: '#495057' }}>{currentUserName}</span>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <span className="app-header-profile-name">{currentUserName}</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
               <circle cx="12" cy="7" r="4"></circle>
             </svg>

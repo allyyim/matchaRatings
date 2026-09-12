@@ -339,6 +339,73 @@ body {
   padding-top: calc(0.75rem + env(safe-area-inset-top)) !important;
 }
 
+.app-header {
+  padding: 0.75rem 0;
+  padding-top: calc(0.75rem + env(safe-area-inset-top));
+}
+
+.app-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  box-sizing: border-box;
+}
+
+.app-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.app-header-brand-sip {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1f5f34;
+}
+
+.app-header-brand-amp {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #6c757d;
+}
+
+.app-header-brand-score {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #20c997;
+}
+
+.app-header-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  color: #495057;
+  cursor: pointer;
+  text-decoration: none;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.app-header-profile:hover,
+.app-header-profile:focus-visible {
+  color: #1f5f34;
+  outline: none;
+}
+
+.app-header-profile-name {
+  font-size: 0.875rem;
+  color: inherit;
+}
+
 /* Navigation Styles */
 .navbar-brand {
   display: block;
