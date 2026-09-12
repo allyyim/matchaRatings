@@ -7040,7 +7040,7 @@ function App() {
                         return (
                           <article
                             key={`${user.userName}-${index}`}
-                            className="explore-user-card"
+                            className="explore-user-card explore-user-card--ranked"
                             role="button"
                             tabIndex={0}
                             onClick={() => void openFriendModal(user.userName)}
