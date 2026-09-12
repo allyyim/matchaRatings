@@ -2037,6 +2037,11 @@ app.get('/api/similar-places', async (req, res) => {
   const flavorsParam = String(req.query.flavors || '').trim()
   const userBody = String(req.query.body || '').trim()
   const userName = String(req.query.userName || '').trim()
+  const userShade = Number.parseInt(String(req.query.shade || '0'), 10) || 0
+  // Target greenness % per shade (1..9). Must stay in sync with SHADE_OPTIONS
+  // in the client (src/App.tsx).
+  const SHADE_TARGETS = [8, 20, 32, 44, 56, 68, 78, 88, 96]
+  const targetGreenness = userShade >= 1 && userShade <= 9 ? SHADE_TARGETS[userShade - 1] : null
   if (!flavorsParam && !userBody) {
     return res.status(400).json({ error: 'flavors parameter is required' })
   }
@@ -2074,7 +2079,7 @@ app.get('/api/similar-places', async (req, res) => {
     // trustworthy signature for each place.
     const result = await pool.query(
       `
-        SELECT r.location, r.flavor_preferences, r.rating
+        SELECT r.location, r.flavor_preferences, r.rating, r.greenness
         FROM ratings r
         WHERE r.location IS NOT NULL
           AND r.location != ''
@@ -2100,11 +2105,16 @@ app.get('/api/similar-places', async (req, res) => {
       const key = row.location
       let g = byLocation.get(key)
       if (!g) {
-        g = { flavorCounts: {}, bodyCounts: {}, total: 0, ratingSum: 0 }
+        g = { flavorCounts: {}, bodyCounts: {}, total: 0, ratingSum: 0, greennessSum: 0, greennessCount: 0 }
         byLocation.set(key, g)
       }
       g.total += 1
       g.ratingSum += Number(row.rating) || 0
+      const greenNum = Number(row.greenness)
+      if (Number.isFinite(greenNum)) {
+        g.greennessSum += greenNum
+        g.greennessCount += 1
+      }
       const prefs = row.flavor_preferences || {}
       for (const [k, v] of Object.entries(prefs)) {
         if (Number(v) < 75) continue
@@ -2206,6 +2216,16 @@ app.get('/api/similar-places', async (req, res) => {
         ? (flavorScore * 0.60) + (bodyMatch ? 0.28 : (bodyMismatch ? -0.05 : 0)) + (qualityFactor * 0.12)
         : (flavorScore * 0.80) + (qualityFactor * 0.20)
 
+      // Shade preference: if the user has picked an ideal cup color, blend in
+      // how close this place's average greenness is to their target. Places
+      // with no greenness data get a neutral 0 bonus (neither helped nor hurt).
+      const avgGreenness = g.greennessCount > 0 ? g.greennessSum / g.greennessCount : null
+      if (targetGreenness !== null && avgGreenness !== null) {
+        const shadeMatch = 1 - Math.min(1, Math.abs(avgGreenness - targetGreenness) / 60)
+        // Blend at 20% weight — dominant signal is still flavor+body.
+        matchScore = matchScore * 0.8 + shadeMatch * 0.2
+      }
+
       // Confidence: places with more ratings get up to a 30% boost, single
       // ratings get downweighted so one rater's opinion doesn't dominate.
       const confidence = Math.min(1.3, 0.7 + 0.15 * Math.sqrt(g.total))
@@ -2227,7 +2247,8 @@ app.get('/api/similar-places', async (req, res) => {
         flavors: canonicalFlavors.slice(0, 5),
         body: placeBody,
         matchScore: Math.max(0, Math.min(1, matchScore)),
-        ratingCount: g.total
+        ratingCount: g.total,
+        avgGreenness: avgGreenness !== null ? Math.round(avgGreenness * 10) / 10 : null
       })
     }
 

@@ -40,6 +40,33 @@ const BODY_PROFILE_OPTIONS: Array<{ value: 'full-bodied' | 'medium' | 'milky'; l
   { value: 'milky', label: 'Milky', desc: 'Lighter and creamier — milk or foam takes the lead over the matcha.' }
 ]
 
+// Preferred matcha shade (1..9). Each shade maps to a target greenness %,
+// which is what the greenness analyzer produces per-photo. The similar-places
+// algorithm blends shade proximity into its match score so users see places
+// whose average color matches their ideal cup.
+const SHADE_OPTIONS: Array<{ value: number; label: string; color: string; target: number }> = [
+  { value: 1, label: 'Ivory milk',       color: '#f5f0d8', target: 8  },
+  { value: 2, label: 'Soft pistachio',   color: '#d4e2a5', target: 20 },
+  { value: 3, label: 'Pale sage',        color: '#b8d693', target: 32 },
+  { value: 4, label: 'Bright chartreuse',color: '#a8ce6a', target: 44 },
+  { value: 5, label: 'Classic matcha',   color: '#8bbf4d', target: 56 },
+  { value: 6, label: 'Vivid emerald',    color: '#5fa832', target: 68 },
+  { value: 7, label: 'Deep koicha',      color: '#4a8f22', target: 78 },
+  { value: 8, label: 'Forest umami',     color: '#2d6e18', target: 88 },
+  { value: 9, label: 'Midnight matcha',  color: '#1a4a0e', target: 96 }
+]
+
+function shadeColorForGreenness(greenness: number): string {
+  if (typeof greenness !== 'number' || Number.isNaN(greenness)) return '#e9ecef'
+  let closest = SHADE_OPTIONS[0]
+  let bestDist = Infinity
+  for (const s of SHADE_OPTIONS) {
+    const d = Math.abs(s.target - greenness)
+    if (d < bestDist) { bestDist = d; closest = s }
+  }
+  return closest.color
+}
+
 // Ordering by color group so tags of the same palette sit next to each other.
 const FLAVOR_COLOR_ORDER: Record<string, number> = {
   chocolatey: 0, nutty: 1,
@@ -1313,7 +1340,7 @@ function App() {
   const [communityActiveTab, setCommunityActiveTab] = useState<'search' | 'following' | 'recommendations'>('recommendations')
   const [similarUsers, setSimilarUsers] = useState<Array<{ userName: string; flavors: string[]; body?: string; matchScore: number }>>([])
   const [isLoadingSimilarUsers, setIsLoadingSimilarUsers] = useState(false)
-  const [similarPlaces, setSimilarPlaces] = useState<Array<{ location: string; flavors: string[]; body?: string; matchScore: number }>>([])
+  const [similarPlaces, setSimilarPlaces] = useState<Array<{ location: string; flavors: string[]; body?: string; matchScore: number; avgGreenness?: number | null }>>([])
   const [isLoadingSimilarPlaces, setIsLoadingSimilarPlaces] = useState(false)
   const [recsRefreshKey, setRecsRefreshKey] = useState(0)
   const [similarUsersVisible, setSimilarUsersVisible] = useState(10)
@@ -1417,6 +1444,13 @@ function App() {
       if (v === 'full-bodied' || v === 'medium' || v === 'milky') return v
     } catch { /* ignore */ }
     return ''
+  })
+  const [userShade, setUserShade] = useState<number>(() => {
+    try {
+      const v = Number(localStorage.getItem('matchaShadePref'))
+      if (Number.isInteger(v) && v >= 1 && v <= 9) return v
+    } catch { /* ignore */ }
+    return 0
   })
   const [likedRatingsSet, setLikedRatingsSet] = useState<Set<number>>(new Set())
   const [followingSet, setFollowingSet] = useState<Set<string>>(new Set())
@@ -2358,7 +2392,7 @@ function App() {
 
       Promise.all([
         apiFetch<{ similarUsers: Array<{ userName: string; flavors: string[]; body?: string; matchScore: number }> }>(`/similar-users?userName=${encodeURIComponent(currentUserName)}&_r=${recsRefreshKey}`),
-        apiFetch<{ similarPlaces: Array<{ location: string; flavors: string[]; body?: string; matchScore: number }> }>(`/similar-places?userName=${encodeURIComponent(currentUserName)}&flavors=${encodeURIComponent(userFlavors.join(','))}&body=${encodeURIComponent(userBodyPref)}&_r=${recsRefreshKey}`)
+        apiFetch<{ similarPlaces: Array<{ location: string; flavors: string[]; body?: string; matchScore: number; avgGreenness?: number }> }>(`/similar-places?userName=${encodeURIComponent(currentUserName)}&flavors=${encodeURIComponent(userFlavors.join(','))}&body=${encodeURIComponent(userBodyPref)}&shade=${userShade}&_r=${recsRefreshKey}`)
       ])
         .then(([usersData, placesData]) => {
           if (cancelled) return
@@ -2465,11 +2499,16 @@ function App() {
         const data = await apiFetch<{ flavors?: string[] }>('/preferences')
         if (data?.flavors && Array.isArray(data.flavors)) {
           const bodyEntry = data.flavors.find((f) => typeof f === 'string' && f.startsWith('__body:'))
-          const cleanFlavors = data.flavors.filter((f) => typeof f === 'string' && !f.startsWith('__body:'))
+          const shadeEntry = data.flavors.find((f) => typeof f === 'string' && f.startsWith('__shade:'))
+          const cleanFlavors = data.flavors.filter((f) => typeof f === 'string' && !f.startsWith('__'))
           setUserFlavors(cleanFlavors)
           if (bodyEntry) {
             const b = bodyEntry.slice('__body:'.length)
             if (b === 'full-bodied' || b === 'medium' || b === 'milky') setUserBodyPref(b)
+          }
+          if (shadeEntry) {
+            const s = Number(shadeEntry.slice('__shade:'.length))
+            if (Number.isInteger(s) && s >= 1 && s <= 9) setUserShade(s)
           }
         }
       } catch (error) {
@@ -2496,7 +2535,8 @@ function App() {
         const data = await apiFetch<{ flavors?: string[] }>('/preferences')
         if (data?.flavors && Array.isArray(data.flavors)) {
           const bodyEntry = data.flavors.find((f) => typeof f === 'string' && f.startsWith('__body:'))
-          const cleanFlavors = data.flavors.filter((f) => typeof f === 'string' && !f.startsWith('__body:'))
+          const shadeEntry = data.flavors.find((f) => typeof f === 'string' && f.startsWith('__shade:'))
+          const cleanFlavors = data.flavors.filter((f) => typeof f === 'string' && !f.startsWith('__'))
           setUserFlavors(cleanFlavors)
           writeCache(currentUserName, 'flavors', cleanFlavors)
           if (bodyEntry) {
@@ -2504,6 +2544,13 @@ function App() {
             if (b === 'full-bodied' || b === 'medium' || b === 'milky') {
               setUserBodyPref(b)
               localStorage.setItem('matchaBodyPref', b)
+            }
+          }
+          if (shadeEntry) {
+            const s = Number(shadeEntry.slice('__shade:'.length))
+            if (Number.isInteger(s) && s >= 1 && s <= 9) {
+              setUserShade(s)
+              localStorage.setItem('matchaShadePref', String(s))
             }
           }
         }
@@ -4474,21 +4521,24 @@ function App() {
             style={{ zIndex: 1040 }}
           />
           <div
-            className="profile-drawer"
+            role="dialog"
+            aria-modal="true"
+            aria-label="My Matcha Preferences"
             style={{
               position: 'fixed',
-              right: 0,
-              top: 0,
-              height: '100dvh',
-              width: '280px',
-              paddingTop: 'env(safe-area-inset-top)',
-              paddingBottom: 'env(safe-area-inset-bottom)',
-              maxWidth: '100vw',
+              left: '50%',
+              top: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 'calc(100vw - 2rem)',
+              maxWidth: '440px',
+              maxHeight: 'calc(100dvh - 2rem)',
               backgroundColor: 'white',
-              boxShadow: '-2px 0 8px rgba(0,0,0,0.1)',
+              borderRadius: '16px',
+              boxShadow: '0 20px 48px rgba(15,23,42,0.18)',
               zIndex: 1050,
               display: 'flex',
-              flexDirection: 'column'
+              flexDirection: 'column',
+              overflow: 'hidden'
             }}
           >
             <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -4546,6 +4596,45 @@ function App() {
                 })}
               </div>
 
+              <div className="text-muted small mb-1 mt-3" style={{ fontSize: '0.75rem' }}>
+                Preferred shade of matcha
+              </div>
+              <div className="text-muted small mb-2" style={{ fontSize: '0.7rem', lineHeight: 1.35 }}>
+                Tap the shade closest to your ideal cup — we'll boost places whose average color matches.
+              </div>
+              <div className="shade-grid mb-2">
+                {SHADE_OPTIONS.map((opt) => {
+                  const active = userShade === opt.value
+                  const isDark = opt.value >= 6
+                  return (
+                    <button
+                      key={`pref-shade-${opt.value}`}
+                      type="button"
+                      title={opt.label}
+                      aria-label={opt.label}
+                      aria-pressed={active}
+                      className={`shade-swatch ${active ? 'is-active' : ''}`}
+                      onClick={() => setUserShade(active ? 0 : opt.value)}
+                      style={{ background: opt.color, color: isDark ? '#fff' : '#1f3b1f' }}
+                    >
+                      <span className="shade-swatch-label">{opt.label}</span>
+                      {active && <span className="shade-swatch-check" aria-hidden="true">✓</span>}
+                    </button>
+                  )
+                })}
+              </div>
+              <div className="mb-3">
+                <button
+                  type="button"
+                  className="btn btn-link btn-sm p-0 text-muted"
+                  style={{ fontSize: '0.75rem', textDecoration: 'none' }}
+                  onClick={() => setUserShade(0)}
+                  disabled={userShade === 0}
+                >
+                  {userShade === 0 ? 'No shade preference' : 'Clear shade preference'}
+                </button>
+              </div>
+
                 <button
                   type="button"
                   className="btn w-100"
@@ -4565,14 +4654,20 @@ function App() {
                         } else {
                           localStorage.removeItem('matchaBodyPref')
                         }
+                        if (userShade >= 1 && userShade <= 9) {
+                          localStorage.setItem('matchaShadePref', String(userShade))
+                        } else {
+                          localStorage.removeItem('matchaShadePref')
+                        }
                       } catch { /* ignore */ }
                       // Persist locally BEFORE the network call. If the API
                       // request fails on a bad connection, we still have the
                       // user's picks on-device and can re-sync on next launch.
                       writeCache(currentUserName, 'flavors', userFlavors)
-                      const flavorsToSave = userBodyPref
-                        ? [...userFlavors, `__body:${userBodyPref}`]
-                        : userFlavors
+                      const virtualTags: string[] = []
+                      if (userBodyPref) virtualTags.push(`__body:${userBodyPref}`)
+                      if (userShade >= 1 && userShade <= 9) virtualTags.push(`__shade:${userShade}`)
+                      const flavorsToSave = [...userFlavors, ...virtualTags]
                       const response = await apiFetch('/preferences', {
                         method: 'POST',
                         body: JSON.stringify({
@@ -6720,9 +6815,25 @@ function App() {
                                   >
                                     <div className="card-body">
                                       <div className="d-flex justify-content-between align-items-start mb-2">
-                                        <h6 className="card-title fw-semibold text-success mb-0">
-                                          {place.location}
-                                        </h6>
+                                        <div className="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
+                                          {typeof place.avgGreenness === 'number' && (
+                                            <span
+                                              aria-label={`Average greenness ${place.avgGreenness.toFixed(0)}%`}
+                                              title={`Avg. greenness ${place.avgGreenness.toFixed(0)}%`}
+                                              style={{
+                                                flexShrink: 0,
+                                                width: '14px',
+                                                height: '14px',
+                                                borderRadius: '999px',
+                                                background: shadeColorForGreenness(place.avgGreenness),
+                                                border: '1px solid rgba(0,0,0,0.12)'
+                                              }}
+                                            />
+                                          )}
+                                          <h6 className="card-title fw-semibold text-success mb-0 text-truncate">
+                                            {place.location}
+                                          </h6>
+                                        </div>
                                         <span className="badge" style={{
                                           fontSize: '0.75rem',
                                           background: 'linear-gradient(90deg, #FF6B35 0%, #FFA500 25%, #FFD700 50%, #90EE90 75%, #20B2AA 100%)',
