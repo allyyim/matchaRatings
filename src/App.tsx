@@ -6721,31 +6721,32 @@ function App() {
                                       }
                                     }}
                                   >
-                                    <div className="card-body">
-                                      <div className="d-flex justify-content-between align-items-start mb-2">
-                                        <h6 className="card-title fw-semibold text-success mb-0">
+                                    <div className="card-body" style={{ padding: '0.9rem' }}>
+                                      <div className="d-flex justify-content-between align-items-start mb-2 gap-2">
+                                        <h6 className="card-title fw-semibold text-success mb-0 text-truncate flex-grow-1" style={{ minWidth: 0 }}>
                                           {user.userName}
                                         </h6>
                                         <span className="badge" style={{
-                                          fontSize: '0.75rem',
+                                          flexShrink: 0,
+                                          fontSize: '0.72rem',
                                           background: 'linear-gradient(90deg, #E8A085 0%, #F0C389 25%, #E8D689 50%, #B8D9B3 75%, #7FD1C1 100%)',
                                           color: '#4a5c5a',
-                                          fontWeight: 'bold',
-                                          padding: '0.35rem 0.65rem',
-                                          borderRadius: '0.375rem',
-                                          boxShadow: '0 2px 8px rgba(200, 150, 130, 0.15)'
+                                          fontWeight: 700,
+                                          padding: '0.3rem 0.55rem',
+                                          borderRadius: '999px',
+                                          boxShadow: '0 1px 3px rgba(200, 150, 130, 0.18)'
                                         }}>
                                           {(user.matchScore * 100).toFixed(0)}% match
                                         </span>
                                       </div>
                                       {user.flavors.filter((f) => !f.startsWith('__') && isKnownFlavor(f)).length > 0 && (
                                         <div className="small mt-2">
-                                          <p className="text-muted mb-2">Shared flavors:</p>
+                                          <p className="text-muted mb-1" style={{ fontSize: '0.72rem' }}>Shared flavors</p>
                                           <div className="d-flex flex-wrap gap-1">
                                             {sortFlavorsByColor(user.flavors.filter((f) => !f.startsWith('__') && isKnownFlavor(f))).map((flavor) => {
                                               const _c = flavorColor(flavor)
                                               return (
-                                              <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.25rem 0.55rem' }}>
+                                              <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.28rem 0.6rem', borderRadius: '999px' }}>
                                                 {flavor}
                                               </span>
                                               )
@@ -6755,8 +6756,8 @@ function App() {
                                       )}
                                       {user.body && (
                                         <div className="small mt-2">
-                                          <p className="text-muted mb-2">Matcha body profile:</p>
-                                          <span className="badge" style={{ ...(function(){ const _c = bodyColor(user.body!); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>
+                                          <p className="text-muted mb-1" style={{ fontSize: '0.72rem' }}>Matcha body profile</p>
+                                          <span className="badge" style={{ ...(function(){ const _c = bodyColor(user.body!); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.28rem 0.6rem', borderRadius: '999px' }; })() }}>
                                             {bodyProfileLabel(user.body)}
                                           </span>
                                         </div>
@@ -6813,47 +6814,48 @@ function App() {
                                       }
                                     }}
                                   >
-                                    <div className="card-body">
-                                      <div className="d-flex justify-content-between align-items-start mb-2">
-                                        <div className="d-flex align-items-center gap-2 flex-grow-1 min-w-0">
+                                    <div className="card-body" style={{ padding: '0.9rem' }}>
+                                      <div className="d-flex justify-content-between align-items-start mb-2 gap-2">
+                                        <div className="d-flex align-items-center gap-2 flex-grow-1" style={{ minWidth: 0 }}>
                                           {typeof place.avgGreenness === 'number' && (
                                             <span
                                               aria-label={`Average greenness ${place.avgGreenness.toFixed(0)}%`}
                                               title={`Avg. greenness ${place.avgGreenness.toFixed(0)}%`}
                                               style={{
                                                 flexShrink: 0,
-                                                width: '14px',
-                                                height: '14px',
+                                                width: '12px',
+                                                height: '12px',
                                                 borderRadius: '999px',
                                                 background: shadeColorForGreenness(place.avgGreenness),
                                                 border: '1px solid rgba(0,0,0,0.12)'
                                               }}
                                             />
                                           )}
-                                          <h6 className="card-title fw-semibold text-success mb-0 text-truncate">
+                                          <h6 className="card-title fw-semibold text-success mb-0 text-truncate" style={{ minWidth: 0, textTransform: 'capitalize' }}>
                                             {place.location}
                                           </h6>
                                         </div>
                                         <span className="badge" style={{
-                                          fontSize: '0.75rem',
+                                          flexShrink: 0,
+                                          fontSize: '0.72rem',
                                           background: 'linear-gradient(90deg, #E8A085 0%, #F0C389 25%, #E8D689 50%, #B8D9B3 75%, #7FD1C1 100%)',
                                           color: '#4a5c5a',
-                                          fontWeight: 'bold',
-                                          padding: '0.35rem 0.65rem',
-                                          borderRadius: '0.375rem',
-                                          boxShadow: '0 2px 8px rgba(200, 150, 130, 0.15)'
+                                          fontWeight: 700,
+                                          padding: '0.3rem 0.55rem',
+                                          borderRadius: '999px',
+                                          boxShadow: '0 1px 3px rgba(200, 150, 130, 0.18)'
                                         }}>
                                           {(place.matchScore * 100).toFixed(0)}% match
                                         </span>
                                       </div>
                                       {cleanFlavors.length > 0 && (
                                         <div className="small mt-2">
-                                          <p className="text-muted mb-2">Featured flavors:</p>
+                                          <p className="text-muted mb-1" style={{ fontSize: '0.72rem' }}>Featured flavors</p>
                                           <div className="d-flex flex-wrap gap-1">
                                             {cleanFlavors.map((flavor) => {
                                               const _c = flavorColor(flavor)
                                               return (
-                                              <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 700, padding: '0.3rem 0.55rem' }}>
+                                              <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.28rem 0.6rem', borderRadius: '999px' }}>
                                                 {flavor}
                                               </span>
                                               )
@@ -6863,8 +6865,8 @@ function App() {
                                       )}
                                       {derivedBody && (
                                         <div className="small mt-2">
-                                          <p className="text-muted mb-2">Matcha body profile:</p>
-                                          <span className="badge" style={{ ...(function(){ const _c = bodyColor(derivedBody); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>
+                                          <p className="text-muted mb-1" style={{ fontSize: '0.72rem' }}>Matcha body profile</p>
+                                          <span className="badge" style={{ ...(function(){ const _c = bodyColor(derivedBody); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.28rem 0.6rem', borderRadius: '999px' }; })() }}>
                                             {bodyProfileLabel(derivedBody)}
                                           </span>
                                         </div>
