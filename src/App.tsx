@@ -1310,7 +1310,6 @@ function App() {
   const [explorePlaces, setExplorePlaces] = useState<ExplorePlace[]>([])
   const [exploreUsers, setExploreUsers] = useState<ExploreUser[]>([])
   const [exploreActiveTab, setExploreActiveTab] = useState<'places' | 'users'>('places')
-  const [similarActiveTab, setSimilarActiveTab] = useState<'users' | 'places'>('users')
   const [communityActiveTab, setCommunityActiveTab] = useState<'search' | 'following' | 'recommendations'>('recommendations')
   const [similarUsers, setSimilarUsers] = useState<Array<{ userName: string; flavors: string[]; body?: string; matchScore: number }>>([])
   const [isLoadingSimilarUsers, setIsLoadingSimilarUsers] = useState(false)
@@ -6348,7 +6347,7 @@ function App() {
                     setFriendQuery('')
                   }}
                 >
-                  Recs
+                  For You
                 </button>
                 <button
                   type="button"
@@ -6374,7 +6373,7 @@ function App() {
                     setSelectedFriend('')
                   }}
                 >
-                  Search Users
+                  Search
                 </button>
               </div>
 
@@ -6564,10 +6563,9 @@ function App() {
               {/* Recommendations Tab */}
               {communityActiveTab === 'recommendations' && (
                 <div>
-                  <p className="text-muted small mb-3">Find matcha places and users with similar flavor preferences</p>
                   {userFlavors.length === 0 ? (
                     <div className="alert alert-info border">
-                      <p className="mb-2">You haven't set your flavor preferences yet, so there's nothing to match on. Set them now and we'll surface users and places that share your taste.</p>
+                      <p className="mb-2">Set your matcha preferences and we'll surface people and places that match your palate.</p>
                       <button
                         type="button"
                         className="btn btn-success btn-sm"
@@ -6581,118 +6579,94 @@ function App() {
                     </div>
                   ) : (
                     <div>
-                      <div className="mb-4">
+                      <div className="d-flex align-items-center justify-content-between mb-3">
+                        <p className="text-muted small mb-0">Matched to your flavor profile</p>
                         <button
                           type="button"
-                          className="btn btn-outline-success btn-sm d-inline-flex align-items-center gap-2"
+                          className="btn btn-link btn-sm text-success p-0 text-decoration-none"
                           onClick={() => {
                             setIsProfileDrawerOpen(true)
                             setIsPreferencesModalOpen(true)
                           }}
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                            <path d="M12 20h9" />
-                            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
-                          </svg>
-                          Edit my matcha preferences
+                          Edit preferences
                         </button>
                       </div>
 
-                      <div className="mb-5">
-                        <div className="segmented-tabs segmented-tabs-full mb-4" role="tablist" aria-label="Similar recommendations">
-                          <button
-                            type="button"
-                            role="tab"
-                            aria-selected={similarActiveTab === 'users'}
-                            className={`segmented-tab ${similarActiveTab === 'users' ? 'is-active' : ''}`}
-                            onClick={() => setSimilarActiveTab('users')}
-                          >
-                            Similar Users
-                          </button>
-                          <button
-                            type="button"
-                            role="tab"
-                            aria-selected={similarActiveTab === 'places'}
-                            className={`segmented-tab ${similarActiveTab === 'places' ? 'is-active' : ''}`}
-                            onClick={() => setSimilarActiveTab('places')}
-                          >
-                            Similar Places
-                          </button>
-                        </div>
-
-                        {similarActiveTab === 'users' && (
+                      {/* People like you */}
+                      <div className="mb-4">
+                        <h6 className="fw-bold text-success mb-3">🍵 People like you</h6>
+                        {isLoadingSimilarUsers ? (
+                          <div className="alert alert-light border">
+                            <p className="mb-0 text-muted small">Finding sippers with your palate…</p>
+                          </div>
+                        ) : similarUsers.length === 0 ? (
+                          <div className="alert alert-light border">
+                            <p className="mb-0 text-muted small">No matches yet — rate more matcha to sharpen your profile.</p>
+                          </div>
+                        ) : (
                           <>
-                            {isLoadingSimilarUsers ? (
-                              <div className="alert alert-light border">
-                                <p className="mb-0 text-muted small">Loading similar users...</p>
-                              </div>
-                            ) : similarUsers.length === 0 ? (
-                              <div className="alert alert-light border">
-                                <p className="mb-0 text-muted small">No users found with similar preferences yet.</p>
-                              </div>
-                            ) : (
-                              <div className="row g-3">
-                                {similarUsers.slice(0, similarUsersVisible).map((user) => (
-                                  <div key={user.userName} className="col-12 col-sm-6 col-md-4">
-                                    <div
-                                      className="card border-0 shadow-sm h-100"
-                                      role="button"
-                                      tabIndex={0}
-                                      style={{ cursor: 'pointer' }}
-                                      onClick={() => void openFriendModal(user.userName)}
-                                      onKeyDown={(event) => {
-                                        if (event.key === 'Enter' || event.key === ' ') {
-                                          event.preventDefault()
-                                          void openFriendModal(user.userName)
-                                        }
-                                      }}
-                                    >
-                                      <div className="card-body">
-                                        <div className="d-flex justify-content-between align-items-start mb-2">
-                                          <h6 className="card-title fw-semibold text-success mb-0">
-                                            {user.userName}
-                                          </h6>
-                                          <span className="badge" style={{
-                                            fontSize: '0.75rem',
-                                            background: 'linear-gradient(90deg, #E8A085 0%, #F0C389 25%, #E8D689 50%, #B8D9B3 75%, #7FD1C1 100%)',
-                                            color: '#4a5c5a',
-                                            fontWeight: 'bold',
-                                            padding: '0.35rem 0.65rem',
-                                            borderRadius: '0.375rem',
-                                            boxShadow: '0 2px 8px rgba(200, 150, 130, 0.15)'
-                                          }}>
-                                            {(user.matchScore * 100).toFixed(0)}% match
+                            <div className="row g-3">
+                              {similarUsers.slice(0, similarUsersVisible).map((user) => (
+                                <div key={user.userName} className="col-12 col-sm-6 col-md-4">
+                                  <div
+                                    className="card border-0 shadow-sm h-100"
+                                    role="button"
+                                    tabIndex={0}
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => void openFriendModal(user.userName)}
+                                    onKeyDown={(event) => {
+                                      if (event.key === 'Enter' || event.key === ' ') {
+                                        event.preventDefault()
+                                        void openFriendModal(user.userName)
+                                      }
+                                    }}
+                                  >
+                                    <div className="card-body">
+                                      <div className="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 className="card-title fw-semibold text-success mb-0">
+                                          {user.userName}
+                                        </h6>
+                                        <span className="badge" style={{
+                                          fontSize: '0.75rem',
+                                          background: 'linear-gradient(90deg, #E8A085 0%, #F0C389 25%, #E8D689 50%, #B8D9B3 75%, #7FD1C1 100%)',
+                                          color: '#4a5c5a',
+                                          fontWeight: 'bold',
+                                          padding: '0.35rem 0.65rem',
+                                          borderRadius: '0.375rem',
+                                          boxShadow: '0 2px 8px rgba(200, 150, 130, 0.15)'
+                                        }}>
+                                          {(user.matchScore * 100).toFixed(0)}% match
+                                        </span>
+                                      </div>
+                                      {user.flavors.filter((f) => !f.startsWith('__') && isKnownFlavor(f)).length > 0 && (
+                                        <div className="small mt-2">
+                                          <p className="text-muted mb-2">Shared flavors:</p>
+                                          <div className="d-flex flex-wrap gap-1">
+                                            {sortFlavorsByColor(user.flavors.filter((f) => !f.startsWith('__') && isKnownFlavor(f))).map((flavor) => {
+                                              const _c = flavorColor(flavor)
+                                              return (
+                                              <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.25rem 0.55rem' }}>
+                                                {flavor}
+                                              </span>
+                                              )
+                                            })}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {user.body && (
+                                        <div className="small mt-2">
+                                          <p className="text-muted mb-2">Matcha body profile:</p>
+                                          <span className="badge" style={{ ...(function(){ const _c = bodyColor(user.body!); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>
+                                            {bodyProfileLabel(user.body)}
                                           </span>
                                         </div>
-                                        {user.flavors.filter((f) => !f.startsWith('__') && isKnownFlavor(f)).length > 0 && (
-                                          <div className="small mt-2">
-                                            <p className="text-muted mb-2">Shared flavors:</p>
-                                            <div className="d-flex flex-wrap gap-1">
-                                              {sortFlavorsByColor(user.flavors.filter((f) => !f.startsWith('__') && isKnownFlavor(f))).map((flavor) => {
-                                                const _c = flavorColor(flavor)
-                                                return (
-                                                <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.25rem 0.55rem' }}>
-                                                  {flavor}
-                                                </span>
-                                                )
-                                              })}
-                                            </div>
-                                          </div>
-                                        )}
-                                        {user.body && (
-                                          <div className="small mt-2">
-                                            <p className="text-muted mb-2">Matcha body profile:</p>
-                                            <span className="badge" style={{ ...(function(){ const _c = bodyColor(user.body!); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>
-                                              {bodyProfileLabel(user.body)}
-                                            </span>
-                                          </div>
-                                        )}
-                                      </div>
+                                      )}
                                     </div>
                                   </div>
-                                ))}
-                              </div>
-                            )}
+                                </div>
+                              ))}
+                            </div>
                             {similarUsers.length > similarUsersVisible && (
                               <div className="text-center mt-3">
                                 <button type="button" className="btn btn-outline-success btn-sm" onClick={() => setSimilarUsersVisible((n) => n + 10)}>
@@ -6702,88 +6676,90 @@ function App() {
                             )}
                           </>
                         )}
+                      </div>
 
-                        {similarActiveTab === 'places' && (
+                      {/* Places for you */}
+                      <div className="mb-3">
+                        <h6 className="fw-bold text-success mb-3">📍 Places for you</h6>
+                        {isLoadingSimilarPlaces ? (
+                          <div className="alert alert-light border">
+                            <p className="mb-0 text-muted small">Scoring places against your palate…</p>
+                          </div>
+                        ) : similarPlaces.length === 0 ? (
+                          <div className="alert alert-light border">
+                            <p className="mb-0 text-muted small">No place matches yet.</p>
+                          </div>
+                        ) : (
                           <>
-                            {isLoadingSimilarPlaces ? (
-                              <div className="alert alert-light border">
-                                <p className="mb-0 text-muted small">Loading similar places...</p>
-                              </div>
-                            ) : similarPlaces.length === 0 ? (
-                              <div className="alert alert-light border">
-                                <p className="mb-0 text-muted small">No places found with similar profiles yet.</p>
-                              </div>
-                            ) : (
-                              <div className="row g-3">
-                                {similarPlaces.slice(0, 10).map((place) => {
-                                  const cleanFlavors = sortFlavorsByColor(
-                                    (place.flavors || []).filter((f) => !f.startsWith('__') && isKnownFlavor(f))
-                                  )
-                                  const derivedBody = place.body || (
-                                    (place.flavors || []).find((f) => f.startsWith('__body:'))?.slice('__body:'.length) || ''
-                                  )
-                                  return (
-                                  <div key={place.location} className="col-12 col-sm-6 col-md-4">
-                                    <div
-                                      className="card border-0 shadow-sm h-100"
-                                      role="button"
-                                      tabIndex={0}
-                                      style={{ cursor: 'pointer' }}
-                                      onClick={() => void openExplorePlaceRatings(place.location)}
-                                      onKeyDown={(event) => {
-                                        if (event.key === 'Enter' || event.key === ' ') {
-                                          event.preventDefault()
-                                          void openExplorePlaceRatings(place.location)
-                                        }
-                                      }}
-                                    >
-                                      <div className="card-body">
-                                        <div className="d-flex justify-content-between align-items-start mb-2">
-                                          <h6 className="card-title fw-semibold text-success mb-0">
-                                            {place.location}
-                                          </h6>
-                                          <span className="badge" style={{
-                                            fontSize: '0.75rem',
-                                            background: 'linear-gradient(90deg, #FF6B35 0%, #FFA500 25%, #FFD700 50%, #90EE90 75%, #20B2AA 100%)',
-                                            color: 'white',
-                                            fontWeight: 'bold',
-                                            padding: '0.35rem 0.65rem',
-                                            borderRadius: '0.375rem',
-                                            boxShadow: '0 2px 8px rgba(255, 107, 53, 0.2)'
-                                          }}>
-                                            {(place.matchScore * 100).toFixed(0)}% match
+                            <div className="row g-3">
+                              {similarPlaces.slice(0, 10).map((place) => {
+                                const cleanFlavors = sortFlavorsByColor(
+                                  (place.flavors || []).filter((f) => !f.startsWith('__') && isKnownFlavor(f))
+                                )
+                                const derivedBody = place.body || (
+                                  (place.flavors || []).find((f) => f.startsWith('__body:'))?.slice('__body:'.length) || ''
+                                )
+                                return (
+                                <div key={place.location} className="col-12 col-sm-6 col-md-4">
+                                  <div
+                                    className="card border-0 shadow-sm h-100"
+                                    role="button"
+                                    tabIndex={0}
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => void openExplorePlaceRatings(place.location)}
+                                    onKeyDown={(event) => {
+                                      if (event.key === 'Enter' || event.key === ' ') {
+                                        event.preventDefault()
+                                        void openExplorePlaceRatings(place.location)
+                                      }
+                                    }}
+                                  >
+                                    <div className="card-body">
+                                      <div className="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 className="card-title fw-semibold text-success mb-0">
+                                          {place.location}
+                                        </h6>
+                                        <span className="badge" style={{
+                                          fontSize: '0.75rem',
+                                          background: 'linear-gradient(90deg, #FF6B35 0%, #FFA500 25%, #FFD700 50%, #90EE90 75%, #20B2AA 100%)',
+                                          color: 'white',
+                                          fontWeight: 'bold',
+                                          padding: '0.35rem 0.65rem',
+                                          borderRadius: '0.375rem',
+                                          boxShadow: '0 2px 8px rgba(255, 107, 53, 0.2)'
+                                        }}>
+                                          {(place.matchScore * 100).toFixed(0)}% match
+                                        </span>
+                                      </div>
+                                      {cleanFlavors.length > 0 && (
+                                        <div className="small mt-2">
+                                          <p className="text-muted mb-2">Featured flavors:</p>
+                                          <div className="d-flex flex-wrap gap-1">
+                                            {cleanFlavors.map((flavor) => {
+                                              const _c = flavorColor(flavor)
+                                              return (
+                                              <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 700, padding: '0.3rem 0.55rem' }}>
+                                                {flavor}
+                                              </span>
+                                              )
+                                            })}
+                                          </div>
+                                        </div>
+                                      )}
+                                      {derivedBody && (
+                                        <div className="small mt-2">
+                                          <p className="text-muted mb-2">Matcha body profile:</p>
+                                          <span className="badge" style={{ ...(function(){ const _c = bodyColor(derivedBody); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>
+                                            {bodyProfileLabel(derivedBody)}
                                           </span>
                                         </div>
-                                        {cleanFlavors.length > 0 && (
-                                          <div className="small mt-2">
-                                            <p className="text-muted mb-2">Featured flavors:</p>
-                                            <div className="d-flex flex-wrap gap-1">
-                                              {cleanFlavors.map((flavor) => {
-                                                const _c = flavorColor(flavor)
-                                                return (
-                                                <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 700, padding: '0.3rem 0.55rem' }}>
-                                                  {flavor}
-                                                </span>
-                                                )
-                                              })}
-                                            </div>
-                                          </div>
-                                        )}
-                                        {derivedBody && (
-                                          <div className="small mt-2">
-                                            <p className="text-muted mb-2">Matcha body profile:</p>
-                                            <span className="badge" style={{ ...(function(){ const _c = bodyColor(derivedBody); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>
-                                              {bodyProfileLabel(derivedBody)}
-                                            </span>
-                                          </div>
-                                        )}
-                                      </div>
+                                      )}
                                     </div>
                                   </div>
-                                  )
-                                })}
-                              </div>
-                            )}
+                                </div>
+                                )
+                              })}
+                            </div>
                             {similarPlaces.length > 10 && (
                               <div className="text-center mt-3">
                                 <p className="text-muted small mb-0">Showing top 10 matches</p>
