@@ -3949,7 +3949,7 @@ function App() {
                             <div className="mt-2"><span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
                           )}
                         </div>
-                        {entry.thoughts && <p className="mt-1 mb-0">{entry.thoughts}</p>}
+                        {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
                         {hasEntryPhoto(entry.photo) && (
                           <img src={entry.photo} alt="" className="entry-hero-photo" loading="lazy" decoding="async" onError={(e) => { e.currentTarget.style.display = 'none' }} />
                         )}
