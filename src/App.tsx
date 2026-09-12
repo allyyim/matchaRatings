@@ -2587,9 +2587,10 @@ function App() {
         downscaleDataUrlImage(dataUrl),
         new Promise<never>((_, reject) => window.setTimeout(() => reject(new Error('Image processing timed out.')), IMAGE_PROCESS_TIMEOUT_MS))
       ])
-      setPhotoDataUrl(optimizedDataUrl)
       if (isEditingEntry) {
         setEditEntryPhoto(optimizedDataUrl)
+      } else {
+        setPhotoDataUrl(optimizedDataUrl)
       }
 
       try {
@@ -2606,7 +2607,11 @@ function App() {
       }
     } catch {
       setMatchaGreenness(0)
-      setPhotoDataUrl('')
+      if (isEditingEntry) {
+        setEditEntryPhoto('')
+      } else {
+        setPhotoDataUrl('')
+      }
       setIsAnalyzingGreenness(false)
     }
   }
