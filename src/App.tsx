@@ -3677,22 +3677,33 @@ function App() {
               overflow: 'hidden'
             }}
           >
-            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <h6 className="fw-bold text-success mb-0">My Matcha Preferences</h6>
-              <button
-                type="button"
-                className="close-btn"
-                onClick={() => setIsPreferencesModalOpen(false)}
-                aria-label="Close preferences"
-              >
-                ✕
-              </button>
+            <div style={{ padding: '1rem 1.25rem 0.85rem', borderBottom: '1px solid #e9ecef' }}>
+              <div className="d-flex align-items-start justify-content-between gap-2">
+                <div style={{ minWidth: 0 }}>
+                  <h6 className="fw-bold text-success mb-1">🍵 My Matcha Preferences</h6>
+                  <p className="text-muted mb-0" style={{ fontSize: '0.75rem', lineHeight: 1.35 }}>
+                    Tell us how you like your matcha — we'll tune your recs to match.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="close-btn"
+                  onClick={() => setIsPreferencesModalOpen(false)}
+                  aria-label="Close preferences"
+                  style={{ flexShrink: 0 }}
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
-            <div style={{ padding: '1rem', overflowY: 'auto', flex: 1 }}>
-              <label className="form-label fw-semibold mb-2 text-success">Your Matcha preferences</label>
-              <div className="text-muted small mb-2" style={{ fontSize: '0.75rem' }}>Flavors</div>
-              <div className="pref-chip-grid pref-chip-grid-2 mb-3">
+            <div style={{ padding: '1rem 1.25rem 1.25rem', overflowY: 'auto', flex: 1 }}>
+              <section className="mb-3">
+                <div className="d-flex align-items-baseline justify-content-between mb-2">
+                  <label className="form-label fw-semibold text-success mb-0" style={{ fontSize: '0.85rem' }}>Flavors</label>
+                  <span className="text-muted" style={{ fontSize: '0.7rem' }}>Pick any that fit</span>
+                </div>
+                <div className="pref-chip-grid pref-chip-grid-2">
                 {['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'creamy', 'floral', 'earthy', 'chocolatey', 'mellow'].map((flavor) => {
                   const isSelected = userFlavors.map(f => f.toLowerCase()).includes(flavor.toLowerCase())
                   return (
@@ -3709,13 +3720,18 @@ function App() {
                     </button>
                   )
                 })}
-              </div>
+                </div>
+              </section>
 
-              <div className="text-muted small mb-2 d-inline-flex align-items-center gap-2" style={{ fontSize: '0.75rem' }}>
-                Body
-                <BodyInfoIcon />
-              </div>
-              <div className="pref-chip-grid pref-chip-grid-3 mb-2">
+              <section className="mb-3 pt-3" style={{ borderTop: '1px solid #f1f3f5' }}>
+                <div className="d-flex align-items-center justify-content-between mb-2">
+                  <label className="form-label fw-semibold text-success mb-0 d-inline-flex align-items-center gap-2" style={{ fontSize: '0.85rem' }}>
+                    Body
+                    <BodyInfoIcon />
+                  </label>
+                  <span className="text-muted" style={{ fontSize: '0.7rem' }}>Pick one</span>
+                </div>
+                <div className="pref-chip-grid pref-chip-grid-3">
                 {BODY_PROFILE_OPTIONS.map((opt) => {
                   const active = userBodyPref === opt.value
                   return (
@@ -3730,15 +3746,26 @@ function App() {
                     </button>
                   )
                 })}
-              </div>
+                </div>
+              </section>
 
-              <div className="text-muted small mb-1 mt-3" style={{ fontSize: '0.75rem' }}>
-                Preferred shade of matcha
-              </div>
-              <div className="text-muted small mb-2" style={{ fontSize: '0.7rem', lineHeight: 1.35 }}>
-                Tap the shade closest to your ideal cup — we'll boost places whose average color matches.
-              </div>
-              <div className="shade-grid mb-2">
+              <section className="pt-3" style={{ borderTop: '1px solid #f1f3f5' }}>
+                <div className="d-flex align-items-center justify-content-between mb-1">
+                  <label className="form-label fw-semibold text-success mb-0" style={{ fontSize: '0.85rem' }}>Preferred shade</label>
+                  <button
+                    type="button"
+                    className="btn btn-link btn-sm p-0 text-muted"
+                    style={{ fontSize: '0.7rem', textDecoration: 'none' }}
+                    onClick={() => setUserShade(0)}
+                    disabled={userShade === 0}
+                  >
+                    {userShade === 0 ? 'No preference' : 'Clear'}
+                  </button>
+                </div>
+                <p className="text-muted mb-2" style={{ fontSize: '0.7rem', lineHeight: 1.35 }}>
+                  Tap the shade closest to your ideal cup — we'll boost places whose average color matches.
+                </p>
+                <div className="shade-grid">
                 {SHADE_OPTIONS.map((opt) => {
                   const active = userShade === opt.value
                   const isDark = opt.value >= 6
@@ -3758,22 +3785,14 @@ function App() {
                     </button>
                   )
                 })}
-              </div>
-              <div className="mb-3">
-                <button
-                  type="button"
-                  className="btn btn-link btn-sm p-0 text-muted"
-                  style={{ fontSize: '0.75rem', textDecoration: 'none' }}
-                  onClick={() => setUserShade(0)}
-                  disabled={userShade === 0}
-                >
-                  {userShade === 0 ? 'No shade preference' : 'Clear shade preference'}
-                </button>
-              </div>
+                </div>
+              </section>
+            </div>
 
+            <div style={{ padding: '0.85rem 1.25rem', borderTop: '1px solid #e9ecef', background: '#fafbfc' }}>
                 <button
                   type="button"
-                  className="btn w-100"
+                  className="btn btn-success w-100 fw-semibold"
                   onClick={async () => {
                     if (isDemoAccount) {
                       setIsPreferencesModalOpen(false)
@@ -3818,14 +3837,8 @@ function App() {
                       alert(error instanceof Error ? error.message : 'Failed to save preferences')
                     }
                   }}
-                style={{
-                  background: '#0d4f4a',
-                  color: '#4dd0c1',
-                  border: '1px solid rgba(0, 150, 136, 0.5)',
-                  fontWeight: '600'
-                }}
               >
-                Save
+                Save preferences
               </button>
             </div>
           </div>
