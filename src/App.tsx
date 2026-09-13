@@ -570,7 +570,7 @@ function App() {
   const [similarPlaces, setSimilarPlaces] = useState<Array<{ location: string; flavors: string[]; body?: string; matchScore: number; avgGreenness?: number | null }>>([])
   const [isLoadingSimilarPlaces, setIsLoadingSimilarPlaces] = useState(false)
   const [recsRefreshKey, setRecsRefreshKey] = useState(0)
-  const [similarUsersVisible, setSimilarUsersVisible] = useState(10)
+  const [similarUsersVisible, setSimilarUsersVisible] = useState(6)
   const [friendModalUser, setFriendModalUser] = useState('')
   const [friendModalEntries, setFriendModalEntries] = useState<RatingEntry[]>([])
   const [isFriendModalOpen, setIsFriendModalOpen] = useState(false)
@@ -5869,7 +5869,7 @@ function App() {
                                       }
                                     }}
                                   >
-                                    <div className="card-body" style={{ padding: '0.9rem' }}>
+                                    <div className="card-body" style={{ padding: '0.75rem' }}>
                                       <div className="d-flex justify-content-between align-items-start mb-2 gap-2">
                                         <h6 className="card-title fw-semibold text-success mb-0 text-truncate flex-grow-1" style={{ minWidth: 0 }}>
                                           {user.userName}
@@ -5887,29 +5887,40 @@ function App() {
                                           {(user.matchScore * 100).toFixed(0)}% match
                                         </span>
                                       </div>
-                                      {user.flavors.filter((f) => !f.startsWith('__') && isKnownFlavor(f)).length > 0 && (
-                                        <div className="small mt-2">
-                                          <p className="text-muted mb-1" style={{ fontSize: '0.72rem' }}>Shared flavors</p>
-                                          <div className="d-flex flex-wrap gap-1">
-                                            {sortFlavorsByColor(user.flavors.filter((f) => !f.startsWith('__') && isKnownFlavor(f))).map((flavor) => {
-                                              const _c = flavorColor(flavor)
+                                      {(() => {
+                                        const cleanFlavors = sortFlavorsByColor(user.flavors.filter((f) => !f.startsWith('__') && isKnownFlavor(f)))
+                                        if (cleanFlavors.length === 0 && !user.body) return null
+                                        return (
+                                          <>
+                                            {user.body && (() => {
+                                              const _c = bodyColor(user.body!)
                                               return (
-                                              <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.28rem 0.6rem', borderRadius: '999px' }}>
-                                                {flavor}
-                                              </span>
+                                                <div className="mb-2">
+                                                  <div className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '0.2rem' }}>Matcha body profile</div>
+                                                  <span className="badge" style={{ background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.68rem', padding: '0.24rem 0.55rem', borderRadius: '999px' }}>
+                                                    {bodyProfileLabel(user.body!)}
+                                                  </span>
+                                                </div>
                                               )
-                                            })}
-                                          </div>
-                                        </div>
-                                      )}
-                                      {user.body && (
-                                        <div className="small mt-2">
-                                          <p className="text-muted mb-1" style={{ fontSize: '0.72rem' }}>Matcha body profile</p>
-                                          <span className="badge" style={{ ...(function(){ const _c = bodyColor(user.body!); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.28rem 0.6rem', borderRadius: '999px' }; })() }}>
-                                            {bodyProfileLabel(user.body)}
-                                          </span>
-                                        </div>
-                                      )}
+                                            })()}
+                                            {cleanFlavors.length > 0 && (
+                                              <div>
+                                                <div className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '0.2rem' }}>Shared flavors</div>
+                                                <div className="d-flex flex-wrap gap-1">
+                                                  {cleanFlavors.map((flavor) => {
+                                                    const _c = flavorColor(flavor)
+                                                    return (
+                                                      <span key={flavor} className="badge" style={{ fontSize: '0.68rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.24rem 0.55rem', borderRadius: '999px' }}>
+                                                        {flavor}
+                                                      </span>
+                                                    )
+                                                  })}
+                                                </div>
+                                              </div>
+                                            )}
+                                          </>
+                                        )
+                                      })()}
                                     </div>
                                   </div>
                                 </div>
@@ -5917,7 +5928,7 @@ function App() {
                             </div>
                             {similarUsers.length > similarUsersVisible && (
                               <div className="text-center mt-3">
-                                <button type="button" className="btn btn-outline-success btn-sm" onClick={() => setSimilarUsersVisible((n) => n + 10)}>
+                                <button type="button" className="btn btn-outline-success btn-sm" onClick={() => setSimilarUsersVisible((n) => n + 6)}>
                                   See more ({similarUsers.length - similarUsersVisible} more)
                                 </button>
                               </div>
@@ -5940,7 +5951,7 @@ function App() {
                         ) : (
                           <>
                             <div className="row g-3">
-                              {similarPlaces.slice(0, 10).map((place) => {
+                              {similarPlaces.slice(0, 6).map((place) => {
                                 const cleanFlavors = sortFlavorsByColor(
                                   (place.flavors || []).filter((f) => !f.startsWith('__') && isKnownFlavor(f))
                                 )
@@ -5962,7 +5973,7 @@ function App() {
                                       }
                                     }}
                                   >
-                                    <div className="card-body" style={{ padding: '0.9rem' }}>
+                                    <div className="card-body" style={{ padding: '0.75rem' }}>
                                       <div className="d-flex justify-content-between align-items-start mb-2 gap-2">
                                         <div className="d-flex align-items-center gap-2 flex-grow-1" style={{ minWidth: 0 }}>
                                           {typeof place.avgGreenness === 'number' && (
@@ -5996,27 +6007,30 @@ function App() {
                                           {(place.matchScore * 100).toFixed(0)}% match
                                         </span>
                                       </div>
+                                      {derivedBody && (() => {
+                                        const _c = bodyColor(derivedBody)
+                                        return (
+                                          <div className="mb-2">
+                                            <div className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '0.2rem' }}>Matcha body profile</div>
+                                            <span className="badge" style={{ background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.68rem', padding: '0.24rem 0.55rem', borderRadius: '999px' }}>
+                                              {bodyProfileLabel(derivedBody)}
+                                            </span>
+                                          </div>
+                                        )
+                                      })()}
                                       {cleanFlavors.length > 0 && (
-                                        <div className="small mt-2">
-                                          <p className="text-muted mb-1" style={{ fontSize: '0.72rem' }}>Featured flavors</p>
+                                        <div>
+                                          <div className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '0.2rem' }}>Featured flavors</div>
                                           <div className="d-flex flex-wrap gap-1">
                                             {cleanFlavors.map((flavor) => {
                                               const _c = flavorColor(flavor)
                                               return (
-                                              <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.28rem 0.6rem', borderRadius: '999px' }}>
-                                                {flavor}
-                                              </span>
+                                                <span key={flavor} className="badge" style={{ fontSize: '0.68rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.24rem 0.55rem', borderRadius: '999px' }}>
+                                                  {flavor}
+                                                </span>
                                               )
                                             })}
                                           </div>
-                                        </div>
-                                      )}
-                                      {derivedBody && (
-                                        <div className="small mt-2">
-                                          <p className="text-muted mb-1" style={{ fontSize: '0.72rem' }}>Matcha body profile</p>
-                                          <span className="badge" style={{ ...(function(){ const _c = bodyColor(derivedBody); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.28rem 0.6rem', borderRadius: '999px' }; })() }}>
-                                            {bodyProfileLabel(derivedBody)}
-                                          </span>
                                         </div>
                                       )}
                                     </div>
@@ -6025,9 +6039,9 @@ function App() {
                                 )
                               })}
                             </div>
-                            {similarPlaces.length > 10 && (
+                            {similarPlaces.length > 6 && (
                               <div className="text-center mt-3">
-                                <p className="text-muted small mb-0">Showing top 10 matches</p>
+                                <p className="text-muted small mb-0">Showing top 6 matches</p>
                               </div>
                             )}
                           </>
