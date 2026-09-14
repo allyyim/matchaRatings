@@ -3677,28 +3677,21 @@ function App() {
               overflow: 'hidden'
             }}
           >
-            <div style={{ padding: '1rem 1.25rem 0.85rem', borderBottom: '1px solid #e9ecef' }}>
-              <div className="d-flex align-items-start justify-content-between gap-2">
-                <div style={{ minWidth: 0 }}>
-                  <h6 className="fw-bold text-success mb-1">🍵 My Matcha Preferences</h6>
-                  <p className="text-muted mb-0" style={{ fontSize: '0.75rem', lineHeight: 1.35 }}>
-                    Tell us how you like your matcha — we'll tune your recs to match.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="close-btn"
-                  onClick={() => setIsPreferencesModalOpen(false)}
-                  aria-label="Close preferences"
-                  style={{ flexShrink: 0 }}
-                >
-                  ✕
-                </button>
-              </div>
+            <div style={{ padding: '0.75rem 1.25rem', borderBottom: '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+              <h6 className="fw-bold text-success mb-0">My Matcha Preferences</h6>
+              <button
+                type="button"
+                className="close-btn"
+                onClick={() => setIsPreferencesModalOpen(false)}
+                aria-label="Close preferences"
+                style={{ flexShrink: 0 }}
+              >
+                ✕
+              </button>
             </div>
 
-            <div style={{ padding: '1rem 1.25rem 1.25rem', overflowY: 'auto', flex: 1 }}>
-              <section className="mb-3">
+            <div style={{ padding: '0.85rem 1.25rem 1rem', overflowY: 'auto', flex: 1 }}>
+              <section className="mb-2">
                 <div className="d-flex align-items-baseline justify-content-between mb-2">
                   <label className="form-label fw-semibold text-success mb-0" style={{ fontSize: '0.85rem' }}>Flavors</label>
                   <span className="text-muted" style={{ fontSize: '0.7rem' }}>Pick any that fit</span>
@@ -3723,7 +3716,7 @@ function App() {
                 </div>
               </section>
 
-              <section className="mb-3 pt-3" style={{ borderTop: '1px solid #f1f3f5' }}>
+              <section className="mb-2 pt-2" style={{ borderTop: '1px solid #f1f3f5' }}>
                 <div className="d-flex align-items-center justify-content-between mb-2">
                   <label className="form-label fw-semibold text-success mb-0 d-inline-flex align-items-center gap-2" style={{ fontSize: '0.85rem' }}>
                     Body
@@ -3749,7 +3742,7 @@ function App() {
                 </div>
               </section>
 
-              <section className="pt-3" style={{ borderTop: '1px solid #f1f3f5' }}>
+              <section className="pt-2" style={{ borderTop: '1px solid #f1f3f5' }}>
                 <div className="d-flex align-items-center justify-content-between mb-1">
                   <label className="form-label fw-semibold text-success mb-0" style={{ fontSize: '0.85rem' }}>Preferred shade</label>
                   <button
@@ -3762,8 +3755,8 @@ function App() {
                     {userShade === 0 ? 'No preference' : 'Clear'}
                   </button>
                 </div>
-                <p className="text-muted mb-2" style={{ fontSize: '0.7rem', lineHeight: 1.35 }}>
-                  Tap the shade closest to your ideal cup — we'll boost places whose average color matches.
+                <p className="text-muted mb-2" style={{ fontSize: '0.7rem', lineHeight: 1.3 }}>
+                  Tap the shade closest to your ideal cup.
                 </p>
                 <div className="shade-grid">
                 {SHADE_OPTIONS.map((opt) => {
@@ -3789,7 +3782,7 @@ function App() {
               </section>
             </div>
 
-            <div style={{ padding: '0.85rem 1.25rem', borderTop: '1px solid #e9ecef', background: '#fafbfc' }}>
+            <div style={{ padding: '0.7rem 1.25rem', borderTop: '1px solid #e9ecef', background: '#fafbfc' }}>
                 <button
                   type="button"
                   className="btn btn-success w-100 fw-semibold"
