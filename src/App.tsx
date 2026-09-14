@@ -96,6 +96,31 @@ function bodyColor(body: string): { bg: string; fg: string; border: string } {
   return { bg: '#3AAFB9', fg: '#ffffff', border: '#26808a' }
 }
 
+function EntryThought({ text }: { text: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const CHAR_LIMIT = 140
+  const trimmed = text.trim()
+  if (trimmed.length <= CHAR_LIMIT) {
+    return <p className="entry-thoughts">{trimmed}</p>
+  }
+  const slice = trimmed.slice(0, CHAR_LIMIT)
+  const lastSpace = slice.lastIndexOf(' ')
+  const preview = (lastSpace > 60 ? slice.slice(0, lastSpace) : slice).replace(/[,\s]+$/, '')
+  return (
+    <p className="entry-thoughts">
+      {expanded ? trimmed : `${preview}…`}
+      {' '}
+      <button
+        type="button"
+        className="feed-see-more"
+        onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v) }}
+      >
+        {expanded ? 'See less' : 'See more'}
+      </button>
+    </p>
+  )
+}
+
 function BodyInfoIcon() {
   const [open, setOpen] = useState(false)
   useEffect(() => {
@@ -3088,7 +3113,7 @@ function App() {
                         {hasEntryPhoto(entry.photo) && (
                           <img src={entry.photo} alt="" className="entry-hero-photo" loading="lazy" decoding="async" onError={(e) => { e.currentTarget.style.display = 'none' }} />
                         )}
-                        {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
+                        {entry.thoughts && <EntryThought text={entry.thoughts} />}
                       </div>
                     </article>
                   ))}
@@ -4904,7 +4929,7 @@ function App() {
                             onError={(e) => { e.currentTarget.style.display = 'none' }}
                           />
                         )}
-                        {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
+                        {entry.thoughts && <EntryThought text={entry.thoughts} />}
                       </div>
                     </article>
                     )
@@ -6216,7 +6241,7 @@ function App() {
                         onError={(e) => { e.currentTarget.style.display = 'none' }}
                       />
                     )}
-                    {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
+                    {entry.thoughts && <EntryThought text={entry.thoughts} />}
                   </div>
                 </article>
                 )
