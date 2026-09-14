@@ -14,4 +14,6 @@ export type RatingEntry = {
   comboScore: number
   flavorPreferences?: Record<string, number>
   userAvatarUrl?: string | null
+  likeCount?: number
+  likedByMe?: boolean
 }

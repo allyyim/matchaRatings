@@ -1904,10 +1904,15 @@ app.get('/api/feed/following', async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT r.id, r.user_name, r.photo, r.rating, r.greenness, r.location, r.thoughts,
-              r.created_at, r.flavor_preferences, followed_acct.avatar_url
+              r.created_at, r.flavor_preferences, followed_acct.avatar_url,
+              COALESCE(lc.count, 0)::int AS like_count,
+              CASE WHEN mine.email IS NOT NULL THEN true ELSE false END AS liked_by_me
          FROM ratings r
          JOIN accounts followed_acct ON LOWER(followed_acct.user_name) = LOWER(r.user_name)
          JOIN follows f ON f.following_email = followed_acct.email
+         LEFT JOIN (SELECT rating_id, COUNT(*) AS count FROM rating_likes GROUP BY rating_id) lc
+                ON lc.rating_id = r.id
+         LEFT JOIN rating_likes mine ON mine.rating_id = r.id AND mine.email = $1
         WHERE f.follower_email = $1
           AND LOWER(followed_acct.user_name) <> $2
         ORDER BY r.created_at DESC
@@ -1930,7 +1935,9 @@ app.get('/api/feed/following', async (req, res) => {
           createdAt: r.created_at,
           comboScore: Number(getWeightedScore(rating, greenness).toFixed(2)),
           flavorPreferences: r.flavor_preferences || {},
-          userAvatarUrl: r.avatar_url || null
+          userAvatarUrl: r.avatar_url || null,
+          likeCount: Number(r.like_count) || 0,
+          likedByMe: !!r.liked_by_me
         }
       })
     })

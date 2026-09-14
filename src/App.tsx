@@ -3085,10 +3085,10 @@ function App() {
                             <div className="mt-2"><span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
                           )}
                         </div>
-                        {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
                         {hasEntryPhoto(entry.photo) && (
                           <img src={entry.photo} alt="" className="entry-hero-photo" loading="lazy" decoding="async" onError={(e) => { e.currentTarget.style.display = 'none' }} />
                         )}
+                        {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
                       </div>
                     </article>
                   ))}
@@ -4894,7 +4894,6 @@ function App() {
                             </div>
                           )}
                         </div>
-                        {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
                         {hasEntryPhoto(entry.photo) && (
                           <img
                             src={entry.photo}
@@ -4905,6 +4904,7 @@ function App() {
                             onError={(e) => { e.currentTarget.style.display = 'none' }}
                           />
                         )}
+                        {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
                       </div>
                     </article>
                     )
@@ -5476,7 +5476,6 @@ function App() {
                         </div>
                       )}
                     </div>
-                    {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
                     {hasEntryPhoto(entry.photo) && (
                       <img
                         src={entry.photo}
@@ -5487,6 +5486,7 @@ function App() {
                         onError={(e) => { e.currentTarget.style.display = 'none' }}
                       />
                     )}
+                    {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
                   </div>
 
                   {false && selectedEntryId === entry.id && !isEditingEntry && (
@@ -5575,6 +5575,14 @@ function App() {
               isDemoAccount={isDemoAccount}
               onOpenFriend={(name) => { void openFriendModal(name) }}
               onOpenPlace={(place) => { void openExplorePlaceRatings(place) }}
+              onToggleLike={async (ratingId, nextLiked) => {
+                if (isDemoAccount) {
+                  setMilestoneMessage('Sign up to like sips')
+                  setTimeout(() => setMilestoneMessage(''), 2500)
+                  throw new Error('demo')
+                }
+                await apiFetch(`/ratings/${ratingId}/like`, { method: nextLiked ? 'POST' : 'DELETE' })
+              }}
             />
           </main>
         </Suspense>
@@ -6198,7 +6206,6 @@ function App() {
                         </div>
                       )}
                     </div>
-                    {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
                     {hasEntryPhoto(entry.photo) && (
                       <img
                         src={entry.photo}
@@ -6209,6 +6216,7 @@ function App() {
                         onError={(e) => { e.currentTarget.style.display = 'none' }}
                       />
                     )}
+                    {entry.thoughts && <p className="entry-thoughts">{entry.thoughts}</p>}
                   </div>
                 </article>
                 )

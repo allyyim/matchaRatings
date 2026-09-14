@@ -79,8 +79,27 @@ export default function FeedPage(props: {
   isDemoAccount: boolean
   onOpenFriend: (userName: string) => void
   onOpenPlace: (placeName: string) => void
+  onToggleLike: (ratingId: number, nextLiked: boolean) => Promise<void>
 }) {
-  const { myEntries, friendRatings, recPlaces, isLoading, isDemoAccount, onOpenFriend, onOpenPlace } = props
+  const { myEntries, friendRatings, recPlaces, isLoading, isDemoAccount, onOpenFriend, onOpenPlace, onToggleLike } = props
+
+  // Optimistic like state keyed by rating id. Server-truth (likeCount /
+  // likedByMe) hydrates this whenever friendRatings changes, but user taps
+  // update the local map immediately for a snappy feel.
+  const [likeState, setLikeState] = useState<Record<number, { count: number; liked: boolean }>>({})
+  useEffect(() => {
+    setLikeState((prev) => {
+      const next: Record<number, { count: number; liked: boolean }> = {}
+      for (const r of friendRatings) {
+        const server = { count: r.likeCount ?? 0, liked: !!r.likedByMe }
+        const local = prev[r.id]
+        // Prefer server truth unless the user has an unresolved optimistic
+        // toggle since last poll (i.e., local liked differs from server).
+        next[r.id] = local && local.liked !== server.liked ? local : server
+      }
+      return next
+    })
+  }, [friendRatings])
 
   // Track which friend ratings are brand new relative to the previous poll so
   // we can flash a soft "just now" highlight when they arrive.
@@ -250,7 +269,38 @@ export default function FeedPage(props: {
                           <FeedThought text={entry.thoughts} />
                         </div>
                       ) : null}
-                      <div className="feed-item-meta">{feedRelativeTime(entry.createdAt)}</div>
+                      <div className="feed-item-meta feed-item-meta-row">
+                        <span>{feedRelativeTime(entry.createdAt)}</span>
+                        {(() => {
+                          const s = likeState[entry.id] || { count: entry.likeCount ?? 0, liked: !!entry.likedByMe }
+                          return (
+                            <button
+                              type="button"
+                              className={`feed-like-btn ${s.liked ? 'is-liked' : ''}`}
+                              aria-pressed={s.liked}
+                              aria-label={s.liked ? 'Unlike' : 'Like'}
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                const prev = s
+                                const nextLiked = !prev.liked
+                                setLikeState((cur) => ({
+                                  ...cur,
+                                  [entry.id]: {
+                                    liked: nextLiked,
+                                    count: Math.max(0, prev.count + (nextLiked ? 1 : -1))
+                                  }
+                                }))
+                                onToggleLike(entry.id, nextLiked).catch(() => {
+                                  setLikeState((cur) => ({ ...cur, [entry.id]: prev }))
+                                })
+                              }}
+                            >
+                              <span aria-hidden="true" className="feed-like-heart">{s.liked ? '❤️' : '🤍'}</span>
+                              {s.count > 0 && <span className="feed-like-count">{s.count} {s.count === 1 ? 'like' : 'likes'}</span>}
+                            </button>
+                          )
+                        })()}
+                      </div>
                     </div>
                   </li>
                 )
