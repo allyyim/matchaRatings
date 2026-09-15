@@ -25,7 +25,7 @@ Jump straight to the section you care about.
 | What the app does at a glance | [Overview](#-overview) |
 | Palate archetypes (the tea-themed personality quiz) | [Palate System](#-palate-system) |
 | Flavor vocabulary + descriptors | [Flavor Language](#-flavor-language) |
-| How the ML greenness score works | [ML — Drink-Area Segmentation](#-ml--drink-area-segmentation) |
+| How the ML greenness score works | [ML - Drink-Area Segmentation](#-ml--drink-area-segmentation) |
 | Sip Score formula | [Sip Score](#-sip-score) |
 | Frontend tech + file map | [Frontend](#-frontend) |
 | Backend architecture | [Backend](#-backend) |
@@ -49,7 +49,7 @@ about the cup.
 Matcha is a category that lives *inside* other categories on every
 existing app: it's a drink on a menu at a coffee shop on a review
 platform. That means the actual thing a matcha drinker cares about —
-the whisk, the shade, the umami, the mouthfeel — is invisible.
+the experience, the shade, the umami, the mouthfeel — is invisible.
 
 Sip & Score is the missing layer. Rate the sip, not the store. Track
 your palate over time. Find the people whose taste actually maps to
@@ -152,7 +152,7 @@ Full source: [`src/lib/flavors.ts`](./src/lib/flavors.ts).
 
 ---
 
-## 🤖 ML — Drink-Area Segmentation
+## 🤖 ML - Drink-Area Segmentation
 
 <details>
 <summary><strong>Custom TensorFlow.js model that masks the drink before scoring</strong></summary>
