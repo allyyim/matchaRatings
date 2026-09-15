@@ -22,9 +22,9 @@ type ClusterKey = 'dessert' | 'sweet' | 'earthy' | 'bracing' | 'silky'
 const CLUSTER_MAP: Record<string, ClusterKey> = {
   chocolatey: 'dessert', nutty: 'dessert', velvety: 'dessert', rich: 'dessert',
   sweet: 'sweet', sugary: 'sweet', creamy: 'sweet', floral: 'sweet',
-  earthy: 'earthy', vegetal: 'earthy', grassy: 'earthy',
+  earthy: 'earthy', vegetal: 'earthy', grassy: 'earthy', umami: 'earthy',
   astringent: 'bracing', bitter: 'bracing',
-  mellow: 'silky', smooth: 'silky', umami: 'silky',
+  mellow: 'silky', smooth: 'silky',
 }
 
 // Single-cluster archetypes. Fires when one cluster clearly dominates.

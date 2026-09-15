@@ -28,6 +28,7 @@ import {
   bodyProfileLabel,
   flavorColor,
   bodyColor,
+  flavorDescription,
 } from './lib/flavors'
 import { TruncatedThought } from './lib/TruncatedThought'
 import { summarizePalate } from './lib/palateSummary'
@@ -73,24 +74,28 @@ function EntryThought({ text }: { text: string }) {
   return <TruncatedThought text={text} as="p" className="entry-thoughts" stopPropagation />
 }
 
-function BodyInfoIcon() {
+// Small info dot next to a label. Tap toggles a black tooltip bubble beneath.
+// Reusable — the body-profile and flavor-profile labels in the new-rating
+// modal both use it — so accessibility, click-outside dismissal, and
+// styling stay consistent.
+function InfoIcon({ label, tip }: { label: string; tip: string }) {
   const [open, setOpen] = useState(false)
   useEffect(() => {
     if (!open) return
     const onDoc = (e: Event) => {
       const target = e.target as HTMLElement | null
-      if (target && target.closest('[data-body-info-root]')) return
+      if (target && target.closest('[data-info-icon-root]')) return
       setOpen(false)
     }
     document.addEventListener('click', onDoc)
     return () => document.removeEventListener('click', onDoc)
   }, [open])
   return (
-    <span data-body-info-root style={{ position: 'relative', display: 'inline-flex' }}>
+    <span data-info-icon-root style={{ position: 'relative', display: 'inline-flex' }}>
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen((v) => !v) }}
-        aria-label="What is matcha body?"
+        aria-label={label}
         aria-expanded={open}
         style={{
           display: 'inline-flex',
@@ -137,10 +142,20 @@ function BodyInfoIcon() {
             pointerEvents: 'none'
           }}
         >
-          The “body” of matcha refers to the perceived weight, fullness, and texture of the tea in your mouth.
+          {tip}
         </span>
       )}
     </span>
+  )
+}
+
+// Preserved for existing call sites — thin wrapper around InfoIcon.
+function BodyInfoIcon() {
+  return (
+    <InfoIcon
+      label="What is matcha body?"
+      tip="The “body” of matcha refers to the perceived weight, fullness, and texture of the tea in your mouth."
+    />
   )
 }
 
@@ -331,6 +346,9 @@ function App() {
 
   const [currentRating, setCurrentRating] = useState(0)
   const [ratingFlavorPrefs, setRatingFlavorPrefs] = useState<Record<string, number>>({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, velvety: 0, rich: 0, smooth: 0, mellow: 0, bitter: 0 })
+  // Which flavor bubble to describe in the helper line under the grid.
+  // Cleared when the user closes the modal or deselects the same bubble.
+  const [newLogFlavorFocus, setNewLogFlavorFocus] = useState<string>('')
   const [location, setLocation] = useState('')
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([])
   const [isLocationLookupPending, setIsLocationLookupPending] = useState(false)
@@ -781,6 +799,7 @@ function App() {
       setIsNewLogOpen(false)
       setCurrentRating(0)
       setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, velvety: 0, rich: 0, smooth: 0, mellow: 0, bitter: 0 })
+      setNewLogFlavorFocus('')
       setLocation('')
       setThoughts('')
       setPhotoDataUrl('')
@@ -1871,6 +1890,7 @@ function App() {
 
       setCurrentRating(0)
       setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, velvety: 0, rich: 0, smooth: 0, mellow: 0, bitter: 0 })
+      setNewLogFlavorFocus('')
       setLocation('')
       setThoughts('')
       setPhotoDataUrl('')
@@ -3467,7 +3487,7 @@ function App() {
                   about what you *seek out*, not descriptors that show up
                   in a rating.
                 */}
-                {['chocolatey', 'nutty', 'velvety', 'rich', 'sweet', 'sugary', 'creamy', 'floral', 'earthy', 'vegetal', 'grassy', 'mellow', 'smooth', 'umami'].map((flavor) => {
+                {['chocolatey', 'nutty', 'velvety', 'rich', 'sweet', 'sugary', 'creamy', 'floral', 'earthy', 'vegetal', 'grassy', 'umami', 'mellow', 'smooth'].map((flavor) => {
                   const isSelected = userFlavors.map(f => f.toLowerCase()).includes(flavor.toLowerCase())
                   return (
                     <button
@@ -4901,9 +4921,9 @@ function App() {
                 </div>
               </div>
 
-              <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
+              <hr className="my-2" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
 
-              <div className="mb-3">
+              <div className="mb-2">
                 <button
                   type="button"
                   className="btn btn-link text-start text-muted p-0 d-flex align-items-center gap-2"
@@ -4959,12 +4979,18 @@ function App() {
               )}
               </center>
 
-              <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
+              <hr className="my-2" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
 
-              <div className="mb-3">
-                <label className="form-label fw-semibold d-block">Flavor profile</label>
-                <div className="small text-muted mb-3">Click bubbles to toggle flavors</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.5rem', placeItems: 'center' }}>
+              <div className="mb-2">
+                <label className="form-label fw-semibold d-inline-flex align-items-center gap-2 mb-1">
+                  Flavor profile
+                  <InfoIcon
+                    label="What is a flavor profile?"
+                    tip="The taste notes you pick up in this matcha. Tap as many bubbles as you notice — earthy, creamy, umami, whatever hits."
+                  />
+                </label>
+                <div className="small text-muted mb-2">Tap bubbles to toggle flavors</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.4rem', placeItems: 'center' }}>
                   {FLAVOR_LIST.map((flavor) => {
                     const intensity = ratingFlavorPrefs[flavor]
                     const isActive = intensity > 0
@@ -4980,18 +5006,23 @@ function App() {
                           color: isActive ? c.fg : '#666',
                           border: isActive ? '1px solid ' + c.border : 'none',
                           borderRadius: '20px',
-                          padding: '0.3rem 0.7rem',
+                          padding: '0.25rem 0.65rem',
                           transition: 'all 0.2s ease',
                           textTransform: 'capitalize',
-                          fontSize: '0.75rem',
+                          fontSize: '0.72rem',
                           fontWeight: isActive ? 600 : 500,
                           cursor: 'pointer'
                         }}
                         onClick={() => {
+                          const nextActive = !isActive
                           setRatingFlavorPrefs({
                             ...ratingFlavorPrefs,
-                            [flavor]: isActive ? 0 : 75
+                            [flavor]: nextActive ? 75 : 0
                           })
+                          // Show the descriptor for the flavor the user just
+                          // interacted with; clear when they toggle it off so
+                          // the helper line only reflects an "active" choice.
+                          setNewLogFlavorFocus(nextActive ? String(flavor).toLowerCase() : '')
                         }}
                       >
                         {flavor}
@@ -4999,9 +5030,15 @@ function App() {
                     )
                   })}
                 </div>
+                {newLogFlavorFocus && flavorDescription(newLogFlavorFocus) && (
+                  <div className="small text-muted mt-2" style={{ textTransform: 'capitalize' }}>
+                    <span style={{ fontWeight: 600 }}>{newLogFlavorFocus}:</span>{' '}
+                    <span style={{ textTransform: 'none' }}>{flavorDescription(newLogFlavorFocus)}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="mb-3">
+              <div className="mb-2">
                 <label className="form-label fw-semibold d-inline-flex align-items-center gap-2">
                   Matcha body profile
                   <BodyInfoIcon />
@@ -5040,9 +5077,9 @@ function App() {
                 )}
               </div>
 
-              <div className="mb-3">
-                <label className="form-label fw-semibold d-block" id="star-rating-label">How do you rate this matcha?</label>
-                <div className="small text-muted mb-2 text-center">Half-star and 0-star ratings are allowed. Tap a star to set a value; use ← / → arrows to adjust by half a star.</div>
+              <div className="mb-2">
+                <label className="form-label fw-semibold d-block mb-1" id="star-rating-label">How do you rate this matcha?</label>
+                <div className="small text-muted mb-1 text-center">Half-star and 0-star ratings are allowed. Tap a star to set a value; use ← / → arrows to adjust by half a star.</div>
                 <div
                   id="star-rating"
                   className="d-flex gap-2 rating-star-row justify-content-center"
@@ -5102,9 +5139,9 @@ function App() {
                 </div>
               </div>
 
-              <hr className="my-3" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
+              <hr className="my-2" style={{ borderColor: '#e9ecef', opacity: 0.5 }} />
 
-              <div className="mb-3">
+              <div className="mb-2">
                 <button
                   type="button"
                   className="btn btn-link text-start text-muted p-0 d-flex align-items-start gap-2 w-100"
