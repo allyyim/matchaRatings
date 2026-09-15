@@ -21,6 +21,7 @@ Jump straight to the section you care about.
 
 | Topic | Section |
 | --- | --- |
+| Why this exists | [Problem & Opportunity](#-problem--opportunity) |
 | What the app does at a glance | [Overview](#-overview) |
 | Palate archetypes (the tea-themed personality quiz) | [Palate System](#-palate-system) |
 | Flavor vocabulary + descriptors | [Flavor Language](#-flavor-language) |
@@ -34,6 +35,28 @@ Jump straight to the section you care about.
 | Rate limits, sanitization, headers | [Security](#-security) |
 | Bundle splits, caching, motion tokens | [Performance](#-performance) |
 | File tree | [File Map](#-file-map) |
+
+---
+
+## 💡 Problem & Opportunity
+
+<details open>
+<summary><strong>Matcha drinkers have nowhere to rate the matcha itself</strong></summary>
+
+Yelp cares about the café. Beli cares about the meal. Neither cares
+about the cup.
+
+Matcha is a category that lives *inside* other categories on every
+existing app: it's a drink on a menu at a coffee shop on a review
+platform. That means the actual thing a matcha drinker cares about —
+the whisk, the shade, the umami, the mouthfeel — is invisible.
+
+Sip & Score is the missing layer. Rate the sip, not the store. Track
+your palate over time. Find the people whose taste actually maps to
+yours, and the places whose matcha (not their oat milk latte) is worth
+the trip.
+
+</details>
 
 ---
 
