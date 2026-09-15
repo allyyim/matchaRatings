@@ -1057,11 +1057,18 @@ async function seedDemoData(userName) {
     { location: 'Kettl Tea (Brooklyn)', photo: `${DEMO_PHOTO_BASE}/kettl.png`, rating: 4.5, greenness: 92, thoughts: 'Elegant, floral top-notes and lingering umami. Ceremonial grade layered over cold milk.', flavors: ['nutty', 'sweet', 'creamy', '__body:full-bodied'] },
     { location: 'Boba Guys (SF)', rating: 3, greenness: 60, thoughts: 'Solid latte base, but leans sugary. Would order iced.', flavors: ['earthy', 'rich'] }
   ]
+  // Convert a ['nutty', 'sweet', '__body:medium'] array into the
+  // { nutty: 100, sweet: 100, '__body:medium': 100 } shape the UI reads.
+  const flavorsToPrefs = (arr) => {
+    const out = {}
+    for (const key of arr || []) out[String(key)] = 100
+    return out
+  }
   for (const s of seeds) {
     await pool.query(
       `INSERT INTO ratings (user_name, photo, rating, greenness, location, thoughts, flavor_preferences, is_seed)
        VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)`,
-      [userName, s.photo || '', s.rating, s.greenness, s.location, s.thoughts, JSON.stringify(s.flavors)]
+      [userName, s.photo || '', s.rating, s.greenness, s.location, s.thoughts, JSON.stringify(flavorsToPrefs(s.flavors))]
     )
   }
   await pool.query(
@@ -2544,7 +2551,9 @@ async function initBackground() {
       { location: 'Boba Guys (SF)', photo: '', greenness: 60, flavors: ['earthy', 'rich'] }
     ]
     for (const p of demoSeedUpdates) {
-      const flavorsJson = JSON.stringify(p.flavors)
+      const prefs = {}
+      for (const key of p.flavors || []) prefs[String(key)] = 100
+      const flavorsJson = JSON.stringify(prefs)
       const r = await pool.query(
         `UPDATE ratings SET photo = $1, greenness = $2, flavor_preferences = $3
            WHERE LOWER(user_name) = LOWER($4) AND is_seed = TRUE
