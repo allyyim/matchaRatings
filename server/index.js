@@ -2019,7 +2019,8 @@ app.get('/api/users/:userName/preferences', async (req, res) => {
   try {
     const KNOWN_FLAVORS = new Set([
       'sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent',
-      'creamy', 'floral', 'earthy', 'chocolatey', 'mellow', 'bitter'
+      'creamy', 'floral', 'earthy', 'chocolatey', 'mellow', 'bitter',
+      'rich', 'velvety', 'grassy', 'smooth'
     ])
 
     // Fetch the account's avatar_url alongside preferences so the friend
@@ -2083,7 +2084,8 @@ app.get('/api/similar-users', async (req, res) => {
     // Canonical flavor allowlist - keep in sync with client + similar-places
     const KNOWN_FLAVORS = new Set([
       'sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent',
-      'creamy', 'floral', 'earthy', 'chocolatey', 'mellow', 'bitter'
+      'creamy', 'floral', 'earthy', 'chocolatey', 'mellow', 'bitter',
+      'rich', 'velvety', 'grassy', 'smooth'
     ])
 
     // Parse a stored flavor prefs blob (array or object) into
@@ -2276,7 +2278,8 @@ app.get('/api/similar-places', async (req, res) => {
     // to the __body:* namespace) and is ignored for aggregation + display.
     const KNOWN_FLAVORS = new Set([
       'sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent',
-      'creamy', 'floral', 'earthy', 'chocolatey', 'mellow', 'bitter'
+      'creamy', 'floral', 'earthy', 'chocolatey', 'mellow', 'bitter',
+      'rich', 'velvety', 'grassy', 'smooth'
     ])
 
     // Aggregate per-location: track how often each flavor is chosen (>=75)

@@ -7,7 +7,7 @@
 // with the chip grid the user already recognizes from their own profile.
 
 import type { CSSProperties } from 'react'
-import { palateArchetype, palateArchetypeCluster, palateArchetypePalette } from './palateSummary'
+import { palateArchetype, palateArchetypeCluster, palateArchetypePaletteFor } from './palateSummary'
 
 type PalateChipProps = {
   flavors: string[]
@@ -22,7 +22,7 @@ export function PalateChip({ flavors, size = 'sm', onClick, active = false, titl
   if (!label) return null
   const cluster = palateArchetypeCluster(flavors)
   if (!cluster) return null
-  const palette = palateArchetypePalette(cluster)
+  const palette = palateArchetypePaletteFor(label, cluster)
 
   const fontSize = size === 'xs' ? '0.62rem' : '0.68rem'
   const padding = size === 'xs' ? '0.15rem 0.5rem' : '0.22rem 0.6rem'

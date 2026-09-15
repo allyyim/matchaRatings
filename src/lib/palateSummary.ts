@@ -41,23 +41,26 @@ const PRIMARY_ARCHETYPE: Record<ClusterKey, string> = {
 // the key is a sorted "a+b" so we look up (dessert, sweet) and (sweet,
 // dessert) as the same combo. Each name is meant to feel like a
 // personality quiz result, not a category label.
+// All combo names lean into tea/matcha vocabulary — traditional pairings,
+// tea varietals, and prep rituals — to match the solo archetype voice
+// (Dessert Sipper, Creamy Dreamer, Purist, etc).
 const COMBO_ARCHETYPE: Record<string, string> = {
-  'dessert+sweet':   'The Confectioner',
-  'dessert+earthy':  'The Nostalgic',
-  'bracing+dessert': 'The Bittersweet',
-  'dessert+silky':   'The Nightcap',
-  'earthy+sweet':    'The Garden Party',
-  'bracing+sweet':   'The Contrarian',
-  'silky+sweet':     'The Cloud Sipper',
-  'bracing+earthy':  'The Traditionalist',
-  'earthy+silky':    'The Zen Master',
-  'bracing+silky':   'The Even Keel',
+  'dessert+sweet':   'The Wagashi Pair',   // matcha's classic sweet companion
+  'dessert+earthy':  'The Hojicha Head',   // roasted green — sweet + earthy
+  'bracing+dessert': 'The Koicha Kid',     // thick ceremonial matcha — rich + bracing
+  'dessert+silky':   'The Latte Artist',   // sweet + silky = latte territory
+  'earthy+sweet':    'The Genmaicha',      // roasted rice + green tea blend
+  'bracing+sweet':   'The Yuzu Sipper',    // bright citrus + green sharpness
+  'silky+sweet':     'The Cloud Whisker',  // frothy sweet foam
+  'bracing+earthy':  'The Stone Milled',   // traditional ishiusu-ground matcha
+  'earthy+silky':    'The Zen Master',     // classic matcha meditation vibe
+  'bracing+silky':   'The Gyokuro',        // shade-grown umami + bright edge
 }
 
 // Three-plus-cluster balanced palates get their own label so we don't
 // force a false "top" cluster. Fires when 3+ clusters all sit within
-// ~66% of the leader.
-const BALANCED_ARCHETYPE = 'The Wildcard'
+// ~66% of the leader. Named after the bamboo whisk that blends everything.
+const BALANCED_ARCHETYPE = 'The Chasen'
 
 // Punchy sub-tagline for when there's a *modest* secondary cluster
 // (not competitive enough for a combo, but present). Reads "Primary
@@ -137,10 +140,9 @@ export function palateArchetypeCluster(flavors: string[]): ClusterKey | null {
   return ranked[0]?.[0] ?? null
 }
 
-// Chip palette per cluster — matches the flavor-color families in flavors.ts
+// Cluster fallback palette — matches flavor-color families in flavors.ts
 // (dessert = brown, sweet = pink, earthy = green, bracing = yellow-olive,
-// silky = blue) so the archetype visually maps to the same taste family
-// the user sees in their flavor grid.
+// silky = blue). Used when we don't have a per-archetype override.
 export function palateArchetypePalette(cluster: ClusterKey): { bg: string; fg: string; border: string } {
   switch (cluster) {
     case 'dessert': return { bg: '#f2e3e0', fg: '#5c3839', border: '#d6bab7' }
@@ -149,6 +151,43 @@ export function palateArchetypePalette(cluster: ClusterKey): { bg: string; fg: s
     case 'bracing': return { bg: '#f8fadc', fg: '#5c5d1c', border: '#dcdd94' }
     case 'silky':   return { bg: '#e0f0fa', fg: '#1e4a5f', border: '#a9def9' }
   }
+}
+
+// Per-archetype pastel palettes. Each archetype gets its own hue so combo
+// archetypes visually differ from their solo cousins (e.g. The Wagashi Pair
+// reads as peach, not the plain pink of Creamy Dreamer). Combo hues are
+// chosen as visual blends of their two clusters — brown+pink → peach,
+// green+blue → teal, pink+blue → lavender — so the chip color still hints
+// at the underlying flavor mix.
+const ARCHETYPE_PALETTE: Record<string, { bg: string; fg: string; border: string }> = {
+  // Solo — reuse the cluster palettes.
+  'The Dessert Sipper':  { bg: '#f2e3e0', fg: '#5c3839', border: '#d6bab7' },
+  'The Creamy Dreamer':  { bg: '#f8e3f0', fg: '#5a2a4b', border: '#e0bad7' },
+  'The Purist':          { bg: '#e2eedb', fg: '#2f5b3a', border: '#b7d6a8' },
+  'The Grown-Up':        { bg: '#f8fadc', fg: '#5c5d1c', border: '#dcdd94' },
+  'The Smooth Operator': { bg: '#e0f0fa', fg: '#1e4a5f', border: '#a9def9' },
+  // Combos — each one a distinct pastel blend.
+  'The Wagashi Pair':    { bg: '#fbe4dc', fg: '#6b3838', border: '#eac1b5' }, // brown+pink → peach
+  'The Hojicha Head':    { bg: '#eee4cf', fg: '#4d3b1f', border: '#d1be91' }, // brown+green → warm taupe
+  'The Koicha Kid':      { bg: '#f0e0c2', fg: '#5b3d15', border: '#d6b880' }, // brown+bracing → mustard-brown
+  'The Latte Artist':    { bg: '#ece0d8', fg: '#4a3634', border: '#cfb8ae' }, // brown+silky → milky mauve
+  'The Genmaicha':       { bg: '#ede6cf', fg: '#4a4423', border: '#cec48c' }, // sweet+earthy → toasted sage
+  'The Yuzu Sipper':     { bg: '#faeecd', fg: '#6a481c', border: '#e8ce85' }, // sweet+bracing → apricot
+  'The Cloud Whisker':   { bg: '#eae0ee', fg: '#3f3160', border: '#c9b8dc' }, // sweet+silky → lavender
+  'The Stone Milled':    { bg: '#e6ecc4', fg: '#454e1c', border: '#c0cb82' }, // earthy+bracing → olive-sage
+  'The Zen Master':      { bg: '#d8ebe6', fg: '#1e4a4e', border: '#a6d1cc' }, // earthy+silky → teal
+  'The Gyokuro':         { bg: '#dcecd6', fg: '#2f523a', border: '#a8ceac' }, // bracing+silky → seafoam
+  // Balanced 3+ — bright neutral so it feels distinct from everyone else.
+  'The Chasen':          { bg: '#efe4f2', fg: '#402f4d', border: '#cdb8d5' },
+}
+
+// Palette for a specific archetype label, falling back to the primary
+// cluster palette if we don't have a hand-picked override.
+export function palateArchetypePaletteFor(
+  label: string,
+  fallbackCluster: ClusterKey,
+): { bg: string; fg: string; border: string } {
+  return ARCHETYPE_PALETTE[label] || palateArchetypePalette(fallbackCluster)
 }
 
 export function summarizePalate({ flavors, body, shade }: PalateInput): string {
