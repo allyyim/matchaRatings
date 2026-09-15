@@ -152,17 +152,25 @@ app.get('/api/warm', async (_req, res) => {
 //   5. business + accountRouter — session-protected
 // ---------------------------------------------------------------------------
 
-app.use('/api', adminRouter)
-app.use('/api', authRouter)
-app.use('/api', exploreRouter)
+// ---------------------------------------------------------------------------
+// Note: each router file already prefixes its routes with '/api/...' — so
+// we mount them at root, not at '/api'. Mounting at '/api' would produce a
+// double prefix ('/api/api/...') and every route would 404 through to
+// requireSession, surfacing as a bogus 'Authentication required' error on
+// what should be public endpoints (e.g. /api/auth/google/verify).
+// ---------------------------------------------------------------------------
+
+app.use(adminRouter)
+app.use(authRouter)
+app.use(exploreRouter)
 
 // Auth gate. Any /api request that reaches this middleware is a
 // session-protected route; pre-gate routers already handled the public ones.
 app.use('/api', requireSession)
 
-app.use('/api', ratingsRouter)
-app.use('/api', socialRouter)
-app.use('/api', accountRouter)
+app.use(ratingsRouter)
+app.use(socialRouter)
+app.use(accountRouter)
 
 app.use((err, _req, res, _next) => {
   console.error(err)
