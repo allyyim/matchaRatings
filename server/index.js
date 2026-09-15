@@ -1170,40 +1170,44 @@ app.get('/api/explore/users', recsRateLimiter, async (req, res) => {
   const limit = Math.max(1, Math.min(200, Number(req.query.limit) || 50))
 
   try {
+    // Aggregate ratings per user first in a CTE, THEN join preferences once
+    // per user. Previous version did MAX(p.flavors::text) so the JSONB column
+    // could survive a GROUP BY — that cast round-trip was both fragile
+    // (breaks on any non-array JSON) and slow. This shape lets Postgres
+    // return native JSONB, which node-pg auto-parses.
     const result = await pool.query(
       `
-        SELECT
-          MIN(r.user_name) AS user_name,
-          COUNT(*) AS place_count,
-          MAX(a.avatar_url) AS avatar_url,
-          MAX(p.flavors::text) AS flavors_json
-        FROM ratings r
-        LEFT JOIN accounts a ON LOWER(a.user_name) = LOWER(r.user_name)
+        WITH rating_stats AS (
+          SELECT
+            MIN(r.user_name) AS user_name,
+            LOWER(r.user_name) AS user_key,
+            COUNT(*)::int AS place_count
+          FROM ratings r
+          WHERE TRIM(r.location) <> ''
+            AND LOWER(r.user_name) <> 'demo'
+          GROUP BY LOWER(r.user_name)
+          ORDER BY place_count DESC, MIN(r.user_name) ASC
+          LIMIT $1
+        )
+        SELECT DISTINCT ON (rs.user_key)
+          rs.user_name,
+          rs.place_count,
+          a.avatar_url,
+          p.flavors AS flavors
+        FROM rating_stats rs
+        LEFT JOIN accounts a ON LOWER(a.user_name) = rs.user_key
         LEFT JOIN user_preferences p ON p.email = a.email
-        WHERE TRIM(r.location) <> ''
-          AND LOWER(r.user_name) <> 'demo'
-        GROUP BY LOWER(r.user_name)
-        ORDER BY place_count DESC, MIN(r.user_name) ASC
-        LIMIT $1
+        ORDER BY rs.user_key, rs.place_count DESC
       `,
       [limit * 2]
     )
 
     const users = result.rows
       .map((row) => {
-        // flavors column is JSONB but we cast to text in the SELECT so the
-        // aggregate MAX() works (JSONB doesn't have a native ordering). Parse
-        // it back into an array here.
-        let rawFlavors = []
-        try {
-          if (row.flavors_json) rawFlavors = JSON.parse(row.flavors_json)
-        } catch { rawFlavors = [] }
-        const flavors = Array.isArray(rawFlavors)
-          ? rawFlavors.filter((f) => typeof f === 'string' && !f.startsWith('__'))
-          : []
-        const bodyEntry = Array.isArray(rawFlavors)
-          ? rawFlavors.find((f) => typeof f === 'string' && f.startsWith('__body:'))
-          : null
+        // flavors is now native JSONB → node-pg gives us a parsed JS value.
+        const rawFlavors = Array.isArray(row.flavors) ? row.flavors : []
+        const flavors = rawFlavors.filter((f) => typeof f === 'string' && !f.startsWith('__'))
+        const bodyEntry = rawFlavors.find((f) => typeof f === 'string' && f.startsWith('__body:'))
         const body = bodyEntry ? String(bodyEntry).slice('__body:'.length) : ''
         return {
           userName: String(row.user_name || '').trim(),
@@ -1214,6 +1218,7 @@ app.get('/api/explore/users', recsRateLimiter, async (req, res) => {
         }
       })
       .filter((u) => u.userName)
+      .sort((a, b) => b.placeCount - a.placeCount || a.userName.localeCompare(b.userName))
       .slice(0, limit)
 
     return res.json({ users })
