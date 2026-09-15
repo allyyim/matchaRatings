@@ -681,6 +681,7 @@ function App() {
   const [isChangeUsernameSaving, setIsChangeUsernameSaving] = useState(false)
   const [currentAvatarUrl, setCurrentAvatarUrl] = useState<string | null>(null)
   const [isAvatarSaving, setIsAvatarSaving] = useState(false)
+  const [isProfilePictureModalOpen, setIsProfilePictureModalOpen] = useState(false)
   const avatarFileInputRef = useRef<HTMLInputElement | null>(null)
   const [isIosInstallModalOpen, setIsIosInstallModalOpen] = useState(false)
   const [canShowIosInstall, setCanShowIosInstall] = useState(false)
@@ -3474,78 +3475,46 @@ function App() {
             </div>
 
             {!isDemoAccount && (
-              <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0, display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <input
-                  ref={avatarFileInputRef}
-                  type="file"
-                  accept="image/*"
-                  style={{ display: 'none' }}
-                  onChange={async (ev) => {
-                    const file = ev.target.files?.[0]
-                    if (ev.target) ev.target.value = ''
-                    if (!file) return
-                    if (file.size > 5 * 1024 * 1024) {
-                      alert('Please pick an image under 5MB.')
-                      return
-                    }
-                    setIsAvatarSaving(true)
-                    try {
-                      const dataUrl: string = await new Promise((resolve, reject) => {
-                        const reader = new FileReader()
-                        reader.onload = () => resolve(String(reader.result || ''))
-                        reader.onerror = () => reject(reader.error)
-                        reader.readAsDataURL(file)
-                      })
-                      const uploadRes = await apiFetch<{ url: string }>('/upload-image', {
-                        method: 'POST',
-                        body: JSON.stringify({ image: dataUrl })
-                      })
-                      await apiFetch<{ avatarUrl: string | null }>('/account/avatar', {
-                        method: 'POST',
-                        body: JSON.stringify({ avatarUrl: uploadRes.url })
-                      })
-                      setCurrentAvatarUrl(uploadRes.url)
-                      setSavedEntryToast({ headline: 'Profile picture', connector: ' ', highlight: 'updated' })
-                    } catch (err) {
-                      console.error('Avatar upload failed:', err)
-                      alert(err instanceof Error ? err.message : 'Could not update profile picture')
-                    } finally {
-                      setIsAvatarSaving(false)
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  className="btn btn-outline-success btn-sm"
-                  onClick={() => avatarFileInputRef.current?.click()}
-                  disabled={isAvatarSaving}
-                >
-                  {isAvatarSaving ? 'Saving…' : (currentAvatarUrl ? 'Change photo' : 'Add photo')}
-                </button>
-                {currentAvatarUrl && (
-                  <button
-                    type="button"
-                    className="btn btn-outline-secondary btn-sm"
-                    onClick={async () => {
-                      setIsAvatarSaving(true)
-                      try {
-                        await apiFetch('/account/avatar', {
-                          method: 'POST',
-                          body: JSON.stringify({ avatarUrl: null })
-                        })
-                        setCurrentAvatarUrl(null)
-                      } catch (err) {
-                        alert(err instanceof Error ? err.message : 'Could not remove profile picture')
-                      } finally {
-                        setIsAvatarSaving(false)
-                      }
-                    }}
-                    disabled={isAvatarSaving}
-                  >
-                    Remove
-                  </button>
-                )}
-              </div>
+              <input
+                ref={avatarFileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={async (ev) => {
+                  const file = ev.target.files?.[0]
+                  if (ev.target) ev.target.value = ''
+                  if (!file) return
+                  if (file.size > 5 * 1024 * 1024) {
+                    alert('Please pick an image under 5MB.')
+                    return
+                  }
+                  setIsAvatarSaving(true)
+                  try {
+                    const dataUrl: string = await new Promise((resolve, reject) => {
+                      const reader = new FileReader()
+                      reader.onload = () => resolve(String(reader.result || ''))
+                      reader.onerror = () => reject(reader.error)
+                      reader.readAsDataURL(file)
+                    })
+                    const uploadRes = await apiFetch<{ url: string }>('/upload-image', {
+                      method: 'POST',
+                      body: JSON.stringify({ image: dataUrl })
+                    })
+                    await apiFetch<{ avatarUrl: string | null }>('/account/avatar', {
+                      method: 'POST',
+                      body: JSON.stringify({ avatarUrl: uploadRes.url })
+                    })
+                    setCurrentAvatarUrl(uploadRes.url)
+                    setSavedEntryToast({ headline: 'Profile picture', connector: ' ', highlight: 'updated' })
+                    setIsProfilePictureModalOpen(false)
+                  } catch (err) {
+                    console.error('Avatar upload failed:', err)
+                    alert(err instanceof Error ? err.message : 'Could not update profile picture')
+                  } finally {
+                    setIsAvatarSaving(false)
+                  }
+                }}
+              />
             )}
 
             <div className="profile-drawer-body">
@@ -3563,6 +3532,16 @@ function App() {
 
               <div className="profile-drawer-section">
                 <div className="profile-drawer-section-label">Account</div>
+                <button
+                  type="button"
+                  className="profile-drawer-row"
+                  onClick={() => setIsProfilePictureModalOpen(true)}
+                  disabled={isDemoAccount}
+                  title={isDemoAccount ? 'Not available on the demo account' : undefined}
+                >
+                  <span>Profile Picture</span>
+                  <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
+                </button>
                 <button
                   type="button"
                   className="profile-drawer-row"
@@ -4170,6 +4149,108 @@ function App() {
                   </button>.
                 </div>
               </details>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
+
+      {isProfilePictureModalOpen && createPortal(
+        <>
+          <div
+            className="modal-overlay"
+            onClick={() => { if (!isAvatarSaving) setIsProfilePictureModalOpen(false) }}
+            style={{ zIndex: 1040 }}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="profile-picture-title"
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: 'min(360px, calc(100vw - 2rem))',
+              backgroundColor: 'white',
+              borderRadius: '14px',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.18)',
+              zIndex: 1050,
+              padding: '1.25rem'
+            }}
+          >
+            <div className="d-flex align-items-center justify-content-between mb-3">
+              <h5 id="profile-picture-title" className="fw-bold text-success mb-0">Profile Picture</h5>
+              <button
+                type="button"
+                className="close-btn"
+                onClick={() => setIsProfilePictureModalOpen(false)}
+                aria-label="Close"
+                disabled={isAvatarSaving}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="d-flex flex-column align-items-center gap-3">
+              <div
+                aria-hidden="true"
+                style={{
+                  width: '5.5rem',
+                  height: '5.5rem',
+                  borderRadius: '50%',
+                  background: currentAvatarUrl ? '#f5f5f5' : 'var(--accent-teal-subtle, #d9f0e5)',
+                  color: 'var(--accent-teal, #1f5f34)',
+                  fontWeight: 700,
+                  fontSize: '1.75rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  border: '1px solid var(--border-light, #e9ecef)'
+                }}
+              >
+                {currentAvatarUrl ? (
+                  <img src={currentAvatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                  (currentUserName || '?').charAt(0).toUpperCase()
+                )}
+              </div>
+              <p className="text-muted small mb-0 text-center" style={{ maxWidth: '260px' }}>
+                Shown next to your name in the Feed and on your leaderboard rank. PNG or JPG, up to 5MB.
+              </p>
+              <div className="d-flex gap-2 w-100 justify-content-center flex-wrap">
+                <button
+                  type="button"
+                  className="btn btn-success btn-sm"
+                  onClick={() => avatarFileInputRef.current?.click()}
+                  disabled={isAvatarSaving}
+                >
+                  {isAvatarSaving ? 'Saving…' : (currentAvatarUrl ? 'Change photo' : 'Add photo')}
+                </button>
+                {currentAvatarUrl && (
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary btn-sm"
+                    onClick={async () => {
+                      setIsAvatarSaving(true)
+                      try {
+                        await apiFetch('/account/avatar', {
+                          method: 'POST',
+                          body: JSON.stringify({ avatarUrl: null })
+                        })
+                        setCurrentAvatarUrl(null)
+                      } catch (err) {
+                        alert(err instanceof Error ? err.message : 'Could not remove profile picture')
+                      } finally {
+                        setIsAvatarSaving(false)
+                      }
+                    }}
+                    disabled={isAvatarSaving}
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </>,
