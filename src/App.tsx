@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react'
 import type { ChangeEvent, MouseEvent } from 'react'
 import { createPortal } from 'react-dom'
 import { useGoogleLogin } from '@react-oauth/google'
-import * as Sentry from '@sentry/react'
 import './App.css'
 import { SHADE_OPTIONS, shadeColorForGreenness } from './lib/shade'
 import { analyzeGreennessFromDataUrl, loadRandomForest } from './lib/greenness'
@@ -40,15 +39,31 @@ const OnboardingSlides = lazy(() => import('./features/OnboardingSlides'))
 
 const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN || ''
 
-if (SENTRY_DSN) {
-  Sentry.init({
-    dsn: SENTRY_DSN,
-    environment: import.meta.env.MODE,
-    release: `matcha-ratings@${import.meta.env.VITE_APP_VERSION || 'dev'}`,
-    tracesSampleRate: 1.0,
-    integrations: [Sentry.browserTracingIntegration()],
-    enableLogs: true
-  })
+// Sentry is ~30-60KB gzip. Eagerly `import * as Sentry from '@sentry/react'`
+// pulled the whole SDK into the initial chunk even when there was no DSN
+// (bundlers can't tree-shake around a namespace import). Load it lazily
+// during browser idle time so first paint / TTI aren't blocked. If the
+// browser doesn't have requestIdleCallback (Safari <= 16), fall back to a
+// tiny setTimeout — Sentry isn't needed on the critical path either way.
+if (SENTRY_DSN && typeof window !== 'undefined') {
+  const start = () => {
+    void import('@sentry/react').then((Sentry) => {
+      Sentry.init({
+        dsn: SENTRY_DSN,
+        environment: import.meta.env.MODE,
+        release: `matcha-ratings@${import.meta.env.VITE_APP_VERSION || 'dev'}`,
+        tracesSampleRate: 1.0,
+        integrations: [Sentry.browserTracingIntegration()],
+        enableLogs: true
+      })
+    }).catch(() => { /* Sentry failing to load must never break the app. */ })
+  }
+  const w = window as unknown as { requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number }
+  if (typeof w.requestIdleCallback === 'function') {
+    w.requestIdleCallback(start, { timeout: 4000 })
+  } else {
+    window.setTimeout(start, 2000)
+  }
 }
 
 function EntryThought({ text }: { text: string }) {
