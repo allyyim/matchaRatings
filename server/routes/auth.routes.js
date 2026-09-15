@@ -31,7 +31,16 @@ router.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
     if (!userInfoResponse.ok) {
       const errorText = await userInfoResponse.text()
       console.error('Google userinfo error:', userInfoResponse.status, errorText)
-      return res.status(401).json({ error: 'Invalid Google token' })
+      // Surface Google's actual reason back to the client so we can
+      // diagnose which auth flow is breaking (expired token vs revoked
+      // vs unauthorized OAuth client vs scopes missing). Safe to leak
+      // — the token itself is never returned, only Google's own
+      // rejection reason.
+      return res.status(401).json({
+        error: 'Invalid Google token',
+        googleStatus: userInfoResponse.status,
+        googleError: errorText.slice(0, 500),
+      })
     }
 
     const userInfo = await userInfoResponse.json()
