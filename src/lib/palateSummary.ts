@@ -24,7 +24,10 @@ const CLUSTER_MAP: Record<string, ClusterKey> = {
   sweet: 'sweet', sugary: 'sweet', creamy: 'sweet', floral: 'sweet',
   earthy: 'earthy', vegetal: 'earthy', grassy: 'earthy', umami: 'earthy',
   astringent: 'bracing', bitter: 'bracing',
-  mellow: 'silky', smooth: 'silky',
+  mellow: 'silky', bold: 'silky',
+  // Legacy alias: existing rows may still have `smooth` — keep it in the
+  // silky cluster so old chip data doesn't silently disappear.
+  smooth: 'silky',
 }
 
 // Single-cluster archetypes. Fires when one cluster clearly dominates.

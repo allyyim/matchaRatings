@@ -20,7 +20,7 @@ export const FLAVOR_LIST = [
   // yellow / bracing
   'astringent', 'bitter',
   // blue / silky
-  'mellow', 'smooth',
+  'mellow', 'bold',
 ] as const
 
 export type BodyProfileValue = 'full-bodied' | 'medium' | 'milky'
@@ -38,7 +38,7 @@ export const FLAVOR_COLOR_ORDER: Record<string, number> = {
   sweet: 4, sugary: 5, creamy: 6, floral: 7,
   earthy: 8, vegetal: 9, grassy: 10, umami: 11,
   astringent: 12, bitter: 13,
-  mellow: 14, smooth: 15,
+  mellow: 14, bold: 15,
 }
 
 export function sortFlavorsByColor(flavors: string[]): string[] {
@@ -94,14 +94,14 @@ export const FLAVOR_DESCRIPTIONS: Record<string, string> = {
   sugary:     'Distinct added-sugar or syrupy sweetness.',
   creamy:     'Milky, dessert-like smoothness.',
   floral:     'Fragrant top-notes — jasmine, orange blossom.',
-  earthy:     'Grounded and mineral — the stone-milled backbone of a good matcha.',
+  earthy:     'Grounded and mineral.',
   vegetal:    'Fresh spinach, raw green notes.',
   grassy:     'Fresh-cut lawn, springtime green.',
   umami:      'Savory, brothy, seaweed-like depth.',
   astringent: 'Puckering, dry mouthfeel.',
-  bitter:     'Sharp and edgy — hits the back of the tongue.',
-  mellow:     'A gentle matcha that never bites — quiet, calm, and easy to drink.',
-  smooth:     'Clean, effortless finish.',
+  bitter:     'Sharp, dry and pungent.',
+  mellow:     'Smooth and no bitterness.',
+  bold:       'Strong, matcha-forward finish — makes itself known.',
 }
 
 export function flavorDescription(flavor: string): string {
@@ -116,14 +116,14 @@ export type ChipPalette = { bg: string; fg: string; border: string }
 //   sweet (pink):    sweet, sugary, creamy, floral
 //   earthy (green):  earthy, vegetal, grassy, umami
 //   bracing (yellow):astringent, bitter
-//   silky (blue):    mellow, smooth
+//   silky (blue):    mellow, bold
 export function flavorColor(flavor: string): ChipPalette {
   const key = String(flavor || '').toLowerCase()
   if (key === 'chocolatey' || key === 'nutty' || key === 'velvety' || key === 'rich') return { bg: '#815355', fg: '#ffffff', border: '#5c3839' }
   if (key === 'sugary' || key === 'sweet' || key === 'creamy' || key === 'floral') return { bg: '#E0BAD7', fg: '#5a2a4b', border: '#c290b3' }
   if (key === 'earthy' || key === 'vegetal' || key === 'grassy' || key === 'umami') return { bg: '#63a375', fg: '#ffffff', border: '#4a7d5a' }
   if (key === 'astringent' || key === 'bitter') return { bg: '#F8FA90', fg: '#5c5d1c', border: '#c9cb6d' }
-  if (key === 'mellow' || key === 'smooth') return { bg: '#A9DEF9', fg: '#1e4a5f', border: '#7fbbdc' }
+  if (key === 'mellow' || key === 'bold') return { bg: '#A9DEF9', fg: '#1e4a5f', border: '#7fbbdc' }
   return { bg: '#82D99E', fg: '#0b6e4f', border: '#0b6e4f' }
 }
 

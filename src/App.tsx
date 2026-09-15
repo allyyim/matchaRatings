@@ -345,7 +345,7 @@ function App() {
   const [verifiedAccountName, setVerifiedAccountName] = useState<string | null>(null)
 
   const [currentRating, setCurrentRating] = useState(0)
-  const [ratingFlavorPrefs, setRatingFlavorPrefs] = useState<Record<string, number>>({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, velvety: 0, rich: 0, smooth: 0, mellow: 0, bitter: 0 })
+  const [ratingFlavorPrefs, setRatingFlavorPrefs] = useState<Record<string, number>>({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, velvety: 0, rich: 0, bold: 0, mellow: 0, bitter: 0 })
   // Which flavor bubble to describe in the helper line under the grid.
   // Cleared when the user closes the modal or deselects the same bubble.
   const [newLogFlavorFocus, setNewLogFlavorFocus] = useState<string>('')
@@ -798,7 +798,7 @@ function App() {
       setIsMyRatingsFilterOpen(false)
       setIsNewLogOpen(false)
       setCurrentRating(0)
-      setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, velvety: 0, rich: 0, smooth: 0, mellow: 0, bitter: 0 })
+      setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, velvety: 0, rich: 0, bold: 0, mellow: 0, bitter: 0 })
       setNewLogFlavorFocus('')
       setLocation('')
       setThoughts('')
@@ -1889,7 +1889,7 @@ function App() {
       void fetchExploreData(false).catch(() => { /* silent */ })
 
       setCurrentRating(0)
-      setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, velvety: 0, rich: 0, smooth: 0, mellow: 0, bitter: 0 })
+      setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, velvety: 0, rich: 0, bold: 0, mellow: 0, bitter: 0 })
       setNewLogFlavorFocus('')
       setLocation('')
       setThoughts('')
@@ -3494,7 +3494,7 @@ function App() {
                   about what you *seek out*, not descriptors that show up
                   in a rating.
                 */}
-                {['chocolatey', 'nutty', 'velvety', 'rich', 'sweet', 'sugary', 'creamy', 'floral', 'earthy', 'vegetal', 'grassy', 'umami', 'mellow', 'smooth'].map((flavor) => {
+                {['chocolatey', 'nutty', 'velvety', 'rich', 'sweet', 'sugary', 'creamy', 'floral', 'earthy', 'vegetal', 'grassy', 'umami', 'mellow', 'bold'].map((flavor) => {
                   const isSelected = userFlavors.map(f => f.toLowerCase()).includes(flavor.toLowerCase())
                   return (
                     <button
