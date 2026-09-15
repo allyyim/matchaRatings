@@ -5031,9 +5031,8 @@ function App() {
                   })}
                 </div>
                 {newLogFlavorFocus && flavorDescription(newLogFlavorFocus) && (
-                  <div className="small text-muted mt-2" style={{ textTransform: 'capitalize' }}>
-                    <span style={{ fontWeight: 600 }}>{newLogFlavorFocus}:</span>{' '}
-                    <span style={{ textTransform: 'none' }}>{flavorDescription(newLogFlavorFocus)}</span>
+                  <div className="small text-muted mt-2">
+                    {flavorDescription(newLogFlavorFocus)}
                   </div>
                 )}
               </div>

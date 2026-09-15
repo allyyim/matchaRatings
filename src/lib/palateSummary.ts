@@ -51,7 +51,7 @@ const COMBO_ARCHETYPE: Record<string, string> = {
   'dessert+silky':   'The Latte Artist',   // sweet + silky = latte territory
   'earthy+sweet':    'The Genmaicha',      // roasted rice + green tea blend
   'bracing+sweet':   'The Yuzu Sipper',    // bright citrus + green sharpness
-  'silky+sweet':     'The Cloud Whisker',  // frothy sweet foam
+  'silky+sweet':     'The Foam Chaser',    // frothy sweet foam vibes
   'bracing+earthy':  'The Stone Milled',   // traditional ishiusu-ground matcha
   'earthy+silky':    'The Zen Master',     // classic matcha meditation vibe
   'bracing+silky':   'The Gyokuro',        // shade-grown umami + bright edge
@@ -59,9 +59,9 @@ const COMBO_ARCHETYPE: Record<string, string> = {
 
 // Three-plus-cluster balanced palates get their own label so we don't
 // force a false "top" cluster. Fires when 3+ clusters all sit within
-// ~66% of the leader. Named "Tea Master" because whoever this fires
-// on knows every corner of the vocabulary.
-const BALANCED_ARCHETYPE = 'The Tea Master'
+// ~66% of the leader. Named "The Cloud Whisker" — a bit of everything,
+// whipped together into one silky palate.
+const BALANCED_ARCHETYPE = 'The Cloud Whisker'
 
 // Punchy sub-tagline for when there's a *modest* secondary cluster
 // (not competitive enough for a combo, but present). Reads "Primary
@@ -174,12 +174,12 @@ const ARCHETYPE_PALETTE: Record<string, { bg: string; fg: string; border: string
   'The Latte Artist':    { bg: '#ece0d8', fg: '#4a3634', border: '#cfb8ae' }, // brown+silky → milky mauve
   'The Genmaicha':       { bg: '#ede6cf', fg: '#4a4423', border: '#cec48c' }, // sweet+earthy → toasted sage
   'The Yuzu Sipper':     { bg: '#faeecd', fg: '#6a481c', border: '#e8ce85' }, // sweet+bracing → apricot
-  'The Cloud Whisker':   { bg: '#eae0ee', fg: '#3f3160', border: '#c9b8dc' }, // sweet+silky → lavender
+  'The Foam Chaser':     { bg: '#eae0ee', fg: '#3f3160', border: '#c9b8dc' }, // sweet+silky → lavender
   'The Stone Milled':    { bg: '#e6ecc4', fg: '#454e1c', border: '#c0cb82' }, // earthy+bracing → olive-sage
   'The Zen Master':      { bg: '#d8ebe6', fg: '#1e4a4e', border: '#a6d1cc' }, // earthy+silky → teal
   'The Gyokuro':         { bg: '#dcecd6', fg: '#2f523a', border: '#a8ceac' }, // bracing+silky → seafoam
   // Balanced 3+ — bright neutral so it feels distinct from everyone else.
-  'The Tea Master':      { bg: '#efe4f2', fg: '#402f4d', border: '#cdb8d5' },
+  'The Cloud Whisker':   { bg: '#efe4f2', fg: '#402f4d', border: '#cdb8d5' },
 }
 
 // Palette for a specific archetype label, falling back to the primary

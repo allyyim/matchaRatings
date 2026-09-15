@@ -98,9 +98,9 @@ export const FLAVOR_DESCRIPTIONS: Record<string, string> = {
   vegetal:    'Fresh spinach, raw green notes.',
   grassy:     'Fresh-cut lawn, springtime green.',
   umami:      'Savory, brothy, mouth-filling depth.',
-  astringent: 'Puckering, dry mouthfeel — a firm bite.',
+  astringent: 'Puckering, dry mouthfeel.',
   bitter:     'Sharp and edgy — hits the back of the tongue.',
-  mellow:     'Soft, easygoing — no harsh edges.',
+  mellow:     'A gentle matcha that never bites — quiet, calm, and easy to drink.',
   smooth:     'Clean, effortless finish.',
 }
 
