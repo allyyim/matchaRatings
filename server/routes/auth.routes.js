@@ -64,22 +64,28 @@ router.post('/api/auth/verify', authRateLimiter, async (req, res) => {
   }
 
   const tokenHash = hashLoginToken(rawToken)
-  const tokenRow = await pool.query(
-    `SELECT email, user_name, purpose, expires_at, used_at
-     FROM login_tokens WHERE token_hash = $1`,
+  // Atomic consume: flip used_at to NOW() only if the row exists AND is
+  // still unused AND unexpired, and return the row we captured. Two
+  // parallel requests with the same token can't both succeed — only the
+  // UPDATE that actually flipped used_at gets a row back; the loser
+  // sees rowCount=0 and 400s. This closes the tiny window between
+  // "SELECT confirms unused" and "UPDATE marks used" that a separate
+  // read-then-write pattern exposes.
+  const claimed = await pool.query(
+    `UPDATE login_tokens
+        SET used_at = NOW()
+      WHERE token_hash = $1
+        AND used_at IS NULL
+        AND expires_at > NOW()
+      RETURNING email, user_name, purpose, expires_at`,
     [tokenHash]
   )
 
-  if (tokenRow.rowCount === 0) {
-    return res.status(400).json({ error: 'This link is invalid. Please request a new one.' })
+  if (claimed.rowCount === 0) {
+    return res.status(400).json({ error: 'This link is invalid or has expired. Please request a new one.' })
   }
 
-  const record = tokenRow.rows[0]
-  if (record.used_at || new Date(record.expires_at).getTime() < Date.now()) {
-    return res.status(400).json({ error: 'This link has expired. Please request a new one.' })
-  }
-
-  await pool.query('UPDATE login_tokens SET used_at = NOW() WHERE token_hash = $1', [tokenHash])
+  const record = claimed.rows[0]
 
   const existingAccount = await pool.query('SELECT user_name FROM accounts WHERE email = $1', [record.email])
   let userName = existingAccount.rows[0]?.user_name

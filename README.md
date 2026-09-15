@@ -491,6 +491,16 @@ call surfacing its own error.
 - `X-XSS-Protection: 0`
 - `x-powered-by` disabled
 
+### Concurrency guards
+| Race | Guard |
+| --- | --- |
+| Magic-link double-consume | Atomic `UPDATE login_tokens SET used_at = NOW() WHERE token_hash = $1 AND used_at IS NULL AND expires_at > NOW() RETURNING ...` — two parallel requests can't both succeed |
+| Signup username collision | `CREATE UNIQUE INDEX idx_accounts_user_name_lower` — DB rejects duplicates even if two verify races land at the same instant |
+| Follow / unfollow | `UNIQUE(follower_email, following_email)` + `error.code === '23505'` → 409 |
+| Rating like | `UNIQUE(rating_id, email)` + 23505 → 409 |
+| Username rename | Explicit `BEGIN`/`COMMIT` transaction spans account + ratings updates |
+| Rate limiter | In-memory per dyno (fine for one-dyno Render; swap to Redis on scale) |
+
 ### Encryption at rest & in transit
 - **Passwords:** none stored — magic-link + Google OAuth only
 - **Magic-link tokens:** SHA-256 hashed in DB (`hashLoginToken`); raw token only ever
