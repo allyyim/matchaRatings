@@ -2,16 +2,55 @@ import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import crypto from 'node:crypto'
-import jwt from 'jsonwebtoken'
 import * as Sentry from '@sentry/node'
-import rateLimit from 'express-rate-limit'
 import { Resend } from 'resend'
 import { OAuth2Client } from 'google-auth-library'
 import { v2 as cloudinary } from 'cloudinary'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
 import { initDb, pool } from './db.js'
-import { findBestMatch } from 'string-similarity'
+import {
+  sanitizeText,
+  sanitizeUserName,
+  normalizeLocationText,
+  safeJsonParse,
+  normalizeEmail,
+  isValidEmail,
+} from './lib/sanitize.js'
+import {
+  LOW_RATING_GREENNESS_WEIGHT,
+  FULL_GREENNESS_WEIGHT,
+  getWeightedScore,
+} from './lib/scoring.js'
+import {
+  normalizeLocationName,
+  getCanonicalPlaceData,
+  shouldMergePlaces,
+} from './lib/places.js'
+import { mapRatingRow } from './lib/mappers.js'
+import {
+  RECS_CACHE_TTL_MS,
+  recsCacheGet,
+  recsCacheSet,
+  recsCacheInvalidate,
+} from './lib/recsCache.js'
+import {
+  encryptField,
+  decryptField,
+  generateToken,
+  hashLoginToken,
+} from './lib/crypto.js'
+import {
+  getSessionFromRequest,
+  requireSession,
+  requireUserOwnership,
+} from './lib/session.js'
+import {
+  apiRateLimiter,
+  authRateLimiter,
+  recsRateLimiter,
+} from './lib/rateLimits.js'
+import adminRouter from './routes/admin.routes.js'
 
 dotenv.config()
 
@@ -28,9 +67,6 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 app.set('trust proxy', 1)
 const port = Number(process.env.PORT || 4000)
-const APP_SECRET = process.env.APP_SECRET || 'matcha-development-secret-change-me'
-const JWT_SECRET = process.env.JWT_SECRET || APP_SECRET
-const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7
 const LOGIN_TOKEN_TTL_MS = 1000 * 60 * 15
 const APP_ORIGIN = String(process.env.APP_ORIGIN || 'https://allyyim.github.io/matchaRatings').replace(/\/$/, '')
 const EMAIL_FROM = process.env.EMAIL_FROM || 'Sip & Score <onboarding@resend.dev>'
@@ -44,91 +80,6 @@ cloudinary.config({
 })
 
 const telemetryBuffer = []
-const LOW_RATING_GREENNESS_WEIGHT = 0.8
-const FULL_GREENNESS_WEIGHT = 1
-
-function getWeightedScore(rating, greenness) {
-  const greennessWeight = rating >= 4 ? FULL_GREENNESS_WEIGHT : LOW_RATING_GREENNESS_WEIGHT
-  return rating * 20 + greenness * greennessWeight
-}
-
-function sanitizeText(value, maxLength = 500) {
-  return String(value ?? '')
-    .replace(/[\u0000-\u001F\u007F]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, maxLength)
-}
-
-function sanitizeUserName(value) {
-  return sanitizeText(value, 80).replace(/[^a-zA-Z0-9._-]/g, '')
-}
-
-function normalizeLocationText(value) {
-  return sanitizeText(value, 200)
-}
-
-function safeJsonParse(value) {
-  try {
-    return JSON.parse(value)
-  } catch {
-    return null
-  }
-}
-
-function encryptField(value) {
-  if (!value) return ''
-
-  const key = crypto.createHash('sha256').update(APP_SECRET).digest()
-  const iv = crypto.randomBytes(16)
-  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv)
-  const encrypted = Buffer.concat([
-    cipher.update(String(value), 'utf8'),
-    cipher.final()
-  ])
-  const tag = cipher.getAuthTag()
-
-  return JSON.stringify({ iv: iv.toString('hex'), content: encrypted.toString('base64'), tag: tag.toString('hex') })
-}
-
-function decryptField(value) {
-  if (!value) return ''
-
-  const parsed = safeJsonParse(value)
-  if (!parsed || !parsed.iv || !parsed.content || !parsed.tag) {
-    return String(value)
-  }
-
-  try {
-    const key = crypto.createHash('sha256').update(APP_SECRET).digest()
-    const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(parsed.iv, 'hex'))
-    decipher.setAuthTag(Buffer.from(parsed.tag, 'hex'))
-    const decrypted = Buffer.concat([
-      decipher.update(Buffer.from(parsed.content, 'base64')),
-      decipher.final()
-    ])
-
-    return decrypted.toString('utf8')
-  } catch {
-    return String(value)
-  }
-}
-
-function generateToken(userName, browserId) {
-  return jwt.sign({ userName, browserId: browserId || '' }, JWT_SECRET, { expiresIn: '365d' })
-}
-
-function normalizeEmail(value) {
-  return String(value ?? '').trim().toLowerCase().slice(0, 254)
-}
-
-function isValidEmail(value) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254
-}
-
-function hashLoginToken(rawToken) {
-  return crypto.createHash('sha256').update(rawToken).digest('hex')
-}
 
 async function createLoginToken(email, purpose, userName = null) {
   const rawToken = crypto.randomBytes(32).toString('base64url')
@@ -166,68 +117,6 @@ async function sendMagicLinkEmail(email, rawToken, purpose) {
 
   return null
 }
-
-function getSessionFromRequest(req) {
-  const authorization = String(req.headers.authorization || '')
-  const match = authorization.match(/^Bearer\s+(.+)$/i)
-  const token = match ? match[1].trim() : ''
-  if (!token) return null
-
-  try {
-    const payload = jwt.verify(token, JWT_SECRET)
-    if (!payload || typeof payload !== 'object') return null
-
-    const userName = String(payload.userName || '').trim()
-    const browserId = String(payload.browserId || '').trim()
-    if (!userName) return null
-
-    return {
-      userName,
-      browserId,
-      expiresAt: Date.now() + SESSION_TTL_MS,
-      token
-    }
-  } catch {
-    return null
-  }
-}
-
-function requireSession(req, res, next) {
-  const session = getSessionFromRequest(req)
-  if (!session) {
-    return res.status(401).json({ error: 'Authentication required' })
-  }
-
-  req.session = session
-  return next()
-}
-
-function requireUserOwnership(req, res, next) {
-  const sessionUser = String(req.session?.userName || '').trim()
-  const candidate = String(req.body?.userName || req.query?.userName || '').trim()
-
-  if (!sessionUser) {
-    return res.status(401).json({ error: 'Invalid session' })
-  }
-
-  if (!candidate) {
-    return res.status(400).json({ error: 'userName is required' })
-  }
-
-  if (sessionUser.toLowerCase() !== candidate.toLowerCase()) {
-    return res.status(403).json({ error: 'Forbidden: user ownership mismatch' })
-  }
-
-  return next()
-}
-
-const apiRateLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 120,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many requests. Please slow down.' }
-})
 
 // CORS allowlist. Production frontend lives on GitHub Pages; dev happens
 // on Vite's default 5173 / preview 4173 and localhost:3001 for same-origin
@@ -275,105 +164,6 @@ app.get('/', (_req, res) => {
   res.status(200).send('Matcha Ratings API is running. Use /api/health for health checks.')
 })
 
-function mapRatingRow(row) {
-  const rating = Number(row.rating)
-  const greenness = Number(row.greenness)
-  return {
-    id: Number(row.id),
-    userName: row.user_name,
-    photo: row.photo,
-    rating,
-    greenness,
-    location: row.location || '',
-    thoughts: row.thoughts || '',
-    date: new Date(row.created_at).toLocaleDateString(),
-    createdAt: row.created_at,
-    comboScore: Number(getWeightedScore(rating, greenness).toFixed(2)),
-    flavorPreferences: row.flavor_preferences || {}
-  }
-}
-
-function normalizeLocationName(rawLocation) {
-  const location = String(rawLocation || '').trim()
-  if (!location) return ''
-
-  const canonical = location
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  return canonical
-    .split(' ')
-    .filter(Boolean)
-    .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
-    .join(' ')
-}
-
-function getCanonicalPlaceData(rawLocation) {
-  const normalizedName = normalizeLocationName(rawLocation)
-  if (!normalizedName) {
-    return { displayName: '', canonicalKey: '' }
-  }
-
-  const firstSegment = normalizedName.split(',')[0].split(' - ')[0].trim()
-  const displayName = firstSegment || normalizedName
-  const canonicalKey = displayName
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/&/g, ' and ')
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-
-  return { displayName, canonicalKey }
-}
-
-function shouldMergePlaces(canonicalA, canonicalB) {
-  if (!canonicalA || !canonicalB) return false
-  if (canonicalA === canonicalB) return true
-
-  const compactA = canonicalA.replace(/\s+/g, '')
-  const compactB = canonicalB.replace(/\s+/g, '')
-  if (compactA && compactA === compactB) {
-    return true
-  }
-
-  const compactShorter = compactA.length <= compactB.length ? compactA : compactB
-  const compactLonger = compactA.length > compactB.length ? compactA : compactB
-  if (compactShorter.length >= 5 && compactLonger.startsWith(compactShorter)) {
-    return true
-  }
-
-  const shorter = canonicalA.length <= canonicalB.length ? canonicalA : canonicalB
-  const longer = canonicalA.length > canonicalB.length ? canonicalA : canonicalB
-  if (shorter.length >= 4 && longer.startsWith(shorter)) {
-    return true
-  }
-
-  const tokensA = new Set(canonicalA.split(' ').filter(Boolean))
-  const tokensB = new Set(canonicalB.split(' ').filter(Boolean))
-  const minTokenCount = Math.min(tokensA.size, tokensB.size)
-  if (!minTokenCount) return false
-
-  let overlap = 0
-  for (const token of tokensA) {
-    if (tokensB.has(token)) {
-      overlap += 1
-    }
-  }
-
-  if (overlap / minTokenCount >= 0.8) {
-    return true
-  }
-
-  const similarity = findBestMatch(canonicalA, [canonicalB]).bestMatch.rating
-  return similarity >= 0.78
-}
-
 app.get('/api/health', async (_req, res) => {
   res.json({ ok: true })
 })
@@ -394,40 +184,6 @@ app.get('/api/warm', async (_req, res) => {
   }
 })
 
-// In-process TTL cache for expensive read endpoints (similar-users,
-// similar-places). Recs don't need to be second-fresh — one 5-minute
-// aggregation is plenty for a hackathon-scale app, and it takes a scan of
-// ~5000 rating rows off the DB on every Explore mount. Safe to lose on
-// process restart; NOT shared across dynos (fine — Render free tier is 1).
-const RECS_CACHE_TTL_MS = 5 * 60 * 1000
-const recsCache = new Map()
-function recsCacheGet(key) {
-  const hit = recsCache.get(key)
-  if (!hit) return null
-  if (Date.now() - hit.at > RECS_CACHE_TTL_MS) {
-    recsCache.delete(key)
-    return null
-  }
-  return hit.value
-}
-function recsCacheSet(key, value) {
-  recsCache.set(key, { at: Date.now(), value })
-  // Cap the cache so a scripted attack can't grow it unbounded.
-  if (recsCache.size > 500) {
-    const oldest = recsCache.keys().next().value
-    if (oldest !== undefined) recsCache.delete(oldest)
-  }
-}
-// Wipe cache entries touching a specific userName whenever they change
-// prefs or add a rating, so recs still feel live.
-function recsCacheInvalidate(userName) {
-  if (!userName) return
-  const needle = String(userName).toLowerCase()
-  for (const key of recsCache.keys()) {
-    if (key.startsWith(`u:${needle}|`)) recsCache.delete(key)
-  }
-}
-
 // Periodic cleanup of expired magic-link tokens. Without this the
 // login_tokens table grows forever (every sign-in adds a row). Runs once
 // an hour and only touches rows whose expiry is already in the past.
@@ -435,27 +191,6 @@ setInterval(() => {
   pool.query(`DELETE FROM login_tokens WHERE expires_at < NOW() - INTERVAL '1 day'`)
     .catch((err) => console.warn('login_tokens cleanup failed:', err.message))
 }, 60 * 60 * 1000).unref?.()
-
-const authRateLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many requests. Please wait a minute and try again.' }
-})
-
-// Middle-tier limiter for heavy recs/discovery endpoints. Global limit
-// (120/min) already covers everyone; this is a second belt so a single
-// abusive client can't hammer expensive SQL joins and evict recs cache
-// entries for real users. 40/min per IP is invisible to humans (would
-// require switching tabs faster than once per 1.5s).
-const recsRateLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 40,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: 'Too many requests. Please slow down.' }
-})
 
 // Requests a magic sign-in link for a stable, email-backed account.
 // - If the email already has an account, the link signs in as that account's userName.
@@ -777,274 +512,10 @@ app.post('/api/auth/google/confirm-account', authRateLimiter, async (req, res) =
   }
 })
 
-app.post('/api/migrate/ali', async (_req, res) => {
-  // Disabled: this endpoint used to reassign every 'Ali' rating to the caller,
-  // which caused every new signup to steal Ali's ratings. Kept as a 410 so
-  // any stale clients that still call it fail loudly instead of doing damage.
-  return res.status(410).json({ error: 'This migration endpoint is permanently disabled.' })
-})
 
-app.post('/api/admin/link-users', async (req, res) => {
-  try {
-    const { links } = req.body
-
-    if (!Array.isArray(links)) {
-      return res.status(400).json({ error: 'links must be an array' })
-    }
-
-    const results = []
-    for (const { userName, email } of links) {
-      const result = await pool.query(
-        'UPDATE accounts SET email = $1 WHERE LOWER(user_name) = LOWER($2) RETURNING user_name, email',
-        [email, userName]
-      )
-      if (result.rowCount > 0) {
-        results.push({ userName: result.rows[0].user_name, email: result.rows[0].email, success: true })
-      } else {
-        results.push({ userName, email, success: false, error: 'User not found' })
-      }
-    }
-
-    return res.json({ results })
-  } catch (error) {
-    console.error('Link users failed:', error)
-    return res.status(400).json({ error: 'Failed to link users' })
-  }
-})
-
-app.post('/api/admin/delete-user', async (req, res) => {
-  try {
-    const { userName } = req.body
-
-    if (!userName) {
-      return res.status(400).json({ error: 'userName is required' })
-    }
-
-    // Delete all related data
-    const userResult = await pool.query('SELECT email, user_name FROM accounts WHERE LOWER(user_name) = LOWER($1)', [userName])
-    if (userResult.rowCount === 0) {
-      return res.status(404).json({ error: 'User not found' })
-    }
-
-    const email = userResult.rows[0].email
-    const actualUserName = userResult.rows[0].user_name
-
-    // Delete ratings
-    await pool.query('DELETE FROM ratings WHERE LOWER(user_name) = LOWER($1)', [actualUserName])
-
-    // Delete follows
-    await pool.query('DELETE FROM follows WHERE follower_email = $1 OR following_email = $1', [email])
-
-    // Delete likes
-    await pool.query('DELETE FROM rating_likes WHERE email = $1', [email])
-
-    // Delete user preferences
-    await pool.query('DELETE FROM user_preferences WHERE email = $1', [email])
-
-    // Delete browser users
-    await pool.query('DELETE FROM browser_users WHERE LOWER(user_name) = LOWER($1)', [actualUserName])
-
-    // Delete login tokens
-    await pool.query('DELETE FROM login_tokens WHERE email = $1', [email])
-
-    // Delete account
-    await pool.query('DELETE FROM accounts WHERE email = $1', [email])
-
-    return res.json({ ok: true, message: `User ${userName} deleted successfully` })
-  } catch (error) {
-    console.error('Delete user failed:', error)
-    return res.status(400).json({ error: 'Failed to delete user' })
-  }
-})
-
-app.post('/api/admin/fix-ali', async (req, res) => {
-  try {
-    // Update accounts table
-    const accountResult = await pool.query(
-      `UPDATE accounts SET email = $1 WHERE LOWER(user_name) = LOWER($2) RETURNING user_name, email`,
-      ['alisonyim3@gmail.com', 'Ali']
-    )
-
-    // Update ratings table - replace @Jarel with Ali
-    const ratingsResult = await pool.query(
-      `UPDATE ratings SET user_name = $1 WHERE user_name = $2 RETURNING id`,
-      ['Ali', '@Jarel']
-    )
-
-    return res.json({
-      ok: true,
-      message: `Ali account fixed and ${ratingsResult.rowCount} ratings updated`,
-      accountsUpdated: accountResult.rowCount,
-      ratingsUpdated: ratingsResult.rowCount
-    })
-  } catch (error) {
-    console.error('Fix Ali failed:', error)
-    return res.status(400).json({ error: 'Failed to fix Ali account' })
-  }
-})
-
-app.post('/api/users/session', authRateLimiter, async (req, res) => {
-  const browserId = String(req.body?.browserId || '').trim()
-  const incomingUserName = sanitizeUserName(String(req.body?.userName || '').trim())
-
-  if (!browserId || browserId.length > 128) {
-    return res.status(400).json({ error: 'browserId is required and must be valid' })
-  }
-
-  const existing = await pool.query(
-    'SELECT user_name FROM browser_users WHERE browser_id = $1',
-    [browserId]
-  )
-
-  if (!incomingUserName && existing.rowCount === 0) {
-    return res.status(200).json({ requiresName: true, userName: '', token: '' })
-  }
-
-  const userName = incomingUserName || existing.rows[0].user_name
-  const token = generateToken(userName, browserId)
-
-  await pool.query(
-    `
-      INSERT INTO browser_users (browser_id, user_name)
-      VALUES ($1, $2)
-      ON CONFLICT (browser_id)
-      DO UPDATE SET user_name = EXCLUDED.user_name
-    `,
-    [browserId, userName]
-  )
-
-  return res.json({ requiresName: false, userName, token })
-})
-
-app.post('/api/telemetry', async (req, res) => {
-  const eventName = sanitizeText(String(req.body?.event || '').trim(), 80)
-  const page = sanitizeText(String(req.body?.page || '').trim(), 40)
-  const properties = req.body?.properties && typeof req.body.properties === 'object' ? req.body.properties : {}
-
-  if (!eventName) {
-    return res.status(400).json({ error: 'event is required' })
-  }
-
-  telemetryBuffer.push({
-    eventName,
-    page,
-    properties,
-    createdAt: new Date().toISOString(),
-    userName: req.session?.userName || null
-  })
-
-  if (telemetryBuffer.length > 500) {
-    telemetryBuffer.splice(0, telemetryBuffer.length - 500)
-  }
-
-  return res.json({ ok: true })
-})
-
-app.get('/api/telemetry', async (_req, res) => {
-  res.json({ events: telemetryBuffer.slice(-50) })
-})
-
-app.post('/api/admin/migrate-photos-to-cloudinary', async (req, res) => {
-  try {
-    console.log('Starting photo migration to Cloudinary...')
-
-    // Get all ratings with photos
-    const allRatings = await pool.query(
-      'SELECT id, photo, user_name FROM ratings WHERE photo IS NOT NULL AND photo != \'\' ORDER BY created_at DESC'
-    )
-
-    console.log(`Found ${allRatings.rows.length} ratings with photos`)
-
-    let uploadedCount = 0
-    let skippedCount = 0
-    const errors = []
-
-    for (let i = 0; i < allRatings.rows.length; i++) {
-      const rating = allRatings.rows[i]
-      try {
-        console.log(`[${i + 1}/${allRatings.rows.length}] Processing rating ${rating.id}...`)
-
-        // Skip if already a Cloudinary URL
-        if (rating.photo.includes('cloudinary.com') || rating.photo.includes('res.cloudinary.com')) {
-          console.log(`Skipping - already Cloudinary URL`)
-          skippedCount++
-          continue
-        }
-
-        // Skip if not a data URL or valid image
-        if (!rating.photo.startsWith('data:image/')) {
-          console.log(`Skipping - invalid photo format: ${rating.photo.substring(0, 50)}`)
-          skippedCount++
-          continue
-        }
-
-        console.log(`Uploading photo (${Math.round(rating.photo.length / 1024)}KB)...`)
-
-        // Upload to Cloudinary with timeout and retry
-        let result
-        let retries = 0
-        const maxRetries = 3
-
-        while (retries < maxRetries) {
-          try {
-            result = await Promise.race([
-              cloudinary.uploader.upload(rating.photo, {
-                folder: 'matcha-ratings-migration',
-                resource_type: 'auto',
-                quality: 'auto',
-                fetch_format: 'auto',
-                timeout: 60000
-              }),
-              new Promise((_, reject) =>
-                setTimeout(() => reject(new Error('Upload timeout after 60s')), 65000)
-              )
-            ])
-            break // Success
-          } catch (uploadError) {
-            retries++
-            console.error(`Upload attempt ${retries}/${maxRetries} failed:`, uploadError.message)
-            if (retries < maxRetries) {
-              await new Promise(resolve => setTimeout(resolve, 1000 * retries)) // Backoff
-            } else {
-              throw uploadError
-            }
-          }
-        }
-
-        // Update database with new URL
-        await pool.query(
-          'UPDATE ratings SET photo = $1 WHERE id = $2',
-          [result.secure_url, rating.id]
-        )
-
-        uploadedCount++
-        console.log(`✓ Migrated rating ${rating.id}`)
-
-        // Small delay to avoid rate limiting
-        if (i < allRatings.rows.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 100))
-        }
-      } catch (error) {
-        console.error(`✗ Failed rating ${rating.id}:`, error.message)
-        errors.push({ ratingId: rating.id, error: error.message })
-      }
-    }
-
-    console.log(`Migration complete: ${uploadedCount} uploaded, ${skippedCount} skipped, ${errors.length} errors`)
-
-    return res.json({
-      ok: true,
-      message: `Photo migration complete`,
-      uploadedCount,
-      skippedCount,
-      errorCount: errors.length,
-      errors: errors.slice(0, 10)
-    })
-  } catch (error) {
-    console.error('Photo migration failed:', error)
-    return res.status(500).json({ error: 'Photo migration failed', details: String(error.message) })
-  }
-})
+// Admin/maintenance routes. Mounted BEFORE the auth gate below so they don't
+// require a session — they're used by ops scripts (migrate-photos, delete-user).
+app.use('/api', adminRouter)
 
 // Protect all /api routes with auth, except the migration endpoint
 app.use('/api', (req, res, next) => {
