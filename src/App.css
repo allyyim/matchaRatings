@@ -1087,9 +1087,7 @@ textarea.form-control {
   object-fit: contain;
   border-radius: 12px;
   margin: 0.5rem auto 0.5rem;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-light);
-  background: #f5f5f5;
+  background: transparent;
 }
 
 .entry-media-col {

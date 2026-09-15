@@ -1049,10 +1049,10 @@ const DEMO_USER_NAME = 'demo'
 const DEMO_PHOTO_BASE = 'https://allyyim.github.io/matchaRatings/demo'
 async function seedDemoData(userName) {
   const seeds = [
-    { location: 'Cha Cha Matcha (NYC)', rating: 4.5, greenness: 88, thoughts: 'Vibrant color, smooth umami finish. Loved the ceremonial grade.', flavors: ['umami', 'sweet', 'creamy', '__body:medium'] },
+    { location: 'Cha Cha Matcha (NYC)', photo: `${DEMO_PHOTO_BASE}/chacha.png`, rating: 4.5, greenness: 78, thoughts: 'Vibrant color, smooth umami finish. Strawberry base peeks through, dropping greenness a touch.', flavors: ['umami', 'sweet', 'creamy', '__body:medium'] },
     { location: 'Ippodo Tea (Kyoto)', photo: `${DEMO_PHOTO_BASE}/ippodo.png`, rating: 5, greenness: 97, thoughts: 'Benchmark quality. Deep vegetal notes, silky mouthfeel, zero bitterness.', flavors: ['umami', 'vegetal', 'creamy', 'sweet'] },
-    { location: 'Blue Bottle (SF)', rating: 3.5, greenness: 72, thoughts: 'Balanced but leaned bitter. Slightly muted color.', flavors: ['bitter', 'nutty', 'earthy'] },
-    { location: 'Matchaful (NYC)', rating: 4, greenness: 84, thoughts: 'Bright, grassy, with a clean sweet finish. Great daily driver.', flavors: ['vegetal', 'sweet', 'umami'] },
+    { location: 'Blue Bottle (SF)', photo: `${DEMO_PHOTO_BASE}/bluebottle.png`, rating: 3.5, greenness: 74, thoughts: 'Balanced but leaned bitter. Iced pour looked a bit muted next to the ceremonial-grade cups.', flavors: ['bitter', 'nutty', 'earthy'] },
+    { location: 'Matchaful (NYC)', photo: `${DEMO_PHOTO_BASE}/matchaful.png`, rating: 4, greenness: 88, thoughts: 'Bright, grassy, with a clean sweet finish. Great daily driver — vivid green through and through.', flavors: ['vegetal', 'sweet', 'umami'] },
     { location: 'Stonemill Matcha (SF)', photo: `${DEMO_PHOTO_BASE}/stonemill.png`, rating: 4.5, greenness: 80, thoughts: 'Rich, creamy, chocolatey undertones. Great with oat milk — strawberry base peeked through so the greenness dipped.', flavors: ['creamy', 'chocolatey', 'mellow', 'sweet'] },
     { location: 'Kettl Tea (Brooklyn)', photo: `${DEMO_PHOTO_BASE}/kettl.png`, rating: 4.5, greenness: 92, thoughts: 'Elegant, floral top-notes and lingering umami. Ceremonial grade layered over cold milk.', flavors: ['floral', 'umami', 'vegetal', 'sweet'] },
     { location: 'Boba Guys (SF)', rating: 3, greenness: 60, thoughts: 'Solid latte base, but leans sugary. Would order iced.', flavors: ['sugary', 'sweet', 'mellow'] }
@@ -1099,7 +1099,10 @@ app.post('/api/auth/demo', authRateLimiter, async (req, res) => {
       const photoUpdates = [
         { location: 'Ippodo Tea (Kyoto)', photo: `${DEMO_PHOTO_BASE}/ippodo.png`, greenness: 97 },
         { location: 'Kettl Tea (Brooklyn)', photo: `${DEMO_PHOTO_BASE}/kettl.png`, greenness: 92 },
-        { location: 'Stonemill Matcha (SF)', photo: `${DEMO_PHOTO_BASE}/stonemill.png`, greenness: 80 }
+        { location: 'Stonemill Matcha (SF)', photo: `${DEMO_PHOTO_BASE}/stonemill.png`, greenness: 80 },
+        { location: 'Cha Cha Matcha (NYC)', photo: `${DEMO_PHOTO_BASE}/chacha.png`, greenness: 78 },
+        { location: 'Blue Bottle (SF)', photo: `${DEMO_PHOTO_BASE}/bluebottle.png`, greenness: 74 },
+        { location: 'Matchaful (NYC)', photo: `${DEMO_PHOTO_BASE}/matchaful.png`, greenness: 88 }
       ]
       for (const p of photoUpdates) {
         await pool.query(
@@ -2534,7 +2537,10 @@ async function initBackground() {
     const demoPhotoUpdates = [
       { location: 'Ippodo Tea (Kyoto)', photo: `${DEMO_PHOTO_BASE}/ippodo.png`, greenness: 97 },
       { location: 'Kettl Tea (Brooklyn)', photo: `${DEMO_PHOTO_BASE}/kettl.png`, greenness: 92 },
-      { location: 'Stonemill Matcha (SF)', photo: `${DEMO_PHOTO_BASE}/stonemill.png`, greenness: 80 }
+      { location: 'Stonemill Matcha (SF)', photo: `${DEMO_PHOTO_BASE}/stonemill.png`, greenness: 80 },
+      { location: 'Cha Cha Matcha (NYC)', photo: `${DEMO_PHOTO_BASE}/chacha.png`, greenness: 78 },
+      { location: 'Blue Bottle (SF)', photo: `${DEMO_PHOTO_BASE}/bluebottle.png`, greenness: 74 },
+      { location: 'Matchaful (NYC)', photo: `${DEMO_PHOTO_BASE}/matchaful.png`, greenness: 88 }
     ]
     for (const p of demoPhotoUpdates) {
       const r = await pool.query(
