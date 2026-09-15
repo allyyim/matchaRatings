@@ -9,6 +9,7 @@ import { analyzeGreennessFromDataUrl, loadRandomForest } from './lib/greenness'
 import type { RatingEntry } from './lib/types'
 import { useDemoCleanup } from './hooks/useDemoCleanup'
 import { usePreferences } from './hooks/usePreferences'
+import { useSession } from './hooks/useSession'
 import {
   API_BASE_URL,
   API_REQUEST_TIMEOUT_MS,
@@ -16,7 +17,6 @@ import {
   apiFetch,
   friendlyErrorMessage,
   getSessionToken,
-  setSessionToken,
 } from './lib/api'
 import { readCache, writeCache } from './lib/cache'
 import {
@@ -221,17 +221,6 @@ function compareEntriesForRank(a: RatingEntry, b: RatingEntry) {
   return b.greenness - a.greenness
 }
 
-function createFallbackBrowserId() {
-  return `mb-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
-}
-
-function getSafeRandomUuid() {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return crypto.randomUUID()
-  }
-  return createFallbackBrowserId()
-}
-
 function downscaleDataUrlImage(dataUrl: string, maxDimension = 1280, quality = 0.82): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image()
@@ -272,20 +261,13 @@ function downscaleDataUrlImage(dataUrl: string, maxDimension = 1280, quality = 0
   })
 }
 
-function getBrowserId() {
-  const existing = localStorage.getItem('matchaBrowserId')
-  if (existing) return existing
-  const generated = getSafeRandomUuid()
-  localStorage.setItem('matchaBrowserId', generated)
-  return generated
-}
-
 function getGreennessRefreshKey(userName: string) {
   return `matchaGreennessRefreshed:${userName.trim().toLowerCase()}`
 }
 
 // getSessionToken / setSessionToken / ApiError / friendlyErrorMessage /
 // apiFetch all live in src/lib/api.ts.
+// getBrowserId / signIn / signOut live in src/hooks/useSession.ts.
 
 function isPlausibleLocationName(value: string): boolean {
   const trimmed = value.trim()
@@ -306,13 +288,18 @@ function isPlausibleLocationName(value: string): boolean {
 
 function App() {
   const [activePage, setActivePage] = useState<Page>('home')
-  const [browserId] = useState(() => getBrowserId())
-  const [currentUserName, setCurrentUserName] = useState('')
+  const {
+    currentUserName,
+    isUserReady,
+    browserId,
+    setCurrentUserName,
+    signIn,
+    signOut: sessionSignOut,
+  } = useSession()
   const [pendingUserName, setPendingUserName] = useState('')
   const [requiresManualName, setRequiresManualName] = useState(false)
   const [isSubmittingName, setIsSubmittingName] = useState(false)
   const [usernameAvailability, setUsernameAvailability] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle')
-  const [isUserReady, setIsUserReady] = useState(false)
   const [authError, setAuthError] = useState('')
   const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser' | 'confirm-account' | 'magic-link' | 'magic-link-username'>('choice')
   const [welcomeMessage, setWelcomeMessage] = useState('')
@@ -680,11 +667,8 @@ function App() {
             method: 'POST',
             body: JSON.stringify(requestBody)
           })
-          setSessionToken(response.token || '')
-          localStorage.setItem('matchaUserName', response.userName)
-          setCurrentUserName(response.userName)
+          signIn({ userName: response.userName, token: response.token || '' })
           setRequiresManualName(false)
-          setIsUserReady(true)
           setWelcomeMessage(response.userName)
           setVerifiedAccountName(null)
           setTimeout(() => setWelcomeMessage(''), 1800)
@@ -792,9 +776,8 @@ function App() {
           // Returning user with a cached session: skip the login prompt entirely.
           console.log('Restoring session for:', savedName)
           if (mounted) {
-            setCurrentUserName(savedName)
+            signIn({ userName: savedName, persistUserName: false })
             setRequiresManualName(false)
-            setIsUserReady(true)
           }
           void loadRandomForest().catch(() => undefined)
           return
@@ -968,11 +951,8 @@ function App() {
         method: 'POST',
         body: JSON.stringify({ browserId })
       })
-      setSessionToken(response.token || '')
-      localStorage.setItem('matchaUserName', response.userName)
-      setCurrentUserName(response.userName)
+      signIn({ userName: response.userName, token: response.token || '' })
       setRequiresManualName(false)
-      setIsUserReady(true)
       setWelcomeMessage(response.userName)
       setTimeout(() => setWelcomeMessage(''), 1800)
     } catch (error) {
@@ -1025,11 +1005,8 @@ function App() {
             method: 'POST',
             body: JSON.stringify({ token: authToken, browserId })
           })
-          setSessionToken(response.token || '')
-          localStorage.setItem('matchaUserName', response.userName)
-          setCurrentUserName(response.userName)
+          signIn({ userName: response.userName, token: response.token || '' })
           sessionStorage.setItem('justSignedUp', 'true')
-          setIsUserReady(true)
           window.history.replaceState({}, document.title, window.location.pathname)
           void loadRandomForest().catch(() => undefined)
         } catch (error) {
@@ -1052,13 +1029,10 @@ function App() {
         console.warn('demo cleanup on signOut failed (non-fatal):', err)
       })
     }
-    setSessionToken('')
-    localStorage.removeItem('matchaUserName')
-    setCurrentUserName('')
+    sessionSignOut()
     setPendingUserName('')
     setAuthError('')
     setRequiresManualName(false)
-    setIsUserReady(false)
     setAuthMode('choice')
     setCurrentAvatarUrl(null)
   }
@@ -1092,11 +1066,8 @@ function App() {
         method: 'POST',
         body: JSON.stringify({ token: sessionStorage.getItem('googleAccessToken'), userName, browserId })
       })
-      setSessionToken(response.token || '')
-      localStorage.setItem('matchaUserName', response.userName)
-      setCurrentUserName(response.userName)
+      signIn({ userName: response.userName, token: response.token || '' })
       setRequiresManualName(false)
-      setIsUserReady(true)
       sessionStorage.removeItem('googleAccessToken')
       void loadRandomForest().catch(() => undefined)
     } catch (error) {
@@ -2360,11 +2331,8 @@ function App() {
                       method: 'POST',
                       body: JSON.stringify({ token: googleAccessToken, browserId, confirmedUserName: selectedPotentialAccount })
                     })
-                    setSessionToken(response.token || '')
-                    localStorage.setItem('matchaUserName', response.userName)
-                    setCurrentUserName(response.userName)
+                    signIn({ userName: response.userName, token: response.token || '' })
                     setRequiresManualName(false)
-                    setIsUserReady(true)
                     setWelcomeMessage(response.userName)
                     setTimeout(() => setWelcomeMessage(''), 1800)
                     void loadRandomForest().catch(() => undefined)
@@ -2593,11 +2561,8 @@ function App() {
                     method: 'POST',
                     body: JSON.stringify({ token: googleAccessToken, browserId, userName: name })
                   })
-                  setSessionToken(response.token || '')
-                  localStorage.setItem('matchaUserName', response.userName)
-                  setCurrentUserName(response.userName)
+                  signIn({ userName: response.userName, token: response.token || '' })
                   setRequiresManualName(false)
-                  setIsUserReady(true)
                   setWelcomeMessage(response.userName)
                   setPendingUserName('')
                   setTimeout(() => setWelcomeMessage(''), 1800)
