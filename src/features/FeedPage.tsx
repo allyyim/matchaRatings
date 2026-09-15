@@ -5,6 +5,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { RatingEntry } from '../lib/types'
+import { TruncatedThought } from '../lib/TruncatedThought'
 
 // Thresholds that trigger a milestone card in the Feed's "Milestone recap"
 // row. Kept in sync with the identically-shaped map inside saveEntry() so the
@@ -44,31 +45,7 @@ type FeedEvent =
   | { kind: 'rec'; ts: number; location: string; matchScore: number; flavors: string[] }
 
 function FeedThought({ text }: { text: string }) {
-  const [expanded, setExpanded] = useState(false)
-  const CHAR_LIMIT = 140
-  const trimmed = text.trim()
-  const needsTruncation = trimmed.length > CHAR_LIMIT
-  if (!needsTruncation) {
-    return <div className="feed-item-thought">"{trimmed}"</div>
-  }
-  // Word-boundary truncation: cut at the last space before CHAR_LIMIT so we
-  // don't split mid-word.
-  const slice = trimmed.slice(0, CHAR_LIMIT)
-  const lastSpace = slice.lastIndexOf(' ')
-  const preview = (lastSpace > 60 ? slice.slice(0, lastSpace) : slice).replace(/[,\s]+$/, '')
-  return (
-    <div className="feed-item-thought">
-      "{expanded ? trimmed : `${preview}…`}"
-      {' '}
-      <button
-        type="button"
-        className="feed-see-more"
-        onClick={() => setExpanded((v) => !v)}
-      >
-        {expanded ? 'See less' : 'See more'}
-      </button>
-    </div>
-  )
+  return <TruncatedThought text={text} as="div" className="feed-item-thought" quote />
 }
 
 export default function FeedPage(props: {

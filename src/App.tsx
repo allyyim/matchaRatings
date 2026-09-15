@@ -8,6 +8,18 @@ import { SHADE_OPTIONS, shadeColorForGreenness } from './lib/shade'
 import { analyzeGreennessFromDataUrl, loadRandomForest } from './lib/greenness'
 import type { RatingEntry } from './lib/types'
 import { useDemoCleanup } from './hooks/useDemoCleanup'
+import {
+  FLAVOR_LIST,
+  BODY_PROFILE_OPTIONS,
+  sortFlavorsByColor,
+  isKnownFlavor,
+  getBodyProfile,
+  setBodyProfile,
+  bodyProfileLabel,
+  flavorColor,
+  bodyColor,
+} from './lib/flavors'
+import { TruncatedThought } from './lib/TruncatedThought'
 
 // Feature tabs — code-split so first paint doesn't pay for them. Each chunk
 // is only fetched when the user navigates into that tab.
@@ -28,97 +40,8 @@ if (SENTRY_DSN) {
   })
 }
 
-const FLAVOR_LIST = ['Chocolatey', 'nutty', 'velvety', 'rich', 'sweet', 'sugary', 'creamy', 'umami', 'earthy', 'vegetal', 'floral', 'astringent', 'bitter', 'mellow', 'smooth'] as const
-const BODY_PROFILE_OPTIONS: Array<{ value: 'full-bodied' | 'medium' | 'milky'; label: string; desc: string }> = [
-  { value: 'full-bodied', label: 'Full-bodied', desc: 'Rich, thick, and coats the tongue — a bold matcha-forward mouthfeel.' },
-  { value: 'medium', label: 'Medium', desc: 'Balanced weight and creaminess — not too heavy, not too light.' },
-  { value: 'milky', label: 'Milky', desc: 'Lighter and creamier — milk or foam takes the lead over the matcha.' }
-]
-
-// Ordering by color group so tags of the same palette sit next to each other.
-const FLAVOR_COLOR_ORDER: Record<string, number> = {
-  chocolatey: 0, nutty: 1, velvety: 2, rich: 3,
-  sweet: 4, sugary: 5, creamy: 6,
-  umami: 7, earthy: 8, vegetal: 9, floral: 10,
-  astringent: 11, bitter: 12,
-  mellow: 13, smooth: 14,
-}
-function sortFlavorsByColor(flavors: string[]): string[] {
-  return [...flavors].sort((a, b) => {
-    const ra = FLAVOR_COLOR_ORDER[String(a).toLowerCase()] ?? 99
-    const rb = FLAVOR_COLOR_ORDER[String(b).toLowerCase()] ?? 99
-    return ra - rb
-  })
-}
-
-function isKnownFlavor(key: string) {
-  return FLAVOR_LIST.some((f) => f === key)
-}
-
-function getBodyProfile(prefs?: Record<string, number>): '' | 'full-bodied' | 'medium' | 'milky' {
-  if (!prefs) return ''
-  for (const opt of BODY_PROFILE_OPTIONS) {
-    if (Number(prefs[`__body:${opt.value}`]) > 0) return opt.value
-  }
-  return ''
-}
-
-function setBodyProfile(prefs: Record<string, number>, body: '' | 'full-bodied' | 'medium' | 'milky'): Record<string, number> {
-  const next = { ...prefs }
-  for (const opt of BODY_PROFILE_OPTIONS) {
-    delete next[`__body:${opt.value}`]
-  }
-  if (body) next[`__body:${body}`] = 100
-  return next
-}
-
-function bodyProfileLabel(body: string) {
-  const opt = BODY_PROFILE_OPTIONS.find((o) => o.value === body)
-  return opt ? opt.label : ''
-}
-
-// Per-flavor palette. Returns background + text + border color for a tag/bubble.
-function flavorColor(flavor: string): { bg: string; fg: string; border: string } {
-  const key = String(flavor || '').toLowerCase()
-  if (key === 'chocolatey' || key === 'nutty' || key === 'velvety' || key === 'rich') return { bg: '#815355', fg: '#ffffff', border: '#5c3839' }
-  if (key === 'sugary' || key === 'sweet' || key === 'creamy') return { bg: '#E0BAD7', fg: '#5a2a4b', border: '#c290b3' }
-  if (['earthy', 'vegetal', 'floral', 'umami'].includes(key)) return { bg: '#63a375', fg: '#ffffff', border: '#4a7d5a' }
-  if (key === 'astringent' || key === 'bitter') return { bg: '#F8FA90', fg: '#5c5d1c', border: '#c9cb6d' }
-  if (key === 'mellow' || key === 'smooth') return { bg: '#A9DEF9', fg: '#1e4a5f', border: '#7fbbdc' }
-  return { bg: '#82D99E', fg: '#0b6e4f', border: '#0b6e4f' }
-}
-
-// Body palette: varying shades of #3AAFB9.
-function bodyColor(body: string): { bg: string; fg: string; border: string } {
-  if (body === 'full-bodied') return { bg: '#26808a', fg: '#ffffff', border: '#1a5f66' }
-  if (body === 'medium') return { bg: '#3AAFB9', fg: '#ffffff', border: '#26808a' }
-  if (body === 'milky') return { bg: '#8ed5db', fg: '#0e3d43', border: '#5aa9b1' }
-  return { bg: '#3AAFB9', fg: '#ffffff', border: '#26808a' }
-}
-
 function EntryThought({ text }: { text: string }) {
-  const [expanded, setExpanded] = useState(false)
-  const CHAR_LIMIT = 140
-  const trimmed = text.trim()
-  if (trimmed.length <= CHAR_LIMIT) {
-    return <p className="entry-thoughts">{trimmed}</p>
-  }
-  const slice = trimmed.slice(0, CHAR_LIMIT)
-  const lastSpace = slice.lastIndexOf(' ')
-  const preview = (lastSpace > 60 ? slice.slice(0, lastSpace) : slice).replace(/[,\s]+$/, '')
-  return (
-    <p className="entry-thoughts">
-      {expanded ? trimmed : `${preview}…`}
-      {' '}
-      <button
-        type="button"
-        className="feed-see-more"
-        onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v) }}
-      >
-        {expanded ? 'See less' : 'See more'}
-      </button>
-    </p>
-  )
+  return <TruncatedThought text={text} as="p" className="entry-thoughts" stopPropagation />
 }
 
 function BodyInfoIcon() {
