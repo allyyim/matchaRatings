@@ -28,7 +28,7 @@ if (SENTRY_DSN) {
   })
 }
 
-const FLAVOR_LIST = ['Chocolatey', 'nutty', 'sweet', 'sugary', 'creamy', 'umami', 'earthy', 'vegetal', 'floral', 'astringent', 'bitter', 'mellow'] as const
+const FLAVOR_LIST = ['Chocolatey', 'nutty', 'velvety', 'rich', 'sweet', 'sugary', 'creamy', 'umami', 'earthy', 'vegetal', 'floral', 'astringent', 'bitter', 'mellow', 'smooth'] as const
 const BODY_PROFILE_OPTIONS: Array<{ value: 'full-bodied' | 'medium' | 'milky'; label: string; desc: string }> = [
   { value: 'full-bodied', label: 'Full-bodied', desc: 'Rich, thick, and coats the tongue — a bold matcha-forward mouthfeel.' },
   { value: 'medium', label: 'Medium', desc: 'Balanced weight and creaminess — not too heavy, not too light.' },
@@ -37,11 +37,11 @@ const BODY_PROFILE_OPTIONS: Array<{ value: 'full-bodied' | 'medium' | 'milky'; l
 
 // Ordering by color group so tags of the same palette sit next to each other.
 const FLAVOR_COLOR_ORDER: Record<string, number> = {
-  chocolatey: 0, nutty: 1,
-  sweet: 2, sugary: 3, creamy: 4,
-  umami: 5, earthy: 6, vegetal: 7, floral: 8,
-  astringent: 9, bitter: 10,
-  mellow: 11,
+  chocolatey: 0, nutty: 1, velvety: 2, rich: 3,
+  sweet: 4, sugary: 5, creamy: 6,
+  umami: 7, earthy: 8, vegetal: 9, floral: 10,
+  astringent: 11, bitter: 12,
+  mellow: 13, smooth: 14,
 }
 function sortFlavorsByColor(flavors: string[]): string[] {
   return [...flavors].sort((a, b) => {
@@ -80,11 +80,11 @@ function bodyProfileLabel(body: string) {
 // Per-flavor palette. Returns background + text + border color for a tag/bubble.
 function flavorColor(flavor: string): { bg: string; fg: string; border: string } {
   const key = String(flavor || '').toLowerCase()
-  if (key === 'chocolatey' || key === 'nutty') return { bg: '#815355', fg: '#ffffff', border: '#5c3839' }
+  if (key === 'chocolatey' || key === 'nutty' || key === 'velvety' || key === 'rich') return { bg: '#815355', fg: '#ffffff', border: '#5c3839' }
   if (key === 'sugary' || key === 'sweet' || key === 'creamy') return { bg: '#E0BAD7', fg: '#5a2a4b', border: '#c290b3' }
   if (['earthy', 'vegetal', 'floral', 'umami'].includes(key)) return { bg: '#63a375', fg: '#ffffff', border: '#4a7d5a' }
   if (key === 'astringent' || key === 'bitter') return { bg: '#F8FA90', fg: '#5c5d1c', border: '#c9cb6d' }
-  if (key === 'mellow') return { bg: '#A9DEF9', fg: '#1e4a5f', border: '#7fbbdc' }
+  if (key === 'mellow' || key === 'smooth') return { bg: '#A9DEF9', fg: '#1e4a5f', border: '#7fbbdc' }
   return { bg: '#82D99E', fg: '#0b6e4f', border: '#0b6e4f' }
 }
 
@@ -542,7 +542,7 @@ function App() {
   const [verifiedAccountName, setVerifiedAccountName] = useState<string | null>(null)
 
   const [currentRating, setCurrentRating] = useState(0)
-  const [ratingFlavorPrefs, setRatingFlavorPrefs] = useState<Record<string, number>>({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, mellow: 0, bitter: 0 })
+  const [ratingFlavorPrefs, setRatingFlavorPrefs] = useState<Record<string, number>>({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, velvety: 0, rich: 0, smooth: 0, mellow: 0, bitter: 0 })
   const [location, setLocation] = useState('')
   const [locationSuggestions, setLocationSuggestions] = useState<string[]>([])
   const [isLocationLookupPending, setIsLocationLookupPending] = useState(false)
@@ -963,7 +963,7 @@ function App() {
       setIsMyRatingsFilterOpen(false)
       setIsNewLogOpen(false)
       setCurrentRating(0)
-      setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, mellow: 0, bitter: 0 })
+      setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, velvety: 0, rich: 0, smooth: 0, mellow: 0, bitter: 0 })
       setLocation('')
       setThoughts('')
       setPhotoDataUrl('')
@@ -2126,7 +2126,7 @@ function App() {
       void fetchExploreData(false).catch(() => { /* silent */ })
 
       setCurrentRating(0)
-      setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, mellow: 0, bitter: 0 })
+      setRatingFlavorPrefs({ sweet: 0, nutty: 0, umami: 0, vegetal: 0, sugary: 0, astringent: 0, creamy: 0, floral: 0, earthy: 0, Chocolatey: 0, velvety: 0, rich: 0, smooth: 0, mellow: 0, bitter: 0 })
       setLocation('')
       setThoughts('')
       setPhotoDataUrl('')
@@ -3694,7 +3694,7 @@ function App() {
                   <span className="text-muted" style={{ fontSize: '0.7rem' }}>Pick any that fit</span>
                 </div>
                 <div className="pref-chip-grid pref-chip-grid-2">
-                {['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'creamy', 'floral', 'earthy', 'chocolatey', 'mellow'].map((flavor) => {
+                {['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'creamy', 'floral', 'earthy', 'chocolatey', 'velvety', 'rich', 'smooth', 'mellow'].map((flavor) => {
                   const isSelected = userFlavors.map(f => f.toLowerCase()).includes(flavor.toLowerCase())
                   return (
                     <button

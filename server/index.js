@@ -1049,13 +1049,13 @@ const DEMO_USER_NAME = 'demo'
 const DEMO_PHOTO_BASE = 'https://allyyim.github.io/matchaRatings/demo'
 async function seedDemoData(userName) {
   const seeds = [
-    { location: 'Cha Cha Matcha (NYC)', photo: `${DEMO_PHOTO_BASE}/chacha.png`, rating: 4.5, greenness: 78, thoughts: 'Vibrant color, smooth umami finish. Strawberry base peeks through, dropping greenness a touch.', flavors: ['umami', 'sweet', 'creamy', '__body:medium'] },
-    { location: 'Ippodo Tea (Kyoto)', photo: `${DEMO_PHOTO_BASE}/ippodo.png`, rating: 5, greenness: 97, thoughts: 'Benchmark quality. Deep vegetal notes, silky mouthfeel, zero bitterness.', flavors: ['umami', 'vegetal', 'creamy', 'sweet'] },
-    { location: 'Blue Bottle (SF)', photo: `${DEMO_PHOTO_BASE}/bluebottle.png`, rating: 3.5, greenness: 74, thoughts: 'Balanced but leaned bitter. Iced pour looked a bit muted next to the ceremonial-grade cups.', flavors: ['bitter', 'nutty', 'earthy'] },
-    { location: 'Matchaful (NYC)', photo: `${DEMO_PHOTO_BASE}/matchaful.png`, rating: 4, greenness: 88, thoughts: 'Bright, grassy, with a clean sweet finish. Great daily driver — vivid green through and through.', flavors: ['vegetal', 'sweet', 'umami'] },
-    { location: 'Stonemill Matcha (SF)', photo: `${DEMO_PHOTO_BASE}/stonemill.png`, rating: 4.5, greenness: 80, thoughts: 'Rich, creamy, chocolatey undertones. Great with oat milk — strawberry base peeked through so the greenness dipped.', flavors: ['creamy', 'chocolatey', 'mellow', 'sweet'] },
-    { location: 'Kettl Tea (Brooklyn)', photo: `${DEMO_PHOTO_BASE}/kettl.png`, rating: 4.5, greenness: 92, thoughts: 'Elegant, floral top-notes and lingering umami. Ceremonial grade layered over cold milk.', flavors: ['floral', 'umami', 'vegetal', 'sweet'] },
-    { location: 'Boba Guys (SF)', rating: 3, greenness: 60, thoughts: 'Solid latte base, but leans sugary. Would order iced.', flavors: ['sugary', 'sweet', 'mellow'] }
+    { location: 'Cha Cha Matcha (NYC)', photo: `${DEMO_PHOTO_BASE}/chacha.png`, rating: 4.5, greenness: 78, thoughts: 'Vibrant color, smooth umami finish. Strawberry base peeks through, dropping greenness a touch.', flavors: ['earthy', 'bitter', '__body:medium'] },
+    { location: 'Ippodo Tea (Kyoto)', photo: `${DEMO_PHOTO_BASE}/ippodo.png`, rating: 5, greenness: 97, thoughts: 'Benchmark quality. Deep vegetal notes, silky mouthfeel, zero bitterness.', flavors: ['nutty', 'velvety', 'umami', 'chocolatey', '__body:full-bodied'] },
+    { location: 'Blue Bottle (SF)', photo: `${DEMO_PHOTO_BASE}/bluebottle.png`, rating: 3.5, greenness: 74, thoughts: 'Balanced but leaned bitter. Iced pour looked a bit muted next to the ceremonial-grade cups.', flavors: ['mellow', 'earthy', '__body:milky'] },
+    { location: 'Matchaful (NYC)', photo: `${DEMO_PHOTO_BASE}/matchaful.png`, rating: 4, greenness: 88, thoughts: 'Bright, grassy, with a clean sweet finish. Great daily driver — vivid green through and through.', flavors: ['smooth', 'umami', 'nutty', 'sweet', '__body:medium'] },
+    { location: 'Stonemill Matcha (SF)', photo: `${DEMO_PHOTO_BASE}/stonemill.png`, rating: 4.5, greenness: 80, thoughts: 'Rich, creamy, chocolatey undertones. Great with oat milk — strawberry base peeked through so the greenness dipped.', flavors: ['earthy', '__body:medium'] },
+    { location: 'Kettl Tea (Brooklyn)', photo: `${DEMO_PHOTO_BASE}/kettl.png`, rating: 4.5, greenness: 92, thoughts: 'Elegant, floral top-notes and lingering umami. Ceremonial grade layered over cold milk.', flavors: ['nutty', 'sweet', 'creamy', '__body:full-bodied'] },
+    { location: 'Boba Guys (SF)', rating: 3, greenness: 60, thoughts: 'Solid latte base, but leans sugary. Would order iced.', flavors: ['earthy', 'rich'] }
   ]
   for (const s of seeds) {
     await pool.query(
@@ -2530,32 +2530,34 @@ async function initBackground() {
     console.error('Error linking users:', error)
   }
 
-  // One-shot backfill: sync demo showcase photos + recalibrated greenness
+  // One-shot backfill: sync demo showcase photos, greenness, and flavors
   // onto seed rows for any pre-existing demo account. Idempotent — safe to
   // run every boot.
   try {
-    const demoPhotoUpdates = [
-      { location: 'Ippodo Tea (Kyoto)', photo: `${DEMO_PHOTO_BASE}/ippodo.png`, greenness: 97 },
-      { location: 'Kettl Tea (Brooklyn)', photo: `${DEMO_PHOTO_BASE}/kettl.png`, greenness: 92 },
-      { location: 'Stonemill Matcha (SF)', photo: `${DEMO_PHOTO_BASE}/stonemill.png`, greenness: 80 },
-      { location: 'Cha Cha Matcha (NYC)', photo: `${DEMO_PHOTO_BASE}/chacha.png`, greenness: 78 },
-      { location: 'Blue Bottle (SF)', photo: `${DEMO_PHOTO_BASE}/bluebottle.png`, greenness: 74 },
-      { location: 'Matchaful (NYC)', photo: `${DEMO_PHOTO_BASE}/matchaful.png`, greenness: 88 }
+    const demoSeedUpdates = [
+      { location: 'Ippodo Tea (Kyoto)', photo: `${DEMO_PHOTO_BASE}/ippodo.png`, greenness: 97, flavors: ['nutty', 'velvety', 'umami', 'chocolatey', '__body:full-bodied'] },
+      { location: 'Kettl Tea (Brooklyn)', photo: `${DEMO_PHOTO_BASE}/kettl.png`, greenness: 92, flavors: ['nutty', 'sweet', 'creamy', '__body:full-bodied'] },
+      { location: 'Stonemill Matcha (SF)', photo: `${DEMO_PHOTO_BASE}/stonemill.png`, greenness: 80, flavors: ['earthy', '__body:medium'] },
+      { location: 'Cha Cha Matcha (NYC)', photo: `${DEMO_PHOTO_BASE}/chacha.png`, greenness: 78, flavors: ['earthy', 'bitter', '__body:medium'] },
+      { location: 'Blue Bottle (SF)', photo: `${DEMO_PHOTO_BASE}/bluebottle.png`, greenness: 74, flavors: ['mellow', 'earthy', '__body:milky'] },
+      { location: 'Matchaful (NYC)', photo: `${DEMO_PHOTO_BASE}/matchaful.png`, greenness: 88, flavors: ['smooth', 'umami', 'nutty', 'sweet', '__body:medium'] },
+      { location: 'Boba Guys (SF)', photo: '', greenness: 60, flavors: ['earthy', 'rich'] }
     ]
-    for (const p of demoPhotoUpdates) {
+    for (const p of demoSeedUpdates) {
+      const flavorsJson = JSON.stringify(p.flavors)
       const r = await pool.query(
-        `UPDATE ratings SET photo = $1, greenness = $2
-           WHERE LOWER(user_name) = LOWER($3) AND is_seed = TRUE
-             AND LOWER(location) = LOWER($4)
-             AND (photo IS NULL OR photo = '' OR photo <> $1 OR greenness <> $2)`,
-        [p.photo, p.greenness, DEMO_USER_NAME, p.location]
+        `UPDATE ratings SET photo = $1, greenness = $2, flavor_preferences = $3
+           WHERE LOWER(user_name) = LOWER($4) AND is_seed = TRUE
+             AND LOWER(location) = LOWER($5)
+             AND (photo IS DISTINCT FROM $1 OR greenness <> $2 OR flavor_preferences::text <> $3)`,
+        [p.photo, p.greenness, flavorsJson, DEMO_USER_NAME, p.location]
       )
       if (r.rowCount > 0) {
-        console.log(`✓ Backfilled demo photo for ${p.location}`)
+        console.log(`✓ Backfilled demo row for ${p.location}`)
       }
     }
   } catch (error) {
-    console.error('Demo photo backfill failed:', error)
+    console.error('Demo seed backfill failed:', error)
   }
 }
 
