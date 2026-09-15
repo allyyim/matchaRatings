@@ -1043,21 +1043,25 @@ app.get('/api/auth/check-username', async (req, res) => {
 // explore leaderboards, similar users/places, follows) so recruiter-facing seed data never
 // leaks into the real PWA/website experience for normal users.
 const DEMO_USER_NAME = 'demo'
+// Base URL for demo-only static photo assets. Points to the GitHub Pages
+// build so the images load correctly whether the demo runs on Render or on
+// the GH Pages mirror. Files are checked in at public/demo/*.png.
+const DEMO_PHOTO_BASE = 'https://allyyim.github.io/matchaRatings/demo'
 async function seedDemoData(userName) {
   const seeds = [
     { location: 'Cha Cha Matcha (NYC)', rating: 4.5, greenness: 88, thoughts: 'Vibrant color, smooth umami finish. Loved the ceremonial grade.', flavors: ['umami', 'sweet', 'creamy', '__body:medium'] },
-    { location: 'Ippodo Tea (Kyoto)', rating: 5, greenness: 96, thoughts: 'Benchmark quality. Deep vegetal notes, silky mouthfeel, zero bitterness.', flavors: ['umami', 'vegetal', 'creamy', 'sweet'] },
+    { location: 'Ippodo Tea (Kyoto)', photo: `${DEMO_PHOTO_BASE}/ippodo.png`, rating: 5, greenness: 97, thoughts: 'Benchmark quality. Deep vegetal notes, silky mouthfeel, zero bitterness.', flavors: ['umami', 'vegetal', 'creamy', 'sweet'] },
     { location: 'Blue Bottle (SF)', rating: 3.5, greenness: 72, thoughts: 'Balanced but leaned bitter. Slightly muted color.', flavors: ['bitter', 'nutty', 'earthy'] },
     { location: 'Matchaful (NYC)', rating: 4, greenness: 84, thoughts: 'Bright, grassy, with a clean sweet finish. Great daily driver.', flavors: ['vegetal', 'sweet', 'umami'] },
-    { location: 'Stonemill Matcha (SF)', rating: 4.5, greenness: 90, thoughts: 'Rich, creamy, chocolatey undertones. Great with oat milk.', flavors: ['creamy', 'chocolatey', 'mellow', 'sweet'] },
-    { location: 'Kettl Tea (Brooklyn)', rating: 4.5, greenness: 92, thoughts: 'Elegant, floral top-notes and lingering umami. Ceremonial grade.', flavors: ['floral', 'umami', 'vegetal', 'sweet'] },
+    { location: 'Stonemill Matcha (SF)', photo: `${DEMO_PHOTO_BASE}/stonemill.png`, rating: 4.5, greenness: 80, thoughts: 'Rich, creamy, chocolatey undertones. Great with oat milk — strawberry base peeked through so the greenness dipped.', flavors: ['creamy', 'chocolatey', 'mellow', 'sweet'] },
+    { location: 'Kettl Tea (Brooklyn)', photo: `${DEMO_PHOTO_BASE}/kettl.png`, rating: 4.5, greenness: 92, thoughts: 'Elegant, floral top-notes and lingering umami. Ceremonial grade layered over cold milk.', flavors: ['floral', 'umami', 'vegetal', 'sweet'] },
     { location: 'Boba Guys (SF)', rating: 3, greenness: 60, thoughts: 'Solid latte base, but leans sugary. Would order iced.', flavors: ['sugary', 'sweet', 'mellow'] }
   ]
   for (const s of seeds) {
     await pool.query(
       `INSERT INTO ratings (user_name, photo, rating, greenness, location, thoughts, flavor_preferences, is_seed)
        VALUES ($1, $2, $3, $4, $5, $6, $7, TRUE)`,
-      [userName, '', s.rating, s.greenness, s.location, s.thoughts, JSON.stringify(s.flavors)]
+      [userName, s.photo || '', s.rating, s.greenness, s.location, s.thoughts, JSON.stringify(s.flavors)]
     )
   }
   await pool.query(
@@ -1088,6 +1092,23 @@ app.post('/api/auth/demo', authRateLimiter, async (req, res) => {
     )
     if (ratingCount.rows[0].c === 0) {
       await seedDemoData(DEMO_USER)
+    } else {
+      // Idempotent backfill: sync the three showcase photos + recalculated
+      // greenness onto existing seed rows so demo users who logged in
+      // before the photos existed still see them. Safe to run every login.
+      const photoUpdates = [
+        { location: 'Ippodo Tea (Kyoto)', photo: `${DEMO_PHOTO_BASE}/ippodo.png`, greenness: 97 },
+        { location: 'Kettl Tea (Brooklyn)', photo: `${DEMO_PHOTO_BASE}/kettl.png`, greenness: 92 },
+        { location: 'Stonemill Matcha (SF)', photo: `${DEMO_PHOTO_BASE}/stonemill.png`, greenness: 80 }
+      ]
+      for (const p of photoUpdates) {
+        await pool.query(
+          `UPDATE ratings SET photo = $1, greenness = $2
+             WHERE LOWER(user_name) = LOWER($3) AND is_seed = TRUE
+               AND LOWER(location) = LOWER($4)`,
+          [p.photo, p.greenness, DEMO_USER, p.location]
+        )
+      }
     }
     // Auto-follow the maintainer account (allyyim) from the demo account so
     // the Feed tab always has fresh friend activity to show visitors. Uses
