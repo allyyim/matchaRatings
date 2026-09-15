@@ -46,63 +46,10 @@
         -webkit-overflow-scrolling: touch;
       }
     </style>
-    <script>
-      // iOS Safari ignores user-scalable=no in the viewport meta tag,
-      // so block pinch/double-tap zoom gestures explicitly for the PWA.
-      document.addEventListener('gesturestart', function (e) { e.preventDefault(); }, { passive: false });
-      document.addEventListener('gesturechange', function (e) { e.preventDefault(); }, { passive: false });
-      document.addEventListener('gestureend', function (e) { e.preventDefault(); }, { passive: false });
-      document.addEventListener('touchmove', function (e) {
-        if (e.touches && e.touches.length > 1) e.preventDefault();
-      }, { passive: false });
-      var lastTouchEnd = 0;
-      document.addEventListener('touchend', function (e) {
-        var now = Date.now();
-        if (now - lastTouchEnd <= 350) e.preventDefault();
-        lastTouchEnd = now;
-      }, { passive: false });
-    </script>
+    <script src="%BASE_URL%bootstrap.js"></script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script>
-      // GitHub Pages SPA routing redirect restoration
-      (function() {
-        var redirect = sessionStorage.redirect;
-        delete sessionStorage.redirect;
-        if (redirect && redirect !== location.href) {
-          history.replaceState(null, null, redirect);
-        }
-      })();
-    </script>
-    <script>
-      // Redirect handler for 404.html
-      if (window.location.pathname !== '/' && !window.location.pathname.includes('.')) {
-        sessionStorage.redirect = window.location.href;
-      }
-    </script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        // Get the base path from the current URL
-        const basePath = window.location.pathname.replace(/index\.html$/, '').replace(/\/$/, '') || '/';
-        const swPath = basePath + '/service-worker.js';
-        navigator.serviceWorker.register(swPath).then(reg => {
-          console.log('Service Worker registered:', swPath);
-        }).catch(err => {
-          console.log('Service Worker registration failed:', err);
-        });
-
-        // Auto-reload once when a new service worker takes control so users get
-        // fresh code without having to reinstall the PWA. Auth token lives in
-        // localStorage, so this does not sign anyone out.
-        let __swRefreshing = false;
-        navigator.serviceWorker.addEventListener('controllerchange', function () {
-          if (__swRefreshing) return;
-          __swRefreshing = true;
-          window.location.reload();
-        });
-      }
-    </script>
   </body>
 </html>

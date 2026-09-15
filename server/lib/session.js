@@ -3,6 +3,7 @@
 // Any route that mutates a user's data should require ownership so a
 // stolen/leaked token can only affect its own account.
 
+import crypto from 'node:crypto'
 import { verifyToken } from './crypto.js'
 
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7
@@ -56,6 +57,42 @@ export function requireUserOwnership(req, res, next) {
 
   if (sessionUser.toLowerCase() !== candidate.toLowerCase()) {
     return res.status(403).json({ error: 'Forbidden: user ownership mismatch' })
+  }
+
+  return next()
+}
+
+// Admin-secret gate. Every /admin/* endpoint is an ops tool that can
+// delete users, rebind emails, or fire batch Cloudinary uploads (each
+// with a $ cost). They live BEFORE the /api session gate so an operator
+// can call them from a shell without a session token — which means they
+// need their own auth. Set ADMIN_SECRET in your Render env; requests
+// must send `Authorization: Bearer $ADMIN_SECRET`. In dev, if
+// ADMIN_SECRET is unset, admin routes 503 loud instead of silently
+// letting anyone through.
+export function requireAdminSecret(req, res, next) {
+  const configured = String(process.env.ADMIN_SECRET || '').trim()
+  if (!configured) {
+    return res.status(503).json({ error: 'Admin endpoints disabled: ADMIN_SECRET not configured' })
+  }
+
+  const authorization = String(req.headers.authorization || '')
+  const match = authorization.match(/^Bearer\s+(.+)$/i)
+  const supplied = match ? match[1].trim() : ''
+
+  if (!supplied) {
+    return res.status(401).json({ error: 'Admin authentication required' })
+  }
+
+  // Constant-time comparison so the response time doesn't leak the
+  // secret's prefix on repeated probing.
+  const a = Buffer.from(supplied)
+  const b = Buffer.from(configured)
+  if (a.length !== b.length) {
+    return res.status(403).json({ error: 'Admin authentication failed' })
+  }
+  if (!crypto.timingSafeEqual(a, b)) {
+    return res.status(403).json({ error: 'Admin authentication failed' })
   }
 
   return next()

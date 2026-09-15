@@ -78,16 +78,14 @@ app.use((req, res, next) => {
   // Content-Security-Policy: defense-in-depth against XSS. React auto-escapes
   // all rendered user content and the codebase has no dangerouslySetInnerHTML
   // or innerHTML sinks, so this is a belt over an already-tight suspenders.
-  // 'unsafe-inline' for script-src is required by the small inline bootstrap
-  // scripts in index.html (service worker registration, gesture blocking,
-  // SPA-routing restore); acceptable because there is no injection vector
-  // that could reach an inline <script> tag. Upgrade to sha256-hash pinning
-  // if index.html inline scripts stabilize.
+  // script-src is now hash-pinned: no 'unsafe-inline' — the previously
+  // inline bootstrap scripts live in public/bootstrap.js and load via
+  // 'self'. Google OAuth's script is allowlisted by host.
   res.setHeader(
     'Content-Security-Policy',
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com",
+      "script-src 'self' https://accounts.google.com https://apis.google.com",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https://res.cloudinary.com https://lh3.googleusercontent.com",

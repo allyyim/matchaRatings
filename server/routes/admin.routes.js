@@ -1,6 +1,10 @@
 // Admin + one-off migration endpoints. These sit BEFORE the general
 // /api auth gate in index.js so an operator (not a signed-in user) can
-// call them from a shell without a session token.
+// call them from a shell without a session token — but they are NOT
+// unauthenticated: every /admin/* route is gated by
+// `requireAdminSecret`, which demands `Authorization: Bearer
+// $ADMIN_SECRET`. If ADMIN_SECRET is not set in env, the whole family
+// 503s instead of silently allowing anyone through.
 //
 // If you add anything user-facing here, move it out — this file is
 // intentionally not behind session auth.
@@ -10,8 +14,15 @@ import crypto from 'node:crypto'
 import { v2 as cloudinary } from 'cloudinary'
 import { pool } from '../db.js'
 import { validateImageDataUrl } from '../lib/imageValidation.js'
+import { requireAdminSecret } from '../lib/session.js'
+import { adminRateLimiter } from '../lib/rateLimits.js'
 
 const router = express.Router()
+
+// Gate every /admin/* route below with the shared secret + tighter rate
+// limit. The legacy /migrate/ali is a hard 410 either way, so it stays
+// public (a permanently-disabled endpoint is safe to hit).
+router.use('/admin', adminRateLimiter, requireAdminSecret)
 
 // Legacy migration that used to reassign every 'Ali' rating to the
 // caller — caused every new signup to steal Ali's ratings. Kept as a

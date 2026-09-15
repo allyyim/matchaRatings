@@ -438,15 +438,26 @@ Worker: [`public/service-worker.js`](./public/service-worker.js)
 <summary><strong>Rate limits, sanitization, headers, CORS</strong></summary>
 
 ### Rate limits (per IP)
-| Tier | Limit | Endpoints |
-| --- | --- | --- |
-| Auth | **5 req/min** | All `/auth/*` mutating + `/users/session` |
-| Recs | **40 req/min** | `/similar-users`, `/similar-preferences`, `/explore/users` |
-| Global | **120 req/min** | Everything else under `/api` |
+| Tier | Limit | Endpoints | Why |
+| --- | --- | --- | --- |
+| Auth | **5 req/min** | All `/auth/*` mutating (`/request-link`, `/verify`, `/google/verify`, `/link-email`, `/demo`, ...) | Brute-force + Resend email $ cap |
+| Upload | **10 req/min** | `/api/upload-image` | Cloudinary $ cap — a hostile client can't burn 100+ uploads/min |
+| Admin | **20 req/min** | `/api/admin/*` (also require `ADMIN_SECRET`) | Ops endpoints — belt over the secret gate |
+| Recs | **40 req/min** | `/similar-users`, `/similar-preferences`, `/explore/users`, `/similar-places` | Heavy discovery joins, cache-thrash protection |
+| Global | **120 req/min** | Everything else under `/api` | Floor. Stacks on top of the tiers above |
 
 Client-side: `apiFetch` emits an `onRateLimited` event on any 429;
 `App.tsx` renders a single 4-second pill toast instead of every failing
 call surfacing its own error.
+
+### Admin endpoints
+- `/api/admin/*` are **not** publicly callable. Every request must send
+  `Authorization: Bearer $ADMIN_SECRET`. If `ADMIN_SECRET` is unset in
+  env, the whole family 503s (fail-closed).
+- Secret comparison uses `crypto.timingSafeEqual` so response time does
+  not leak the correct prefix on repeated probing.
+- Endpoints protected: `/admin/link-users`, `/admin/delete-user`,
+  `/admin/fix-ali`, `/admin/migrate-photos-to-cloudinary`.
 
 ### Sanitization
 - `sanitizeUserName()` on every user-supplied name (whitelist `[A-Za-z0-9._-]`, ≤ 40)
@@ -467,10 +478,13 @@ call surfacing its own error.
 - No local disk writes; Cloudinary is the only sink and does not execute uploads
 
 ### Headers
-- `Content-Security-Policy` — `default-src 'self'`; scripts limited to self + Google OAuth;
-  images to self/data/blob + Cloudinary + Google avatars; connect to Photon, Nominatim,
-  Google OAuth, Sentry ingest; `frame-ancestors 'none'`; `object-src 'none'`;
-  `base-uri 'self'`; `upgrade-insecure-requests`
+- `Content-Security-Policy` — **hash-free, no `'unsafe-inline'` on `script-src`**.
+  Scripts pinned to `'self'` + Google OAuth. Inline bootstrap logic
+  (iOS gesture blocking, SPA redirect, service-worker registration) was
+  extracted to `public/bootstrap.js`. `default-src 'self'`; images to
+  self/data/blob + Cloudinary + Google avatars; connect to Photon,
+  Nominatim, Google OAuth, Sentry ingest; `frame-ancestors 'none'`;
+  `object-src 'none'`; `base-uri 'self'`; `upgrade-insecure-requests`
 - `X-Content-Type-Options: nosniff`
 - `X-Frame-Options: DENY`
 - `Referrer-Policy: strict-origin-when-cross-origin`

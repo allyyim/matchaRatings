@@ -9,6 +9,7 @@ import { mapRatingRow } from '../lib/mappers.js'
 import { recsCacheInvalidate } from '../lib/recsCache.js'
 import { requireSession } from '../lib/session.js'
 import { validateImageDataUrl } from '../lib/imageValidation.js'
+import { uploadRateLimiter } from '../lib/rateLimits.js'
 
 const router = express.Router()
 
@@ -61,7 +62,7 @@ router.post('/api/ratings', requireSession, async (req, res) => {
 //    anything that somehow bypassed the byte check
 //  - Filename is server-generated (random 16-byte hex); we never use the
 //    client's filename, so directory traversal is structurally impossible
-router.post('/api/upload-image', requireSession, async (req, res) => {
+router.post('/api/upload-image', uploadRateLimiter, requireSession, async (req, res) => {
   const validation = validateImageDataUrl(req.body?.image)
   if (!validation.ok) {
     return res.status(validation.status).json({ error: validation.error })
