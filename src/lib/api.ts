@@ -60,8 +60,24 @@ export function friendlyErrorMessage(status: number): string {
   if (status === 401 || status === 403) return 'Please sign in again to continue.'
   if (status === 404) return 'We couldn\'t find what you were looking for.'
   if (status === 409) return 'That name is already taken. Please choose another.'
+  if (status === 429) return 'Whoa, slow down — try again in a minute.'
   if (status >= 500) return 'Something went wrong on our end. Please try again.'
   return 'Something went wrong. Please try again.'
+}
+
+// Fires whenever the server responds with 429 Too Many Requests. UI can
+// subscribe to show a single toast instead of every failing call
+// bubbling its own error. Cheap pub/sub — no dep needed.
+type RateLimitListener = () => void
+const rateLimitListeners = new Set<RateLimitListener>()
+export function onRateLimited(listener: RateLimitListener): () => void {
+  rateLimitListeners.add(listener)
+  return () => rateLimitListeners.delete(listener)
+}
+function emitRateLimited(): void {
+  for (const l of rateLimitListeners) {
+    try { l() } catch { /* listener errors mustn't break the fetch path */ }
+  }
 }
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -126,6 +142,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
         !serverMessage.includes('{') &&
         !serverMessage.includes('<')
       const userMessage = isSafeServerMessage ? serverMessage : friendlyErrorMessage(response.status)
+      if (response.status === 429) emitRateLimited()
       throw new ApiError(response.status, data, userMessage)
     }
 

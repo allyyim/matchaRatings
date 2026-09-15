@@ -16,6 +16,7 @@ import {
   apiFetch,
   friendlyErrorMessage,
   getSessionToken,
+  onRateLimited,
 } from './lib/api'
 import { readCache, writeCache } from './lib/cache'
 import {
@@ -462,6 +463,18 @@ function App() {
   }, [rankedFriendModalEntries, friendModalSort])
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [currentOnboardingSlide, setCurrentOnboardingSlide] = useState(0)
+  // Fires whenever any /api call hits HTTP 429. Shows a small toast so a
+  // user who somehow trips the rate limit sees a friendly nudge rather
+  // than every failing call throwing an unfriendly error underneath.
+  const [rateLimitedAt, setRateLimitedAt] = useState<number | null>(null)
+  useEffect(() => {
+    return onRateLimited(() => setRateLimitedAt(Date.now()))
+  }, [])
+  useEffect(() => {
+    if (rateLimitedAt === null) return
+    const t = window.setTimeout(() => setRateLimitedAt(null), 4000)
+    return () => window.clearTimeout(t)
+  }, [rateLimitedAt])
   const [selectedExplorePlaceName, setSelectedExplorePlaceName] = useState('')
   const [selectedExplorePlaceEntries, setSelectedExplorePlaceEntries] = useState<RatingEntry[]>([])
   const [isExplorePlaceModalOpen, setIsExplorePlaceModalOpen] = useState(false)
@@ -2790,6 +2803,17 @@ function App() {
             }}
           />
         </Suspense>
+      )}
+
+      {rateLimitedAt !== null && createPortal(
+        <div
+          role="status"
+          aria-live="polite"
+          className="rate-limit-toast"
+        >
+          Whoa, slow down — try again in a sec.
+        </div>,
+        document.body
       )}
 
       <input

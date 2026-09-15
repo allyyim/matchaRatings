@@ -414,6 +414,19 @@ const authRateLimiter = rateLimit({
   message: { error: 'Too many requests. Please wait a minute and try again.' }
 })
 
+// Middle-tier limiter for heavy recs/discovery endpoints. Global limit
+// (120/min) already covers everyone; this is a second belt so a single
+// abusive client can't hammer expensive SQL joins and evict recs cache
+// entries for real users. 40/min per IP is invisible to humans (would
+// require switching tabs faster than once per 1.5s).
+const recsRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 40,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please slow down.' }
+})
+
 // Requests a magic sign-in link for a stable, email-backed account.
 // - If the email already has an account, the link signs in as that account's userName.
 // - If not, userName must be provided to create a new account (or claim an existing
@@ -662,7 +675,7 @@ app.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
   }
 })
 
-app.post('/api/auth/verify-account', async (req, res) => {
+app.post('/api/auth/verify-account', authRateLimiter, async (req, res) => {
   try {
     const { userName } = req.body
 
@@ -686,7 +699,7 @@ app.post('/api/auth/verify-account', async (req, res) => {
   }
 })
 
-app.post('/api/auth/google/confirm-account', async (req, res) => {
+app.post('/api/auth/google/confirm-account', authRateLimiter, async (req, res) => {
   try {
     const { token: googleAccessToken, browserId, confirmedUserName } = req.body
 
@@ -840,7 +853,7 @@ app.post('/api/admin/fix-ali', async (req, res) => {
   }
 })
 
-app.post('/api/users/session', async (req, res) => {
+app.post('/api/users/session', authRateLimiter, async (req, res) => {
   const browserId = String(req.body?.browserId || '').trim()
   const incomingUserName = sanitizeUserName(String(req.body?.userName || '').trim())
 
@@ -1652,7 +1665,7 @@ app.get('/api/explore/places/:placeName/ratings', async (req, res) => {
   })
 })
 
-app.get('/api/explore/users', async (req, res) => {
+app.get('/api/explore/users', recsRateLimiter, async (req, res) => {
   const limit = Math.max(1, Math.min(200, Number(req.query.limit) || 50))
 
   try {
@@ -2071,7 +2084,7 @@ app.get('/api/users/:userName/preferences', async (req, res) => {
 })
 
 // Find users with similar flavor preferences
-app.get('/api/similar-users', async (req, res) => {
+app.get('/api/similar-users', recsRateLimiter, async (req, res) => {
   const userName = sanitizeUserName(String(req.query.userName || '').trim())
   if (!userName) {
     return res.status(400).json({ error: 'userName is required' })
@@ -2489,7 +2502,7 @@ app.get('/api/ratings/:ratingId/likes', async (req, res) => {
 })
 
 // Find users with similar flavor preferences
-app.get('/api/users/similar-preferences', async (req, res) => {
+app.get('/api/users/similar-preferences', recsRateLimiter, async (req, res) => {
   const limit = Math.max(1, Math.min(50, Number(req.query.limit) || 20))
 
   try {

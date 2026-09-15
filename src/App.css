@@ -2997,6 +2997,33 @@ h1, h2, h3, h4, h5, h6 {
   100% { opacity: 0; transform: translate(-50%, 8px) scale(0.98); }
 }
 
+/* Global 429-toast — one line, auto-dismisses after 4s. Rendered from
+   App.tsx via createPortal, subscribed via onRateLimited(). Sits above
+   the bottom nav so it doesn't overlap the tab bar. */
+.rate-limit-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 12000;
+  padding: 0.55rem 0.95rem;
+  background: rgba(33, 37, 41, 0.94);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+  animation: rateLimitToastIn 0.25s var(--ease-out, ease-out);
+  pointer-events: none;
+  max-width: min(92vw, 380px);
+  text-align: center;
+}
+
+@keyframes rateLimitToastIn {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .save-confirmation {
     animation: none;
