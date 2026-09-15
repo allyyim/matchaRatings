@@ -75,6 +75,31 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'DENY')
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
   res.setHeader('X-XSS-Protection', '0')
+  // Content-Security-Policy: defense-in-depth against XSS. React auto-escapes
+  // all rendered user content and the codebase has no dangerouslySetInnerHTML
+  // or innerHTML sinks, so this is a belt over an already-tight suspenders.
+  // 'unsafe-inline' for script-src is required by the small inline bootstrap
+  // scripts in index.html (service worker registration, gesture blocking,
+  // SPA-routing restore); acceptable because there is no injection vector
+  // that could reach an inline <script> tag. Upgrade to sha256-hash pinning
+  // if index.html inline scripts stabilize.
+  res.setHeader(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "img-src 'self' data: blob: https://res.cloudinary.com https://lh3.googleusercontent.com",
+      "connect-src 'self' https://photon.komoot.io https://nominatim.openstreetmap.org https://accounts.google.com https://oauth2.googleapis.com https://*.ingest.sentry.io https://*.ingest.us.sentry.io",
+      "frame-src https://accounts.google.com",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+      "upgrade-insecure-requests",
+    ].join('; ')
+  )
   next()
 })
 app.use('/api', apiRateLimiter)

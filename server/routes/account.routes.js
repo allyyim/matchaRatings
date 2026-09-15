@@ -1,7 +1,7 @@
 import express from 'express'
 import { v2 as cloudinary } from 'cloudinary'
 import { pool } from '../db.js'
-import { sanitizeUserName } from '../lib/sanitize.js'
+import { sanitizeUserName, normalizeEmail, isValidEmail } from '../lib/sanitize.js'
 import { recsCacheInvalidate } from '../lib/recsCache.js'
 import { DEMO_USER_NAME } from '../lib/constants.js'
 
@@ -68,8 +68,9 @@ router.post('/api/preferences', async (req, res) => {
 })
 
 router.post('/api/account/email', async (req, res) => {
-  const { newEmail } = req.body
-  if (!newEmail?.trim()) return res.status(400).json({ error: 'Email is required' })
+  const newEmail = normalizeEmail(req.body?.newEmail)
+  if (!newEmail) return res.status(400).json({ error: 'Email is required' })
+  if (!isValidEmail(newEmail)) return res.status(400).json({ error: 'Enter a valid email address' })
 
   const email = (await pool.query('SELECT email FROM accounts WHERE LOWER(user_name) = LOWER($1)', [req.session.userName])).rows[0]?.email
   if (!email) return res.status(404).json({ error: 'User not found' })
