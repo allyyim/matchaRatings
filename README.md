@@ -252,7 +252,7 @@ Client (GitHub Pages) ──HTTPS──► Express API (Render) ──pg pool─
                                        └─ In-process recsCache (5-min TTL, 500 entry LRU cap)
 ```
 
-The Express app boots from `server/index.js` (now ~1050 lines — down from
+The Express app boots from `server/index.js` (now ~215 lines — down from
 2306). Pure helpers live in `server/lib/*`, business routes are grouped
 into route modules under `server/routes/*`, and admin/maintenance
 endpoints get their own router mounted **before** the auth gate. This
@@ -262,7 +262,7 @@ narrowly scoped.
 ### Key files
 | Path | Role |
 | --- | --- |
-| [`server/index.js`](./server/index.js) | App wiring, auth routes, preferences, account, `/users/:userName/preferences` |
+| [`server/index.js`](./server/index.js) | App wiring, CORS, rate limiter, /health, /warm, router mounts, error handler, SPA fallback |
 | [`server/db.js`](./server/db.js) | pg pool + schema init |
 | [`server/lib/sanitize.js`](./server/lib/sanitize.js) | Text/email/name sanitization |
 | [`server/lib/scoring.js`](./server/lib/scoring.js) | Weighted Sip Score math |
@@ -272,11 +272,23 @@ narrowly scoped.
 | [`server/lib/crypto.js`](./server/lib/crypto.js) | AES-256-GCM field encrypt + JWT/token helpers |
 | [`server/lib/session.js`](./server/lib/session.js) | Session middleware + ownership guard |
 | [`server/lib/rateLimits.js`](./server/lib/rateLimits.js) | 3 rate-limiter instances |
-| [`server/lib/constants.js`](./server/lib/constants.js) | Shared constants (e.g., `DEMO_USER_NAME`) |
+| [`server/lib/mailer.js`](./server/lib/mailer.js) | Resend client + magic-link token/email helpers |
+| [`server/lib/googleAuth.js`](./server/lib/googleAuth.js) | Shared Google OAuth client |
+| [`server/lib/constants.js`](./server/lib/constants.js) | Shared constants (`DEMO_USER_NAME`, `DEMO_PHOTO_BASE`) |
 | [`server/routes/admin.routes.js`](./server/routes/admin.routes.js) | Ops endpoints (mounted before auth gate) |
+| [`server/routes/auth.routes.js`](./server/routes/auth.routes.js) | Magic-link, Google OAuth, demo, link-email (mounted before auth gate) |
 | [`server/routes/ratings.routes.js`](./server/routes/ratings.routes.js) | Ratings CRUD, upload, dedupe, likes |
 | [`server/routes/explore.routes.js`](./server/routes/explore.routes.js) | Explore places/users, similar-users, similar-places, similar-preferences |
 | [`server/routes/social.routes.js`](./server/routes/social.routes.js) | Friends, follows, feed |
+| [`server/routes/account.routes.js`](./server/routes/account.routes.js) | Preferences, account (email/username/avatar/me), `/users/:userName/preferences` |
+
+### Router mount order
+```
+1. adminRouter    — no session (ops)
+2. authRouter     — signup/signin public; session-only routes apply requireSession inline
+3. requireSession — auth gate (everything past here needs a session)
+4. ratingsRouter · socialRouter · exploreRouter · accountRouter
+```
 
 </details>
 
@@ -524,7 +536,7 @@ matchaRatings/
 │       ├── useSession.ts
 │       └── usePreferences.ts
 ├── server/
-│   ├── index.js                    ← Express wiring, auth, prefs, account
+│   ├── index.js                    ← Express wiring, CORS, /health, router mounts
 │   ├── db.js                       ← pg pool + schema init
 │   ├── lib/                        ← extracted pure helpers
 │   │   ├── sanitize.js
@@ -535,12 +547,16 @@ matchaRatings/
 │   │   ├── crypto.js
 │   │   ├── session.js
 │   │   ├── rateLimits.js
+│   │   ├── mailer.js
+│   │   ├── googleAuth.js
 │   │   └── constants.js
 │   └── routes/                     ← business route modules
 │       ├── admin.routes.js
+│       ├── auth.routes.js
 │       ├── ratings.routes.js
 │       ├── explore.routes.js
-│       └── social.routes.js
+│       ├── social.routes.js
+│       └── account.routes.js
 ├── public/
 │   ├── service-worker.js           ← SW + isUncachedApi()
 │   ├── manifest.webmanifest
