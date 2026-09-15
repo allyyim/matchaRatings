@@ -252,15 +252,17 @@ Client (GitHub Pages) ──HTTPS──► Express API (Render) ──pg pool─
                                        └─ In-process recsCache (5-min TTL, 500 entry LRU cap)
 ```
 
-The Express app boots from `server/index.js` but pure helpers now live in
-`server/lib/*` and admin/maintenance endpoints are mounted from
-`server/routes/admin.routes.js`. This makes helpers unit-testable in
-isolation and keeps the root file focused on wiring + business routes.
+The Express app boots from `server/index.js` (now ~1050 lines — down from
+2306). Pure helpers live in `server/lib/*`, business routes are grouped
+into route modules under `server/routes/*`, and admin/maintenance
+endpoints get their own router mounted **before** the auth gate. This
+makes helpers unit-testable in isolation and keeps each route module
+narrowly scoped.
 
 ### Key files
 | Path | Role |
 | --- | --- |
-| [`server/index.js`](./server/index.js) | App wiring + business routes (auth, ratings, explore, prefs, feed, social) |
+| [`server/index.js`](./server/index.js) | App wiring, auth routes, preferences, account, `/users/:userName/preferences` |
 | [`server/db.js`](./server/db.js) | pg pool + schema init |
 | [`server/lib/sanitize.js`](./server/lib/sanitize.js) | Text/email/name sanitization |
 | [`server/lib/scoring.js`](./server/lib/scoring.js) | Weighted Sip Score math |
@@ -270,7 +272,11 @@ isolation and keeps the root file focused on wiring + business routes.
 | [`server/lib/crypto.js`](./server/lib/crypto.js) | AES-256-GCM field encrypt + JWT/token helpers |
 | [`server/lib/session.js`](./server/lib/session.js) | Session middleware + ownership guard |
 | [`server/lib/rateLimits.js`](./server/lib/rateLimits.js) | 3 rate-limiter instances |
+| [`server/lib/constants.js`](./server/lib/constants.js) | Shared constants (e.g., `DEMO_USER_NAME`) |
 | [`server/routes/admin.routes.js`](./server/routes/admin.routes.js) | Ops endpoints (mounted before auth gate) |
+| [`server/routes/ratings.routes.js`](./server/routes/ratings.routes.js) | Ratings CRUD, upload, dedupe, likes |
+| [`server/routes/explore.routes.js`](./server/routes/explore.routes.js) | Explore places/users, similar-users, similar-places, similar-preferences |
+| [`server/routes/social.routes.js`](./server/routes/social.routes.js) | Friends, follows, feed |
 
 </details>
 
@@ -518,7 +524,7 @@ matchaRatings/
 │       ├── useSession.ts
 │       └── usePreferences.ts
 ├── server/
-│   ├── index.js                    ← Express app, business routes
+│   ├── index.js                    ← Express wiring, auth, prefs, account
 │   ├── db.js                       ← pg pool + schema init
 │   ├── lib/                        ← extracted pure helpers
 │   │   ├── sanitize.js
@@ -528,9 +534,13 @@ matchaRatings/
 │   │   ├── recsCache.js
 │   │   ├── crypto.js
 │   │   ├── session.js
-│   │   └── rateLimits.js
-│   └── routes/
-│       └── admin.routes.js         ← ops endpoints
+│   │   ├── rateLimits.js
+│   │   └── constants.js
+│   └── routes/                     ← business route modules
+│       ├── admin.routes.js
+│       ├── ratings.routes.js
+│       ├── explore.routes.js
+│       └── social.routes.js
 ├── public/
 │   ├── service-worker.js           ← SW + isUncachedApi()
 │   ├── manifest.webmanifest
