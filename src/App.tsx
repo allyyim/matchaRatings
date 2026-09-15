@@ -30,6 +30,7 @@ import {
   bodyColor,
 } from './lib/flavors'
 import { TruncatedThought } from './lib/TruncatedThought'
+import { summarizePalate } from './lib/palateSummary'
 
 // Feature tabs — code-split so first paint doesn't pay for them. Each chunk
 // is only fetched when the user navigates into that tab.
@@ -3189,7 +3190,30 @@ function App() {
                     (currentUserName || '?').charAt(0).toUpperCase()
                   )}
                 </div>
-                <h6 className="fw-bold text-success mb-0 text-truncate" title={currentUserName}>{currentUserName}</h6>
+                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: '0.1rem' }}>
+                  <h6 className="fw-bold text-success mb-0 text-truncate" title={currentUserName}>{currentUserName}</h6>
+                  {(() => {
+                    const summary = summarizePalate({ flavors: userFlavors, body: userBodyPref, shade: userShade })
+                    return summary ? (
+                      <div
+                        className="palate-summary"
+                        title={summary}
+                        style={{
+                          fontSize: '0.72rem',
+                          color: '#4c6b52',
+                          lineHeight: 1.3,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                        }}
+                      >
+                        {summary}
+                      </div>
+                    ) : null
+                  })()}
+                </div>
               </div>
               <button
                 type="button"
