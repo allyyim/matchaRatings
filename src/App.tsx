@@ -3389,6 +3389,18 @@ function App() {
                   <span>Share App</span>
                   <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
                 </button>
+                <button
+                  type="button"
+                  className="profile-drawer-row"
+                  onClick={() => {
+                    setCurrentOnboardingSlide(0)
+                    setIsProfileDrawerOpen(false)
+                    setShowOnboarding(true)
+                  }}
+                >
+                  <span>Replay Tutorial</span>
+                  <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
+                </button>
               </div>
 
               <div className="profile-drawer-section">
