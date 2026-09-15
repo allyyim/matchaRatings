@@ -202,19 +202,6 @@ function requireSession(req, res, next) {
   return next()
 }
 
-const ADMIN_USER_NAMES = new Set(['allyyim'])
-function isAdminSession(session) {
-  const name = String(session?.userName || '').toLowerCase()
-  return ADMIN_USER_NAMES.has(name)
-}
-function requireAdmin(req, res, next) {
-  const session = getSessionFromRequest(req)
-  if (!session) return res.status(401).json({ error: 'Authentication required' })
-  if (!isAdminSession(session)) return res.status(403).json({ error: 'Admin only' })
-  req.session = session
-  return next()
-}
-
 function requireUserOwnership(req, res, next) {
   const sessionUser = String(req.session?.userName || '').trim()
   const candidate = String(req.body?.userName || req.query?.userName || '').trim()
@@ -1466,34 +1453,6 @@ app.get('/api/ratings', async (req, res) => {
   )
 
   return res.json({ ratings: result.rows.map(mapRatingRow) })
-})
-
-// Temporary admin routes for one-shot greenness recompute against another
-// user's photos. Remove alongside the drawer button once the reflow is done.
-app.get('/api/admin/ratings', requireAdmin, async (req, res) => {
-  const userName = sanitizeUserName(String(req.query.userName || '').trim())
-  if (!userName) return res.status(400).json({ error: 'userName required' })
-  const result = await pool.query(
-    `SELECT * FROM ratings WHERE LOWER(user_name) = LOWER($1)
-       ORDER BY rating DESC, greenness DESC, created_at DESC`,
-    [userName]
-  )
-  return res.json({ ratings: result.rows.map(mapRatingRow) })
-})
-
-app.put('/api/admin/ratings/:id/greenness', requireAdmin, async (req, res) => {
-  const id = Number(req.params.id)
-  const greenness = Number(req.body?.greenness)
-  if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ error: 'Valid rating id required' })
-  if (Number.isNaN(greenness) || greenness < 0 || greenness > 100) {
-    return res.status(400).json({ error: 'greenness must be 0-100' })
-  }
-  const updated = await pool.query(
-    'UPDATE ratings SET greenness = $1 WHERE id = $2 RETURNING id',
-    [greenness, id]
-  )
-  if (!updated.rowCount) return res.status(404).json({ error: 'Rating not found' })
-  return res.json({ ok: true })
 })
 
 app.get('/api/friends/search', async (req, res) => {
