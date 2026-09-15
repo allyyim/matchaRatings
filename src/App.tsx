@@ -323,6 +323,8 @@ function App() {
   const [thoughts, setThoughts] = useState('')
   const [isNotesModalOpen, setIsNotesModalOpen] = useState(false)
   const [isEditNotesModalOpen, setIsEditNotesModalOpen] = useState(false)
+  const notesTextareaRef = useRef<HTMLTextAreaElement>(null)
+  const editNotesTextareaRef = useRef<HTMLTextAreaElement>(null)
   const [isNewLogOpen, setIsNewLogOpen] = useState(false)
   const [milestoneMessage, setMilestoneMessage] = useState('')
   const [photoDataUrl, setPhotoDataUrl] = useState('')
@@ -709,6 +711,35 @@ function App() {
     setRequiresManualName(false)
     setPendingUserName('')
   }, [])
+
+  // When the notes / edit-notes modals open, focus the textarea and drop the
+  // cursor at the END of the existing text. The browser's default `autoFocus`
+  // behavior on a textarea with a value lands the caret at position 0, which
+  // makes appending to an existing note feel broken.
+  useEffect(() => {
+    if (!isNotesModalOpen) return
+    const el = notesTextareaRef.current
+    if (!el) return
+    // rAF so the portal has actually painted before we move the caret.
+    const id = window.requestAnimationFrame(() => {
+      el.focus()
+      const len = el.value.length
+      try { el.setSelectionRange(len, len) } catch { /* ignore */ }
+    })
+    return () => window.cancelAnimationFrame(id)
+  }, [isNotesModalOpen])
+
+  useEffect(() => {
+    if (!isEditNotesModalOpen) return
+    const el = editNotesTextareaRef.current
+    if (!el) return
+    const id = window.requestAnimationFrame(() => {
+      el.focus()
+      const len = el.value.length
+      try { el.setSelectionRange(len, len) } catch { /* ignore */ }
+    })
+    return () => window.cancelAnimationFrame(id)
+  }, [isEditNotesModalOpen])
 
   // Filter state resets naturally on a fresh cold start (module re-executes,
   // useState('highest') runs again). We intentionally do NOT reset on
@@ -3017,7 +3048,7 @@ function App() {
       {isNotesModalOpen && createPortal(
         <div className="notes-modal-overlay" role="dialog" aria-modal="true" aria-label="Edit notes">
           <div className="notes-modal card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="notes-modal-header d-flex align-items-center p-4 border-bottom" style={{ flexWrap: 'nowrap' }}>
+            <div className="notes-modal-header d-flex align-items-center justify-content-between gap-3 p-4 border-bottom" style={{ flexWrap: 'nowrap' }}>
               <h3 className="h5 fw-bold text-success mb-0" style={{ flexShrink: 0 }}>Your thoughts...</h3>
               <button
                 type="button"
@@ -3031,12 +3062,12 @@ function App() {
             <div className="notes-modal-body p-4">
               <p className="small text-muted mb-3">What stood out about this matcha? Flavor, texture, experience...</p>
               <textarea
+                ref={notesTextareaRef}
                 className="form-control"
                 rows={10}
                 placeholder="Share your thoughts..."
                 value={thoughts}
                 onChange={(event) => setThoughts(event.target.value)}
-                autoFocus
               />
             </div>
             <div className="notes-modal-footer p-4 border-top d-flex gap-2">
@@ -3056,7 +3087,7 @@ function App() {
       {isEditNotesModalOpen && createPortal(
         <div className="notes-modal-overlay" role="dialog" aria-modal="true" aria-label="Edit notes">
           <div className="notes-modal card border-0 shadow-lg" onClick={(e) => e.stopPropagation()}>
-            <div className="notes-modal-header d-flex align-items-center p-4 border-bottom" style={{ flexWrap: 'nowrap' }}>
+            <div className="notes-modal-header d-flex align-items-center justify-content-between gap-3 p-4 border-bottom" style={{ flexWrap: 'nowrap' }}>
               <h3 className="h5 fw-bold text-success mb-0" style={{ flexShrink: 0 }}>Your thoughts...</h3>
               <button
                 type="button"
@@ -3070,12 +3101,12 @@ function App() {
             <div className="notes-modal-body p-4">
               <p className="small text-muted mb-3">What stood out about this matcha? Flavor, texture, experience...</p>
               <textarea
+                ref={editNotesTextareaRef}
                 className="form-control"
                 rows={10}
                 placeholder="Share your thoughts..."
                 value={editThoughts}
                 onChange={(event) => setEditThoughts(event.target.value)}
-                autoFocus
               />
             </div>
             <div className="notes-modal-footer p-4 border-top d-flex gap-2">
@@ -5593,17 +5624,21 @@ function App() {
                     </div>
                   ) : (
                     <div>
-                      <div className="d-flex align-items-center justify-content-between mb-3">
-                        <p className="text-muted small mb-0">Matched to your flavor profile</p>
+                      <div className="foryou-header">
+                        <span className="foryou-match-chip">
+                          <span aria-hidden="true">🎯</span>
+                          <span>Matched to your flavor profile</span>
+                        </span>
                         <button
                           type="button"
-                          className="btn btn-link btn-sm text-success p-0 text-decoration-none"
+                          className="foryou-edit-btn"
                           onClick={() => {
                             setIsProfileDrawerOpen(true)
                             setIsPreferencesModalOpen(true)
                           }}
                         >
-                          Edit preferences
+                          <span aria-hidden="true">✏️</span>
+                          <span>Edit preferences</span>
                         </button>
                       </div>
 
