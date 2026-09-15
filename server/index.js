@@ -2526,6 +2526,31 @@ async function initBackground() {
   } catch (error) {
     console.error('Error linking users:', error)
   }
+
+  // One-shot backfill: sync demo showcase photos + recalibrated greenness
+  // onto seed rows for any pre-existing demo account. Idempotent — safe to
+  // run every boot.
+  try {
+    const demoPhotoUpdates = [
+      { location: 'Ippodo Tea (Kyoto)', photo: `${DEMO_PHOTO_BASE}/ippodo.png`, greenness: 97 },
+      { location: 'Kettl Tea (Brooklyn)', photo: `${DEMO_PHOTO_BASE}/kettl.png`, greenness: 92 },
+      { location: 'Stonemill Matcha (SF)', photo: `${DEMO_PHOTO_BASE}/stonemill.png`, greenness: 80 }
+    ]
+    for (const p of demoPhotoUpdates) {
+      const r = await pool.query(
+        `UPDATE ratings SET photo = $1, greenness = $2
+           WHERE LOWER(user_name) = LOWER($3) AND is_seed = TRUE
+             AND LOWER(location) = LOWER($4)
+             AND (photo IS NULL OR photo = '' OR photo <> $1 OR greenness <> $2)`,
+        [p.photo, p.greenness, DEMO_USER_NAME, p.location]
+      )
+      if (r.rowCount > 0) {
+        console.log(`✓ Backfilled demo photo for ${p.location}`)
+      }
+    }
+  } catch (error) {
+    console.error('Demo photo backfill failed:', error)
+  }
 }
 
 app.listen(port, () => {
