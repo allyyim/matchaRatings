@@ -82,7 +82,7 @@ export default function OnboardingSlides({ currentSlide, setCurrentSlide, onClos
               <h2 className="onboarding-title">You&apos;re all set</h2>
               <p className="onboarding-lead">Log your favorite spot first — the first sip unlocks a little celebration 🎊</p>
               <ul className="onboarding-list">
-                <li><span className="onboarding-bullet">👤</span> Profile icon (top-right) — Preferences, Account &amp; Help</li>
+                <li><span className="onboarding-bullet">👤</span> Profile icon (top-right) — Account, App &amp; Help</li>
                 <li>
                   <span className="onboarding-bullet">🎯</span>
                   Set your flavors to unlock a palate archetype

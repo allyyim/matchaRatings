@@ -3311,7 +3311,7 @@ function App() {
 
             <div className="profile-drawer-body">
               <div className="profile-drawer-section">
-                <div className="profile-drawer-section-label">Preferences</div>
+                <div className="profile-drawer-section-label">Account</div>
                 <button
                   type="button"
                   className="profile-drawer-row"
@@ -3320,10 +3320,6 @@ function App() {
                   <span>My Matcha Preferences</span>
                   <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
                 </button>
-              </div>
-
-              <div className="profile-drawer-section">
-                <div className="profile-drawer-section-label">Account</div>
                 <button
                   type="button"
                   className="profile-drawer-row"
