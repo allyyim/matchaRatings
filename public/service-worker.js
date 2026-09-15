@@ -101,6 +101,14 @@ function isApiRequest(url) {
   return url.includes('/api/');
 }
 
+// Some API endpoints are per-user identity data that MUST always be live
+// (a stale cached response can misrepresent someone's palate archetype
+// or follower state). We route these straight to the network and never
+// touch the SW cache, so mobile PWAs can't get "stuck" on an old copy.
+function isUncachedApi(url) {
+  return url.includes('/api/users/') && url.includes('/preferences');
+}
+
 function timestampedResponse(response, ts) {
   // Clone body + wrap with a header we can read back to know cache age.
   const headers = new Headers(response.headers);
@@ -222,6 +230,15 @@ self.addEventListener('fetch', event => {
 
   // /api/* GETs: network-first with a short timeout, then stale cache.
   if (isApiRequest(url)) {
+    if (isUncachedApi(url)) {
+      // Never cache - straight to network. Fall through browser default
+      // if network fails (nothing better we can do offline for identity).
+      event.respondWith(fetch(request).catch(() => new Response(
+        JSON.stringify({ error: 'Offline' }),
+        { status: 503, headers: { 'Content-Type': 'application/json' } }
+      )));
+      return;
+    }
     event.respondWith(networkFirstApi(request));
     return;
   }
