@@ -3648,8 +3648,6 @@ function App() {
                 </button>
               </div>
 
-              <div style={{ flex: 1, minHeight: 0 }} />
-
               <div className="profile-drawer-section profile-drawer-section-footer">
                 <button
                   type="button"
