@@ -11,6 +11,7 @@
 import { useState, useMemo } from 'react'
 import { PalateChip } from '../lib/PalateChip'
 import { palateArchetype } from '../lib/palateSummary'
+import { EmptyState } from '../lib/EmptyState'
 
 export type ExplorePlace = {
   rank: number
@@ -114,7 +115,11 @@ export default function ExplorePage(props: ExplorePageProps) {
               </div>
 
               {explorePlaces.length === 0 && (
-                <div className="alert alert-light border mb-0 text-center">No place data yet. Add ratings to build rankings.</div>
+                <EmptyState
+                  emoji="🏔️"
+                  headline="The leaderboard is a blank slate."
+                  subtext="Log your first rating to plant a flag on the mountain."
+                />
               )}
 
               {explorePlaces.length > 0 && (
@@ -186,9 +191,19 @@ export default function ExplorePage(props: ExplorePageProps) {
               )}
 
               {filteredExploreUsers.length === 0 && (
-                <div className="alert alert-light border mb-0 text-center">
-                  {archetypeFilter ? `No other ${archetypeFilter}s yet.` : 'No user place data yet.'}
-                </div>
+                archetypeFilter ? (
+                  <EmptyState
+                    emoji="🦄"
+                    headline={`No other ${archetypeFilter}s — yet.`}
+                    subtext="You're the pioneer. Invite a friend who tastes matcha like you do."
+                  />
+                ) : (
+                  <EmptyState
+                    emoji="👥"
+                    headline="No sippers on the board yet."
+                    subtext="Be the first to log a rating — you'll show up here right after."
+                  />
+                )
               )}
 
               {filteredExploreUsers.length > 0 && (

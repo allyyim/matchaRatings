@@ -32,6 +32,7 @@ import {
 import { TruncatedThought } from './lib/TruncatedThought'
 import { summarizePalate } from './lib/palateSummary'
 import { PalateChip } from './lib/PalateChip'
+import { EmptyState } from './lib/EmptyState'
 
 // Feature tabs — code-split so first paint doesn't pay for them. Each chunk
 // is only fetched when the user navigates into that tab.
@@ -2800,7 +2801,12 @@ function App() {
               )}
 
               {!isLoadingExplorePlaceEntries && selectedExplorePlaceEntries.length === 0 && (
-                <div className="alert alert-light border mb-0">No ratings found for this place yet.</div>
+                <EmptyState
+                  compact
+                  emoji="🍵"
+                  headline="No one's spilled the tea on this one yet."
+                  subtext="Be the first sipper to weigh in."
+                />
               )}
 
               {!isLoadingExplorePlaceEntries && selectedExplorePlaceEntries.length > 0 && (
@@ -4630,7 +4636,12 @@ function App() {
               {isLoadingFriendModal ? (
                 <div className="text-center text-muted py-4">Loading ratings...</div>
               ) : friendModalEntries.length === 0 ? (
-                <div className="alert alert-light border mb-0">No ratings to show yet.</div>
+                <EmptyState
+                  compact
+                  emoji="🌱"
+                  headline="This sipper's still setting up."
+                  subtext="No ratings yet — check back after their first pour."
+                />
               ) : (
                 <>
                   <div className="d-flex justify-content-end mb-2">
@@ -5797,9 +5808,12 @@ function App() {
                             <p className="mb-0 text-muted small">Scoring places against your palate…</p>
                           </div>
                         ) : similarPlaces.length === 0 ? (
-                          <div className="alert alert-light border">
-                            <p className="mb-0 text-muted small">No place matches yet.</p>
-                          </div>
+                          <EmptyState
+                            compact
+                            emoji="🔮"
+                            headline="Your palate's playing hard to get."
+                            subtext="Rate a few more spots so we can learn what you actually like."
+                          />
                         ) : (
                           <>
                             <div className="row g-3">
@@ -5905,9 +5919,11 @@ function App() {
               )}
 
               {communityActiveTab === 'following' && followingSet.size === 0 && (
-                <div className="text-center py-5">
-                  <p className="text-muted">No one following yet. Search for users to get started!</p>
-                </div>
+                <EmptyState
+                  emoji="🫖"
+                  headline="Your sipper circle starts here."
+                  subtext="Find someone whose taste you trust in Explore, then follow to see their sips in your feed."
+                />
               )}
             </div>
           </section>

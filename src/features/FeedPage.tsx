@@ -6,6 +6,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { RatingEntry } from '../lib/types'
 import { TruncatedThought } from '../lib/TruncatedThought'
+import { EmptyState } from '../lib/EmptyState'
 
 // Thresholds that trigger a milestone card in the Feed's "Milestone recap"
 // row. Kept in sync with the identically-shaped map inside saveEntry() so the
@@ -172,17 +173,17 @@ export default function FeedPage(props: {
         <p className="text-muted small mb-4">Milestones you've hit, friends' newest sips, and fresh recs picked for your palate.</p>
 
         {events.length === 0 ? (
-          <div className="text-center py-5">
-            <div style={{ fontSize: '3rem' }} aria-hidden="true">🍵</div>
-            <p className="text-muted mt-3 mb-1"><strong>Your feed is warming up.</strong></p>
-            <p className="text-muted small mb-0">Log a sip, follow another matcha nerd, or refresh your recs to see updates here.</p>
-          </div>
+          <EmptyState
+            emoji="🍵"
+            headline="Quiet in here. Rate a spot to wake up your feed."
+            subtext="Every rating you log, milestone you hit, and sipper you follow shows up right here."
+          />
         ) : (
           <>
             {friendRatings.length === 0 && !isLoading && (
               <div className="feed-notice" role="status">
                 <span aria-hidden="true">👥</span>
-                <span>No new sips from the folks you follow yet. Head to <strong>Explore</strong> to follow more sippers.</span>
+                <span>Nothing new from your circle. Follow more sippers in <strong>Explore</strong> to keep the feed pouring.</span>
               </div>
             )}
           <ul className="feed-list" role="list">
