@@ -33,9 +33,6 @@ Jump straight to the section you care about.
 | PWA + offline behavior | [PWA & Offline](#-pwa--offline) |
 | Rate limits, sanitization, headers | [Security](#-security) |
 | Bundle splits, caching, motion tokens | [Performance](#-performance) |
-| Recent changes | [Changelog Highlights](#-changelog-highlights) |
-| Set up locally | [Local Development](#-local-development) |
-| Deploy pipeline | [Deployment](#-deployment) |
 | File tree | [File Map](#-file-map) |
 
 ---
