@@ -508,6 +508,11 @@ function App() {
   const [canShowIosInstall, setCanShowIosInstall] = useState(false)
   const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<{ prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> } | null>(null)
   const [isIosDevice, setIsIosDevice] = useState(false)
+  // Whether the app is currently running as an installed PWA (standalone).
+  // Used to hide the 'How to Install App' drawer row for people who
+  // already installed — everyone else should see the row so they know
+  // it's possible to install.
+  const [isStandaloneApp, setIsStandaloneApp] = useState(false)
   const [isDemoMode, setIsDemoMode] = useState(false)
   const isDemoAccount = currentUserName.toLowerCase() === 'demo'
 
@@ -1058,6 +1063,7 @@ function App() {
     const isStandalone = window.matchMedia?.('(display-mode: standalone)').matches || (navigator as unknown as { standalone?: boolean }).standalone === true
     setIsIosDevice(isIos)
     setCanShowIosInstall(isIos && !isStandalone)
+    setIsStandaloneApp(isStandalone)
 
     const handleBeforeInstall = (event: Event) => {
       event.preventDefault()
@@ -3384,7 +3390,7 @@ function App() {
                   <span>How to <strong>Use</strong> App</span>
                   <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
                 </button>
-                {(canShowIosInstall || deferredInstallPrompt !== null) && (
+                {!isStandaloneApp && (
                   <button
                     type="button"
                     className="profile-drawer-row"
