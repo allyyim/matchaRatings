@@ -3398,7 +3398,7 @@ function App() {
                     setShowOnboarding(true)
                   }}
                 >
-                  <span>Replay Tutorial</span>
+                  <span>How to Use App</span>
                   <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
                 </button>
               </div>
