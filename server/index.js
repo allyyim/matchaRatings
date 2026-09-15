@@ -75,6 +75,15 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'DENY')
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
   res.setHeader('X-XSS-Protection', '0')
+  // Google OAuth's implicit-flow popup needs to postMessage the access
+  // token back to us and we poll window.closed. The browser default COOP
+  // ('same-origin' in some Chromium builds) severs the opener link so
+  // the popup silently returns a partial/reused token → Google's
+  // /userinfo then 401s and sign-in fails on desktop. 'same-origin-allow-popups'
+  // is the recommended value for pages that open OAuth popups: still
+  // isolates us from unrelated cross-origin windows, but keeps the
+  // opener handle to our own popups intact.
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups')
   // Content-Security-Policy: defense-in-depth against XSS. React auto-escapes
   // all rendered user content and the codebase has no dangerouslySetInnerHTML
   // or innerHTML sinks, so this is a belt over an already-tight suspenders.
