@@ -59,6 +59,7 @@ export default function OnboardingSlides({ currentSlide, setCurrentSlide, onClos
               <ul className="onboarding-list">
                 <li><span className="onboarding-bullet">🏆</span> Milestones you&apos;ve hit — with dates</li>
                 <li><span className="onboarding-bullet">👥</span> Fresh sips from people you follow</li>
+                <li><span className="onboarding-bullet">♡</span> Tap the heart to like a friend&apos;s sip</li>
                 <li><span className="onboarding-bullet">🌟</span> New places picked for your palate</li>
               </ul>
             </div>
@@ -81,8 +82,8 @@ export default function OnboardingSlides({ currentSlide, setCurrentSlide, onClos
               <h2 className="onboarding-title">You&apos;re all set</h2>
               <p className="onboarding-lead">Log your favorite spot first — the first sip unlocks a little celebration 🎊</p>
               <ul className="onboarding-list">
-                <li><span className="onboarding-bullet">👤</span> Profile icon (top-right) — flavors, ideal shade &amp; FAQ</li>
-                <li><span className="onboarding-bullet">🎯</span> Pick a favorite matcha shade to sharpen your recs</li>
+                <li><span className="onboarding-bullet">👤</span> Profile icon (top-right) — Preferences, Account &amp; Help</li>
+                <li><span className="onboarding-bullet">🎯</span> Set flavors, body &amp; ideal shade to sharpen your recs</li>
                 <li><span className="onboarding-bullet">📱</span> Add to home screen for the full app feel</li>
               </ul>
             </div>
