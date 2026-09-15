@@ -5625,10 +5625,6 @@ function App() {
                   ) : (
                     <div>
                       <div className="foryou-header">
-                        <span className="foryou-match-chip">
-                          <span aria-hidden="true">🎯</span>
-                          <span>Matched to your flavor profile</span>
-                        </span>
                         <button
                           type="button"
                           className="foryou-edit-btn"
@@ -5637,8 +5633,7 @@ function App() {
                             setIsPreferencesModalOpen(true)
                           }}
                         >
-                          <span aria-hidden="true">✏️</span>
-                          <span>Edit preferences</span>
+                          Edit preferences
                         </button>
                       </div>
 

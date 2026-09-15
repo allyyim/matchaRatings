@@ -2607,36 +2607,21 @@ a:focus-visible {
   flex-shrink: 0;
 }
 
-/* "For You" tab header: chip on the left, pill button on the right.
-   Previously a text-muted <p> next to a bare btn-link, which read as
-   unstyled/unfinished next to the polished cards below it. */
+/* "For You" tab header: a single, right-aligned "Edit preferences" pill.
+   Earlier iteration paired it with a matching "Matched to your flavor
+   profile" chip, but that label read as ambiguous (the section headings
+   below — "People like you" / "Places for you" — already communicate
+   what's personalized) and the emoji-heavy pair looked juvenile. */
 .foryou-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
+  justify-content: flex-end;
   margin-bottom: 1rem;
-  flex-wrap: wrap;
-}
-
-.foryou-match-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.35rem 0.75rem;
-  border-radius: 999px;
-  background: #eaf5e4;
-  color: #2f5b3a;
-  font-size: 0.8rem;
-  font-weight: 600;
-  border: 1px solid #cfe5c2;
-  line-height: 1.2;
 }
 
 .foryou-edit-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
   padding: 0.35rem 0.85rem;
   border-radius: 999px;
   background: white;
