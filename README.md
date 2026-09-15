@@ -405,8 +405,15 @@ call surfacing its own error.
 - `x-powered-by` disabled
 
 ### CORS
-`cors({ origin: true, credentials: true })` — reflects origin, allows
-cookies. Tighten to an allowlist before wider launch.
+Origin allowlist enforced in `server/index.js`:
+
+- `https://allyyim.github.io` (production frontend)
+- `http://localhost:5173` / `http://127.0.0.1:5173` (Vite dev)
+- `http://localhost:4173` / `http://127.0.0.1:4173` (Vite preview)
+- `http://localhost:3001` / `http://127.0.0.1:3001` (same-origin API)
+
+Extend via the `CORS_ORIGINS` env var (comma-separated) to add staging
+or custom-domain origins without a code change. `credentials: true`.
 
 ### Auth
 - Bearer token via `Authorization` header

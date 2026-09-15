@@ -229,8 +229,38 @@ const apiRateLimiter = rateLimit({
   message: { error: 'Too many requests. Please slow down.' }
 })
 
+// CORS allowlist. Production frontend lives on GitHub Pages; dev happens
+// on Vite's default 5173 / preview 4173 and localhost:3001 for same-origin
+// server calls. Anything else is rejected. Env override lets us add extra
+// origins (staging, custom domain) without a code change.
+const CORS_ALLOWED_ORIGINS = (() => {
+  const base = [
+    'https://allyyim.github.io',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:4173',
+    'http://127.0.0.1:4173',
+    'http://localhost:3001',
+    'http://127.0.0.1:3001',
+  ]
+  const extra = String(process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  return new Set([...base, ...extra])
+})()
+
 app.disable('x-powered-by')
-app.use(cors({ origin: true, credentials: true }))
+app.use(cors({
+  origin(origin, callback) {
+    // No Origin header = same-origin request (e.g. server rendering the
+    // built SPA, curl for /health). Allow.
+    if (!origin) return callback(null, true)
+    if (CORS_ALLOWED_ORIGINS.has(origin)) return callback(null, true)
+    return callback(new Error(`Origin ${origin} not allowed by CORS`))
+  },
+  credentials: true,
+}))
 app.use(express.json({ limit: '15mb' }))
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff')
