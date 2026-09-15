@@ -49,7 +49,7 @@ const COMBO_ARCHETYPE: Record<string, string> = {
   'dessert+earthy':  'The Hojicha Head',   // roasted green — sweet + earthy
   'bracing+dessert': 'The Koicha Kid',     // thick ceremonial matcha — rich + bracing
   'dessert+silky':   'The Latte Artist',   // sweet + silky = latte territory
-  'earthy+sweet':    'The Genmaicha',      // roasted rice + green tea blend
+  'earthy+sweet':    'The Meadow Sipper',  // sweet + earthy — florals in a green field
   'bracing+sweet':   'The Yuzu Sipper',    // bright citrus + green sharpness
   'silky+sweet':     'The Foam Chaser',    // frothy sweet foam vibes
   'bracing+earthy':  'The Stone Milled',   // traditional ishiusu-ground matcha
@@ -172,7 +172,7 @@ const ARCHETYPE_PALETTE: Record<string, { bg: string; fg: string; border: string
   'The Hojicha Head':    { bg: '#eee4cf', fg: '#4d3b1f', border: '#d1be91' }, // brown+green → warm taupe
   'The Koicha Kid':      { bg: '#f0e0c2', fg: '#5b3d15', border: '#d6b880' }, // brown+bracing → mustard-brown
   'The Latte Artist':    { bg: '#ece0d8', fg: '#4a3634', border: '#cfb8ae' }, // brown+silky → milky mauve
-  'The Genmaicha':       { bg: '#ede6cf', fg: '#4a4423', border: '#cec48c' }, // sweet+earthy → toasted sage
+  'The Meadow Sipper':   { bg: '#ede6cf', fg: '#4a4423', border: '#cec48c' }, // sweet+earthy → toasted sage
   'The Yuzu Sipper':     { bg: '#faeecd', fg: '#6a481c', border: '#e8ce85' }, // sweet+bracing → apricot
   'The Foam Chaser':     { bg: '#eae0ee', fg: '#3f3160', border: '#c9b8dc' }, // sweet+silky → lavender
   'The Stone Milled':    { bg: '#e6ecc4', fg: '#454e1c', border: '#c0cb82' }, // earthy+bracing → olive-sage
