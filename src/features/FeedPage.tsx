@@ -295,12 +295,12 @@ export default function FeedPage(props: {
                                 })
                               }}
                             >
+                              {s.count > 0 && <span className="feed-like-count">{s.count} {s.count === 1 ? 'like' : 'likes'}</span>}
                               <span aria-hidden="true" className="feed-like-heart">
-                                <svg viewBox="0 0 24 24" width="16" height="16" fill={s.liked ? '#ef4444' : 'none'} stroke={s.liked ? '#ef4444' : 'currentColor'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill={s.liked ? '#ef4444' : 'none'} stroke="#6b7280" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
                                 </svg>
                               </span>
-                              {s.count > 0 && <span className="feed-like-count">{s.count} {s.count === 1 ? 'like' : 'likes'}</span>}
                             </button>
                           )
                         })()}
