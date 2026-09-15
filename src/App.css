@@ -1082,9 +1082,9 @@ textarea.form-control {
 .entry-hero-photo {
   display: block;
   width: 100%;
-  max-width: 200px;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
+  max-width: 180px;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
   border-radius: 12px;
   margin: 0.5rem auto 0.5rem;
   box-shadow: var(--shadow-sm);
