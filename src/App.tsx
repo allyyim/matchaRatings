@@ -31,6 +31,7 @@ import {
 } from './lib/flavors'
 import { TruncatedThought } from './lib/TruncatedThought'
 import { summarizePalate } from './lib/palateSummary'
+import { PalateChip } from './lib/PalateChip'
 
 // Feature tabs — code-split so first paint doesn't pay for them. Each chunk
 // is only fetched when the user navigates into that tab.
@@ -153,6 +154,8 @@ type ExplorePlace = {
 type ExploreUser = {
   userName: string
   placeCount: number
+  flavors?: string[]
+  body?: string
 }
 
 type ExplorePlaceRatingsResponse = {
@@ -4532,6 +4535,11 @@ function App() {
                   </div>
                   <div style={{ minWidth: 0, flex: 1 }}>
                     <h5 className="mb-1 text-success fw-bold" style={{ wordBreak: 'break-word', lineHeight: 1.2 }}>{friendModalUser}</h5>
+                    {friendModalPrefs.flavors.length > 0 && (
+                      <div style={{ marginBottom: '0.35rem' }}>
+                        <PalateChip flavors={friendModalPrefs.flavors} size="xs" />
+                      </div>
+                    )}
                     <div className="small text-muted" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {isLoadingFriendModal ? (
                         <span className="fst-italic">Loading profile…</span>
@@ -5706,9 +5714,12 @@ function App() {
                                   >
                                     <div className="card-body" style={{ padding: '0.75rem' }}>
                                       <div className="d-flex justify-content-between align-items-start mb-2 gap-2">
-                                        <h6 className="card-title fw-semibold text-success mb-0 text-truncate flex-grow-1" style={{ minWidth: 0 }}>
-                                          {user.userName}
-                                        </h6>
+                                        <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                                          <h6 className="card-title fw-semibold text-success mb-1 text-truncate" style={{ minWidth: 0 }}>
+                                            {user.userName}
+                                          </h6>
+                                          <PalateChip flavors={user.flavors} size="xs" />
+                                        </div>
                                         <span className="badge" style={{
                                           flexShrink: 0,
                                           fontSize: '0.72rem',

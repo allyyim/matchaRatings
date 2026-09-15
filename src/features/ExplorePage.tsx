@@ -4,6 +4,8 @@
 // React.lazy()'d in the App shell. All state, fetches, and modals stay in
 // App.tsx; this file only owns the JSX and immediate event wiring.
 
+import { PalateChip } from '../lib/PalateChip'
+
 export type ExplorePlace = {
   rank: number
   placeName: string
@@ -14,6 +16,8 @@ export type ExplorePlace = {
 export type ExploreUser = {
   userName: string
   placeCount: number
+  flavors?: string[]
+  body?: string
 }
 
 type FollowResponse = unknown
@@ -170,6 +174,11 @@ export default function ExplorePage(props: ExplorePageProps) {
                             <span className="explore-user-link">{user.userName}</span>
                             {isSelf && <span className="explore-user-you-badge">you</span>}
                           </div>
+                          {user.flavors && user.flavors.length > 0 && (
+                            <div style={{ marginTop: '0.25rem' }}>
+                              <PalateChip flavors={user.flavors} size="xs" />
+                            </div>
+                          )}
                           <div className="explore-place-meta">
                             {user.placeCount} {user.placeCount === 1 ? 'place explored' : 'places explored'}
                           </div>

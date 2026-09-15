@@ -1661,9 +1661,11 @@ app.get('/api/explore/users', async (req, res) => {
         SELECT
           MIN(r.user_name) AS user_name,
           COUNT(*) AS place_count,
-          MAX(a.avatar_url) AS avatar_url
+          MAX(a.avatar_url) AS avatar_url,
+          MAX(p.flavors::text) AS flavors_json
         FROM ratings r
         LEFT JOIN accounts a ON LOWER(a.user_name) = LOWER(r.user_name)
+        LEFT JOIN user_preferences p ON p.email = a.email
         WHERE TRIM(r.location) <> ''
           AND LOWER(r.user_name) <> 'demo'
         GROUP BY LOWER(r.user_name)
@@ -1674,11 +1676,29 @@ app.get('/api/explore/users', async (req, res) => {
     )
 
     const users = result.rows
-      .map((row) => ({
-        userName: String(row.user_name || '').trim(),
-        placeCount: Number(row.place_count),
-        avatarUrl: row.avatar_url || null
-      }))
+      .map((row) => {
+        // flavors column is JSONB but we cast to text in the SELECT so the
+        // aggregate MAX() works (JSONB doesn't have a native ordering). Parse
+        // it back into an array here.
+        let rawFlavors = []
+        try {
+          if (row.flavors_json) rawFlavors = JSON.parse(row.flavors_json)
+        } catch { rawFlavors = [] }
+        const flavors = Array.isArray(rawFlavors)
+          ? rawFlavors.filter((f) => typeof f === 'string' && !f.startsWith('__'))
+          : []
+        const bodyEntry = Array.isArray(rawFlavors)
+          ? rawFlavors.find((f) => typeof f === 'string' && f.startsWith('__body:'))
+          : null
+        const body = bodyEntry ? String(bodyEntry).slice('__body:'.length) : ''
+        return {
+          userName: String(row.user_name || '').trim(),
+          placeCount: Number(row.place_count),
+          avatarUrl: row.avatar_url || null,
+          flavors,
+          body,
+        }
+      })
       .filter((u) => u.userName)
       .slice(0, limit)
 

@@ -52,6 +52,51 @@ const BODY_TAIL: Record<BodyProfileValue, string> = {
   'milky':       'Softer, milkier finishes only.',
 }
 
+// Compact archetype label only — no body/shade tail. Meant for chips
+// shown next to other users' names across the app (Explore leaderboard,
+// "People like you" cards, friend modal). Returns '' when the user has
+// no flavor picks so callers can hide the chip.
+export function palateArchetype(flavors: string[]): string {
+  const knownFlavors = (flavors || []).map((f) => String(f).toLowerCase()).filter((f) => f in CLUSTER_MAP)
+  if (knownFlavors.length === 0) return ''
+
+  const counts = new Map<ClusterKey, number>()
+  for (const f of knownFlavors) {
+    const c = CLUSTER_MAP[f]
+    counts.set(c, (counts.get(c) || 0) + 1)
+  }
+  const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1])
+  return PRIMARY_ARCHETYPE[ranked[0][0]]
+}
+
+// The color cluster driving a user's archetype. Callers can use this to
+// tint the chip so 'The Dessert Sipper' picks up the brown palette,
+// 'The Purist' picks up green, etc. — visually reinforcing the vocabulary.
+export function palateArchetypeCluster(flavors: string[]): ClusterKey | null {
+  const knownFlavors = (flavors || []).map((f) => String(f).toLowerCase()).filter((f) => f in CLUSTER_MAP)
+  if (knownFlavors.length === 0) return null
+  const counts = new Map<ClusterKey, number>()
+  for (const f of knownFlavors) {
+    const c = CLUSTER_MAP[f]
+    counts.set(c, (counts.get(c) || 0) + 1)
+  }
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0][0]
+}
+
+// Chip palette per cluster — matches the flavor-color families in flavors.ts
+// (dessert = brown, sweet = pink, earthy = green, bracing = yellow-olive,
+// silky = blue) so the archetype visually maps to the same taste family
+// the user sees in their flavor grid.
+export function palateArchetypePalette(cluster: ClusterKey): { bg: string; fg: string; border: string } {
+  switch (cluster) {
+    case 'dessert': return { bg: '#f2e3e0', fg: '#5c3839', border: '#d6bab7' }
+    case 'sweet':   return { bg: '#f8e3f0', fg: '#5a2a4b', border: '#e0bad7' }
+    case 'earthy':  return { bg: '#e2eedb', fg: '#2f5b3a', border: '#b7d6a8' }
+    case 'bracing': return { bg: '#f8fadc', fg: '#5c5d1c', border: '#dcdd94' }
+    case 'silky':   return { bg: '#e0f0fa', fg: '#1e4a5f', border: '#a9def9' }
+  }
+}
+
 export function summarizePalate({ flavors, body, shade }: PalateInput): string {
   const knownFlavors = (flavors || []).map((f) => String(f).toLowerCase()).filter((f) => f in CLUSTER_MAP)
 
