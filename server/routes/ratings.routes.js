@@ -1,4 +1,5 @@
 import express from 'express'
+import crypto from 'node:crypto'
 import { v2 as cloudinary } from 'cloudinary'
 import { pool } from '../db.js'
 import { sanitizeText, sanitizeUserName, normalizeLocationText } from '../lib/sanitize.js'
@@ -7,6 +8,7 @@ import { getCanonicalPlaceData, shouldMergePlaces } from '../lib/places.js'
 import { mapRatingRow } from '../lib/mappers.js'
 import { recsCacheInvalidate } from '../lib/recsCache.js'
 import { requireSession } from '../lib/session.js'
+import { validateImageDataUrl } from '../lib/imageValidation.js'
 
 const router = express.Router()
 
@@ -48,32 +50,50 @@ router.post('/api/ratings', requireSession, async (req, res) => {
   return res.status(201).json({ rating: mapRatingRow(inserted.rows[0]) })
 })
 
-router.post('/api/upload-image', async (req, res) => {
+// User photo upload. Accepts a data:image/<png|jpeg|gif|webp>;base64,<payload>
+// blob (client pre-resizes on device) and forwards it to Cloudinary.
+//
+// Every trust signal from the client is validated:
+//  - MIME whitelist (data URL prefix)
+//  - Payload size ≤ 8 MB decoded
+//  - Magic-byte signature matches the declared MIME
+//  - Cloudinary `resource_type: 'image'` so the storage layer also rejects
+//    anything that somehow bypassed the byte check
+//  - Filename is server-generated (random 16-byte hex); we never use the
+//    client's filename, so directory traversal is structurally impossible
+router.post('/api/upload-image', requireSession, async (req, res) => {
+  const validation = validateImageDataUrl(req.body?.image)
+  if (!validation.ok) {
+    return res.status(validation.status).json({ error: validation.error })
+  }
+  const { buffer, mime } = validation
+
   try {
-    const image = String(req.body?.image || '').trim()
-    console.log('Image upload requested, data URL length:', image.length)
+    // Server-side public_id so the client can never influence the storage
+    // path. Cloudinary appends the correct extension based on `format` /
+    // detected content.
+    const publicId = `${req.session.userName.toLowerCase()}-${crypto.randomBytes(16).toString('hex')}`
 
-    if (!image || !image.startsWith('data:image/')) {
-      console.error('Invalid image data:', image.substring(0, 50))
-      return res.status(400).json({ error: 'Valid base64 image data is required' })
-    }
+    // Upload the raw buffer (not the data URL) so Cloudinary can't be
+    // tricked into treating a spoofed data-URL prefix as authoritative.
+    const dataUri = `data:${mime};base64,${buffer.toString('base64')}`
 
-    console.log('Uploading image to Cloudinary...')
-    console.log('Cloud name:', process.env.CLOUDINARY_CLOUD_NAME)
-
-    const result = await cloudinary.uploader.upload(image, {
+    const result = await cloudinary.uploader.upload(dataUri, {
       folder: 'matcha-ratings',
-      resource_type: 'auto',
+      resource_type: 'image',
+      public_id: publicId,
+      use_filename: false,
+      unique_filename: false,
+      overwrite: false,
       quality: 'auto',
-      fetch_format: 'auto'
+      fetch_format: 'auto',
+      timeout: 60000,
     })
 
-    console.log('Image uploaded successfully:', result.secure_url)
     return res.json({ url: result.secure_url })
   } catch (error) {
     console.error('Image upload failed:', error.message)
-    console.error('Full error:', error)
-    return res.status(500).json({ error: 'Image upload failed', details: String(error.message) })
+    return res.status(500).json({ error: 'Image upload failed' })
   }
 })
 

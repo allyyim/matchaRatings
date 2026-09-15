@@ -6,8 +6,10 @@
 // intentionally not behind session auth.
 
 import express from 'express'
+import crypto from 'node:crypto'
 import { v2 as cloudinary } from 'cloudinary'
 import { pool } from '../db.js'
+import { validateImageDataUrl } from '../lib/imageValidation.js'
 
 const router = express.Router()
 
@@ -133,12 +135,24 @@ router.post('/admin/migrate-photos-to-cloudinary', async (_req, res) => {
         }
 
         if (!rating.photo.startsWith('data:image/')) {
-          console.log(`Skipping - invalid photo format: ${rating.photo.substring(0, 50)}`)
+          console.log(`Skipping - invalid photo format`)
           skippedCount++
           continue
         }
 
-        console.log(`Uploading photo (${Math.round(rating.photo.length / 1024)}KB)...`)
+        // Validate the stored data URL against the same rules as fresh
+        // uploads. Historical rows might have questionable payloads that
+        // pre-date the byte-level check.
+        const validation = validateImageDataUrl(rating.photo)
+        if (!validation.ok) {
+          console.log(`Skipping rating ${rating.id} - failed validation: ${validation.error}`)
+          skippedCount++
+          continue
+        }
+        const { buffer, mime } = validation
+        const dataUri = `data:${mime};base64,${buffer.toString('base64')}`
+
+        console.log(`Uploading photo (${Math.round(dataUri.length / 1024)}KB)...`)
 
         let result
         let retries = 0
@@ -146,10 +160,15 @@ router.post('/admin/migrate-photos-to-cloudinary', async (_req, res) => {
 
         while (retries < maxRetries) {
           try {
+            const publicId = `migrated-${rating.id}-${crypto.randomBytes(8).toString('hex')}`
             result = await Promise.race([
-              cloudinary.uploader.upload(rating.photo, {
+              cloudinary.uploader.upload(dataUri, {
                 folder: 'matcha-ratings-migration',
-                resource_type: 'auto',
+                resource_type: 'image',
+                public_id: publicId,
+                use_filename: false,
+                unique_filename: false,
+                overwrite: false,
                 quality: 'auto',
                 fetch_format: 'auto',
                 timeout: 60000
