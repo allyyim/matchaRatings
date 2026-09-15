@@ -7,7 +7,7 @@
     "dev": "vite",
     "server": "node server/index.js",
     "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/stamp-sw.js",
     "lint": "eslint .",
     "check:identity": "node scripts/check-identity-sources.js",
     "preview": "vite preview"

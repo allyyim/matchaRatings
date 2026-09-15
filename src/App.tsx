@@ -1433,7 +1433,10 @@ function App() {
   useEffect(() => {
     const controller = new AbortController()
     const timeoutId = window.setTimeout(() => controller.abort(), 60000)
-    fetch(`${API_BASE_URL}/api/health`, {
+    // API_BASE_URL already ends in "/api", so we append "/health" (not
+    // "/api/health") to avoid a double-prefix and the resulting 401 from
+    // the SPA fallback handler.
+    fetch(`${API_BASE_URL}/health`, {
       method: 'GET',
       credentials: 'same-origin',
       signal: controller.signal,
