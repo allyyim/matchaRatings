@@ -5,8 +5,7 @@
 
 A React + TypeScript PWA with an Express + PostgreSQL backend, a custom
 TensorFlow.js drink-area segmentation model, 16 tea-themed palate
-archetypes, and social discovery. Ships as an installable app on iOS,
-Android, and desktop.
+archetypes, and social discovery. Ships as an installable app on Windows.
 
 **🔗 Live:** [allyyim.github.io/matchaRatings](https://allyyim.github.io/matchaRatings/)
 &nbsp;·&nbsp; **📦 Frontend:** GitHub Pages
