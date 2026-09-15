@@ -1,116 +1,317 @@
-# Sip & Score - Matcha Log
+# 🍵 Sip & Score — the matcha rating app
 
-React + TypeScript + Vite app for rating matcha with half-star support, tap-and-drag star input, camera capture, optional ML drink-area detection, friend lookups, and Explore rankings.
+> Rate every matcha you sip. Watch your map fill in. Meet the people who
+> sip like you.
+
+A React + TypeScript PWA with an Express + PostgreSQL backend, a custom
+TensorFlow.js drink-area segmentation model, 16 tea-themed palate
+archetypes, and social discovery. Ships as an installable app on iOS,
+Android, and desktop.
+
+**🔗 Live:** [allyyim.github.io/matchaRatings](https://allyyim.github.io/matchaRatings/)
+&nbsp;·&nbsp; **📦 Frontend:** GitHub Pages
+&nbsp;·&nbsp; **🖥️ Backend:** Render
+&nbsp;·&nbsp; **🗄️ DB:** PostgreSQL
+
+---
+
+## 📖 Glossary
+
+Jump straight to the section you care about.
+
+| Topic | Section |
+| --- | --- |
+| What the app does at a glance | [Overview](#-overview) |
+| Palate archetypes (the tea-themed personality quiz) | [Palate System](#-palate-system) |
+| Flavor vocabulary + descriptors | [Flavor Language](#-flavor-language) |
+| How the ML greenness score works | [ML — Drink-Area Segmentation](#-ml--drink-area-segmentation) |
+| Sip Score formula | [Sip Score](#-sip-score) |
+| Frontend tech + file map | [Frontend](#-frontend) |
+| Backend architecture | [Backend](#-backend) |
+| Full API reference | [API Reference](#-api-reference) |
+| Database schema | [Database](#-database) |
+| PWA + offline behavior | [PWA & Offline](#-pwa--offline) |
+| Rate limits, sanitization, headers | [Security](#-security) |
+| Bundle splits, caching, motion tokens | [Performance](#-performance) |
+| Recent changes | [Changelog Highlights](#-changelog-highlights) |
+| Set up locally | [Local Development](#-local-development) |
+| Deploy pipeline | [Deployment](#-deployment) |
+| File tree | [File Map](#-file-map) |
+
+---
+
+## 🌱 Overview
 
 <details open>
-<summary><strong>Technical Design</strong></summary>
+<summary><strong>What Sip & Score is (and isn't)</strong></summary>
 
-This project uses a split frontend/backend architecture.
+Sip & Score is a personal + social matcha log. Every sip you log gets:
 
-- Frontend: React + TypeScript SPA (`src/App.tsx`) built with Vite.
-- Backend: Express API (`server/index.js`) serving JSON endpoints.
-- Data: PostgreSQL via `pg` pool (`server/db.js`).
-- ML assist: A custom TensorFlow.js drink-area segmentation model in `public/ml/drink-area/model.json` that finds the cup/liquid in the photo before measuring green pixels inside that region.
-- Monitoring: Free Sentry tier for frontend + backend crash monitoring and release tracking.
-- Release tagging: GitHub Releases should include a version tag like `v1.0.0` and match the app release value used in Sentry.
-- Scoring:
-  - Entry total score (out of 200): `rating * 20 + greennessWeight * greenness`
-  - `greennessWeight = 1.0` when rating is `4.0/5` or higher, otherwise `0.8`
-  - Greenness is stored and displayed to one decimal place.
-  - Explore place ranking: average score out of 200 across entries for each normalized place.
+- ⭐ A star rating (half-stars, tap-and-drag)
+- 📸 A photo (camera or upload) auto-scored for greenness by an on-device ML model
+- 🌿 Optional flavor picks + body profile + shade preference
+- ✨ A single **Sip Score** out of 100 combining taste + look
 
-```mermaid
-flowchart TD
-   A[Client Browser]
-   B[React + Vite UI]
-   C[Photo Input / Camera]
-   D[Optional TF.js Model]
-   E[Greenness + Rating Scoring]
-   F[Express API]
-   G[PostgreSQL]
+You get a growing personal log, a Feed of friends' sips + milestones,
+an Explore leaderboard of top places and top sippers, and a
+tea-themed palate archetype (like *The Purist*, *The Cloud Whisker*,
+*The Foam Chaser*) that updates as your flavor picks evolve.
 
-   A --> B
-   B --> C
-   C --> D
-   D --> E
-   E --> F
-   F --> G
+**Non-goals:** matcha grade certification, chemistry testing, café
+reviews for non-matcha drinks.
+
+</details>
+
+---
+
+## 🎭 Palate System
+
+<details>
+<summary><strong>16 tea-themed archetypes with per-archetype pastel chips</strong></summary>
+
+Every user's flavor picks are clustered into 5 families:
+
+| Cluster | Flavors |
+| --- | --- |
+| 🟤 **dessert** | chocolatey, nutty, velvety, rich |
+| 🌸 **sweet** | sweet, sugary, creamy, floral |
+| 🌿 **earthy** | earthy, vegetal, grassy, umami |
+| 🌾 **bracing** | astringent, bitter |
+| 💧 **silky** | mellow, bold |
+
+Then classified into one of **16 archetypes**, each with its own
+distinct pastel chip color:
+
+**Solo (single dominant cluster):**
+- 🟤 The Dessert Sipper &nbsp;·&nbsp; 🌸 The Creamy Dreamer &nbsp;·&nbsp; 🌿 The Purist &nbsp;·&nbsp; 🌾 The Grown-Up &nbsp;·&nbsp; 💧 The Smooth Operator
+
+**Combo (two competitive clusters):**
+- The Wagashi Pair (dessert+sweet) &nbsp;·&nbsp; The Hojicha Head (dessert+earthy) &nbsp;·&nbsp; The Koicha Kid (dessert+bracing) &nbsp;·&nbsp; The Latte Artist (dessert+silky)
+- The Meadow Sipper (sweet+earthy) &nbsp;·&nbsp; The Yuzu Sipper (sweet+bracing) &nbsp;·&nbsp; The Foam Chaser (sweet+silky)
+- The Stone Milled (earthy+bracing) &nbsp;·&nbsp; The Zen Master (earthy+silky) &nbsp;·&nbsp; The Gyokuro (bracing+silky)
+
+**Balanced (3+ close clusters):**
+- The Cloud Whisker
+
+All logic lives in [`src/lib/palateSummary.ts`](./src/lib/palateSummary.ts) —
+`palateArchetype()` returns the label, `palateArchetypePaletteFor()`
+returns the per-archetype pastel. Server never filters flavors so
+the same input always produces the same archetype across the
+leaderboard chip, similar-users recs card, and friend modal.
+
+</details>
+
+---
+
+## 🌿 Flavor Language
+
+<details>
+<summary><strong>Matcha-specific descriptors + info tooltips</strong></summary>
+
+Each flavor bubble has a hand-written, matcha-voice descriptor that
+appears when the user taps the ⓘ icon in the new-log modal:
+
+| Flavor | Descriptor |
+| --- | --- |
+| chocolatey | Cocoa-like depth — dark, roasty sweetness. |
+| nutty | Toasted almond or hazelnut warmth. |
+| velvety | Luxurious, cloud-like microfoam texture. |
+| rich | Bold and full-flavored — matcha-forward. |
+| earthy | Grounded and mineral. |
+| vegetal | Fresh spinach, raw green notes. |
+| grassy | Fresh-cut lawn, springtime green. |
+| umami | Savory, brothy, seaweed-like depth. |
+| astringent | Puckering, dry mouthfeel. |
+| bitter | Sharp, dry and pungent. |
+| mellow | Smooth and no bitterness. |
+| bold | Strong, matcha-forward finish — makes itself known. |
+
+Full source: [`src/lib/flavors.ts`](./src/lib/flavors.ts).
+
+</details>
+
+---
+
+## 🤖 ML — Drink-Area Segmentation
+
+<details>
+<summary><strong>Custom TensorFlow.js model that masks the drink before scoring</strong></summary>
+
+### What the model does
+A lightweight image segmentation model whose job is to answer:
+*"Which pixels in this image are the drink?"*
+
+Without a mask, the greenness score can accidentally count green
+background, shadows, or table surfaces. The model narrows the
+calculation to the actual drink region.
+
+### Technical details
+- **Framework:** TensorFlow.js (browser)
+- **Format:** `model.json` + weight shards in [`public/ml/drink-area/`](./public/ml/drink-area/)
+- **Input:** RGB image resized to 224 × 224
+- **Output:** 2D heatmap; values > `0.45` are treated as drink pixels
+- **Loading:** `tf.loadGraphModel()` first, falls back to `tf.loadLayersModel()`
+- **Fallback mode:** if the model is missing or fails, the app uses a
+  heuristic circular mask centered on the image so ratings still save
+
+### Pipeline
+1. User uploads or captures an image
+2. App downscales for performance
+3. Image → drink-area model → binary mask
+4. Greenness runs only inside the mask
+5. Combined with the star rating → final Sip Score
+
+</details>
+
+---
+
+## ✨ Sip Score
+
+<details>
+<summary><strong>How the single number out of 100 is calculated</strong></summary>
+
+- **Entry raw score (out of 200):** `rating × 20 + greennessWeight × greenness`
+- **`greennessWeight`:** `1.0` when `rating ≥ 4.0/5`, else `0.8`
+- **Greenness:** ML-scored 0–100, stored + displayed to 1 decimal
+- **Explore place ranking:** average score across entries for each
+  normalized place name
+
+Bands users see:
+- 🟢 **85+** — a stunner
+- 🟢 **70–84** — solid sip
+- 🟡 **Below 70** — noted
+
+</details>
+
+---
+
+## 🖥 Frontend
+
+<details>
+<summary><strong>React + TypeScript + Vite SPA, PWA-installable</strong></summary>
+
+### Stack
+- **React 18** + **TypeScript** + **Vite**
+- **React lazy chunks** for Feed, Explore, Onboarding, Google OAuth
+- **Sentry** frontend crash monitoring
+- **PWA** via `public/service-worker.js` + `public/manifest.webmanifest`
+- **Motion tokens** (`--motion-fast/base/slow`, `--ease-out/in-out/spring`)
+  on `:root` so animation timing is consistent app-wide
+- **`__DEV__` compile-time constant** via Vite `define` — strips
+  `console.log` at build
+
+### Key files
+| Path | Role |
+| --- | --- |
+| [`src/App.tsx`](./src/App.tsx) | Top-level shell, tab routing, modals |
+| [`src/lib/api.ts`](./src/lib/api.ts) | `apiFetch` + auth token + 429 `onRateLimited` pub/sub |
+| [`src/lib/palateSummary.ts`](./src/lib/palateSummary.ts) | Archetype logic + 16 pastel palettes |
+| [`src/lib/flavors.ts`](./src/lib/flavors.ts) | Flavor list, cluster map, descriptors |
+| [`src/lib/PalateChip.tsx`](./src/lib/PalateChip.tsx) | The archetype chip component |
+| [`src/features/OnboardingSlides.tsx`](./src/features/OnboardingSlides.tsx) | 6-slide onboarding (replayable) |
+| [`src/features/FeedPage.tsx`](./src/features/FeedPage.tsx) | Feed tab |
+| [`src/features/ExplorePage.tsx`](./src/features/ExplorePage.tsx) | Explore + Leaderboard |
+| [`src/hooks/useSession.ts`](./src/hooks/useSession.ts) | Auth session state |
+| [`src/hooks/usePreferences.ts`](./src/hooks/usePreferences.ts) | Palate prefs read/write |
+
+</details>
+
+---
+
+## 🌐 Backend
+
+<details>
+<summary><strong>Express + PostgreSQL on Render</strong></summary>
+
+### Architecture
+```
+Client (GitHub Pages) ──HTTPS──► Express API (Render) ──pg pool──► PostgreSQL
+                                       │
+                                       ├─ Rate limiters (auth 5/min, recs 40/min, global 120/min)
+                                       ├─ CORS + security headers (X-Content-Type-Options, X-Frame-Options, ...)
+                                       ├─ JWT-ish session tokens
+                                       └─ In-process recsCache (5-min TTL, 500 entry LRU cap)
 ```
 
-</details>
-
-<details open>
-<summary><strong>ML Model: Drink-Area Segmentation</strong></summary>
-
-The app uses a custom TensorFlow.js model to estimate where the drink sits inside the photo before measuring green intensity.
-
-### What the machine learning is doing
-This is not a model that guesses taste or quality. It is a lightweight image segmentation model whose job is to answer:
-
-- “Which pixels in this image are likely part of the drink?”
-- “Which pixels are background, cup edge, table, or other objects?”
-
-This matters because the app is not trying to score the whole photo. It only wants to measure the drink itself.
-
-The segmentation mask is then used to restrict greenness analysis to the actual drink region instead of counting green background, shadows, table surfaces, or cup edges.
-
-### What “greenness” means
-Greenness is a visual proxy score for how much the drink looks like matcha, not a scientific matcha test.
-
-The app computes a score based on:
-
-- how much of the drink region is green
-- how saturated or vivid that green is
-- how much of the drink area is matcha-like instead of neutral/white/brown
-
-It is a rough estimate of “does this look like a vibrant green matcha drink?” on a scale from 0 to 100.
-
-This is intentionally a simple visual feature, not a chemistry assay or a lab-quality metric. It helps rank photos relative to each other, while the user still decides the final taste rating.
-
-### Model technical details
-- Framework: TensorFlow.js
-- Model format: `model.json` + weight shards in `public/ml/drink-area/`
-- Input: RGB image, resized to `224 x 224`
-- Output: a mask tensor that resolves to a 2D heatmap of the drink region
-- Threshold: mask values above `0.45` are treated as drink pixels
-- Runtime loading: `tf.loadGraphModel(...)` first, then `tf.loadLayersModel(...)` as a fallback
-- Fallback mode: if the model is missing, incompatible, or fails at runtime, the app falls back to a heuristic circular mask centered on the image
-
-### Why this is useful
-Without a region mask, the green-score calculation can accidentally count green background, shadows, table surfaces, or cup edges. The model narrows the greenness calculation to the actual drink area, which makes the score more stable and more aligned with what a human would call “matcha green.”
-
-### Processing pipeline
-1. User uploads or captures an image.
-2. The app lightly downscales it for performance.
-3. The image is passed into the drink-area model.
-4. A binary mask is generated for drink pixels.
-5. Greenness analysis runs only inside that mask.
-6. The final score is combined with the star rating to produce the overall entry score.
-
-### Failure behavior
-If the model is unavailable or inference fails, the app keeps working by falling back to the heuristic region detector and still allows the user to save a rating without a photo.
+### Key files
+| Path | Role |
+| --- | --- |
+| [`server/index.js`](./server/index.js) | All routes, rate limiters, recsCache, auth |
+| [`server/db.js`](./server/db.js) | pg pool + schema init |
 
 </details>
 
-<details open>
-<summary><strong>System Design</strong></summary>
+---
 
-### Runtime Components
+## 🔌 API Reference
 
-- `src/App.tsx`: page tabs (`My Log`, `Friends Ratings`, `Explore`), rating creation/edit/delete, tap-and-drag star input, search, and overlays.
-- `server/index.js`: REST routes for sessions, ratings CRUD, friend search/lookups, explore places, and explore users.
-- `server/db.js`: DB pool + schema initialization.
+<details>
+<summary><strong>Full endpoint list</strong> (base path <code>/api</code>)</summary>
 
-### Database Relations
+### Health
+- `GET /health` → `{ ok: true }`
+
+### Auth
+> 🔒 The starred endpoints below use the strict **auth limiter** (5 req/min per IP).
+
+- `POST /auth/request-link` * — magic-link email
+- `POST /auth/verify` * — verify magic link
+- `POST /auth/google/verify` * — Google OAuth
+- `POST /auth/verify-account` * — check account exists
+- `POST /auth/google/confirm-account` * — finalize Google signup
+- `POST /auth/demo` * — spin up demo account
+- `POST /auth/link-email` * — link email to session
+- `POST /users/session` * — establish session
+- `GET  /auth/link-status`
+- `GET  /auth/check-username`
+
+### Ratings
+- `POST /ratings` — create
+- `GET  /ratings?userName=<name>` — list mine
+- `PUT  /ratings/:id` — edit
+- `DELETE /ratings/:id?userName=<name>` — remove
+- `POST /ratings/:id/like` / `DELETE /ratings/:id/like` — Feed likes
+
+### Friends + follows
+- `GET /friends/search?q=<partial>`
+- `GET /friends/:friendName/ratings`
+- `POST /follows` / `DELETE /follows`
+- `GET /follows?userName=<name>`
+
+### Preferences
+- `GET  /users/:userName/preferences` — un-cached (SW bypass)
+- `PUT  /users/:userName/preferences`
+
+### Explore + recs
+> 🔒 Use the **recs limiter** (40 req/min per IP).
+
+- `GET /explore/places?limit=10`
+- `GET /explore/places/:placeName/ratings`
+- `GET /explore/users?limit=50` — leaderboard (un-cached in SW)
+- `GET /similar-users?userName=<name>` — "People like you" (un-cached in SW)
+- `GET /users/similar-preferences`
+- `GET /explore/similar-places`
+
+### Feed
+- `GET /feed?userName=<name>` — milestones + follows + palate picks
+
+</details>
+
+---
+
+## 🗄 Database
+
+<details>
+<summary><strong>PostgreSQL schema (logical FKs by user_name)</strong></summary>
 
 ```mermaid
 erDiagram
-  BROWSER_USERS {
-    text browser_id PK
-    text user_name
+  ACCOUNTS {
+    text user_name PK
+    text email
+    text auth_provider
     timestamptz created_at
   }
-
   RATINGS {
     bigint id PK
     text user_name
@@ -119,151 +320,249 @@ erDiagram
     numeric greenness
     text location
     text thoughts
+    jsonb flavors
+    text body_profile
+    text shade_preference
     timestamptz created_at
   }
-
-  BROWSER_USERS ||--o{ RATINGS : "logical user identity by user_name"
+  PREFERENCES {
+    text user_name PK
+    jsonb flavors
+    text body_profile
+    text shade_preference
+    timestamptz updated_at
+  }
+  FOLLOWS {
+    text follower_user_name
+    text followee_user_name
+    timestamptz created_at
+  }
+  LIKES {
+    bigint rating_id
+    text liker_user_name
+    timestamptz created_at
+  }
+  ACCOUNTS ||--o{ RATINGS : "by user_name"
+  ACCOUNTS ||--o| PREFERENCES : "by user_name"
+  ACCOUNTS ||--o{ FOLLOWS : "as follower/followee"
+  RATINGS  ||--o{ LIKES : "by rating_id"
 ```
 
-Notes:
-- The relationship is logical (by user name), not enforced as a SQL foreign key.
-- Explore endpoints normalize and merge similar place names before aggregation, including spacing, punctuation, and location variants.
+**Notes:**
+- Relationships are logical (`user_name`), not enforced as SQL FKs
+- Explore normalizes place names (spacing/punctuation/location) before aggregation
+- `flavors` is JSONB — stored as an array of strings
 
 </details>
 
-<details open>
-<summary><strong>API Calls</strong></summary>
+---
 
-Base path: `/api`
-
-### Health and Session
-
-- `GET /health`
-  - Response: `{ ok: true }`
-- `POST /users/session`
-  - Body: `{ browserId, userName? }`
-  - Response: `{ requiresName, userName? }`
-
-### Ratings
-
-- `POST /ratings`
-  - Body: `{ userName, photo, rating, greenness, location, thoughts }`
-  - Response: `{ rating }`
-- `GET /ratings?userName=<name>`
-  - Response: `{ ratings: RatingEntry[] }`
-- `PUT /ratings/:id`
-  - Body: `{ userName, rating, location, thoughts, greenness? }`
-  - Response: `{ rating }`
-- `DELETE /ratings/:id?userName=<name>`
-  - Response: `{ deletedId }`
-
-### Friends
-
-- `GET /friends/search?q=<partialName>`
-  - Response: `{ friends: string[] }`
-- `GET /friends/:friendName/ratings`
-  - Response: `{ friendName, ratings: RatingEntry[] }`
-
-### Explore
-
-- `GET /explore/places?limit=10`
-  - Response: `{ places: [{ rank, placeName, averageScore, entryCount }] }`
-- `GET /explore/places/:placeName/ratings`
-  - Response: `{ placeName, ratings: RatingEntry[] }`
-- `GET /explore/users?limit=50`
-  - Response: `{ users: [{ userName, placeCount }] }`
-
-</details>
+## 📱 PWA & Offline
 
 <details>
-<summary><strong>Local Development</strong></summary>
+<summary><strong>Service worker strategy + install support</strong></summary>
 
-1. Install dependencies:
+- **Precache:** app shell + assets tagged by git SHA on deploy
+- **Network-first** for `/api/*` with 3s timeout → falls back to cache
+- **Always-network** for identity endpoints so chips never go stale:
+  - `/api/users/*/preferences`
+  - `/api/similar-users`
+  - `/api/explore/users`
+- **iOS install modal** with step-by-step Add to Home Screen guide
+- **Chrome/Android:** native `beforeinstallprompt` capture
+
+Manifest: [`public/manifest.webmanifest`](./public/manifest.webmanifest)
+Worker: [`public/service-worker.js`](./public/service-worker.js)
+
+</details>
+
+---
+
+## 🔐 Security
+
+<details>
+<summary><strong>Rate limits, sanitization, headers, CORS</strong></summary>
+
+### Rate limits (per IP)
+| Tier | Limit | Endpoints |
+| --- | --- | --- |
+| Auth | **5 req/min** | All `/auth/*` mutating + `/users/session` |
+| Recs | **40 req/min** | `/similar-users`, `/similar-preferences`, `/explore/users` |
+| Global | **120 req/min** | Everything else under `/api` |
+
+Client-side: `apiFetch` emits an `onRateLimited` event on any 429;
+`App.tsx` renders a single 4-second pill toast instead of every failing
+call surfacing its own error.
+
+### Sanitization
+- `sanitizeUserName()` on every user-supplied name
+- `express.json({ limit: '15mb' })` guards against payload attacks
+- Server never returns raw error bodies containing `{` or `<`
+- Client caps server-passthrough messages at 200 chars
+
+### Headers
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `X-XSS-Protection: 0`
+- `x-powered-by` disabled
+
+### CORS
+`cors({ origin: true, credentials: true })` — reflects origin, allows
+cookies. Tighten to an allowlist before wider launch.
+
+### Auth
+- Bearer token via `Authorization` header
+- CSRF token via `X-CSRF-Token` when present
+- Ownership check middleware: session user must match `userName` param
+  or the request 403s
+
+</details>
+
+---
+
+## ⚡ Performance
+
+<details>
+<summary><strong>Bundle splits, caching, motion tokens</strong></summary>
+
+### Bundle
+- `react-vendor` split → 366 kB → **111 kB gzip**
+- Feature chunks: `FeedPage`, `ExplorePage`, `OnboardingSlides`,
+  `google-oauth` (all lazy)
+- Main `index` chunk ~46 kB gzip
+
+### Caching layers
+| Layer | TTL / policy |
+| --- | --- |
+| SW static | Precache by git SHA, cleared on deploy |
+| SW `/api/*` | Network-first, 3s timeout, cache fallback |
+| SW identity endpoints | **Never cache** (`isUncachedApi()`) |
+| Client friend-modal | `?_v=<nonce>` cache-buster on every open |
+| Server recs | In-process `Map`, 5-min TTL, 500 entry cap, `v2` key suffix |
+
+### Runtime
+- Motion tokens centralize animation timing so components share
+  transitions without duplicating cubic-beziers
+- `__DEV__` compile-time constant strips `console.log` in prod
+- ML model is loaded lazily on first photo capture, not app boot
+
+</details>
+
+---
+
+## 📝 Changelog Highlights
+
+<details>
+<summary><strong>Recent notable ships</strong></summary>
+
+- **Rate limits + 429 toast** — auth (5/min) + recs (40/min), client
+  toast wired via `onRateLimited` pub/sub
+- **How to Use App** row in profile drawer → replays the 6-slide
+  onboarding
+- **Drawer restructure** — Preferences folded into Account as the
+  first row
+- **Unique archetype pastels** — 16 distinct hues so no two chip
+  colors collide at 24 px
+- **Chip consistency** — server flavor allowlists removed; identity
+  endpoints bypass SW cache; server recsCache bumped to `v2` key
+- **`bold` replaces `smooth`** in the flavor vocabulary; matcha-voice
+  descriptors for every flavor
+- **Info-icon tooltips** in the new-log modal (tap for descriptor)
+- **Umami** moved from silky → earthy cluster
+- **Tea-themed combo archetypes** — Wagashi Pair, Hojicha Head, Koicha
+  Kid, Latte Artist, Meadow Sipper, Yuzu Sipper, Foam Chaser, Stone
+  Milled, Zen Master, Gyokuro, Cloud Whisker
+- **Feed likes** + demo photos + milestone celebrations
+- **Recs personalization** + offline resilience + PWA polish
+
+</details>
+
+---
+
+## 🛠 Local Development
+
+<details>
+<summary><strong>Set up in ~2 minutes</strong></summary>
 
 ```bash
+# 1. Install
 npm install
+
+# 2. Copy env template
+cp .env.example .env
+# Edit .env: DATABASE_URL, VITE_API_BASE_URL, etc.
+
+# 3. Start both servers
+npm run dev        # frontend @ http://localhost:5173
+npm run server     # backend  @ http://localhost:3001
 ```
 
-2. Copy env template and set DB connection:
+Or with one command: `npm run start:all` (if configured in your shell).
 
-```bash
-copy .env.example .env
-```
-
-3. Start frontend + backend:
-
-```bash
-npm run dev:full
-```
-
-4. Open the Vite URL (usually `http://localhost:5173`).
-
-Optional split runs:
-
-```bash
-npm run dev
-npm run server
-```
+### Requirements
+- Node 20+
+- Postgres 14+ (or a hosted DB URL)
+- Optional: Sentry DSN for crash reporting
 
 </details>
+
+---
+
+## 🚀 Deployment
 
 <details>
-<summary><strong>Build and Deploy</strong></summary>
+<summary><strong>GitHub Pages (frontend) + Render (backend)</strong></summary>
 
-Build:
-
-```bash
-npm run build
-```
-
-Preview:
-
-```bash
-npm run preview
-```
-
-GitHub Pages deploys from `main` via GitHub Actions.
+- **Frontend:** `.github/workflows/deploy.yml` builds Vite and pushes
+  `dist/` to GitHub Pages. Rewrites the service worker `CACHE_NAME` to
+  the git SHA so each deploy invalidates static caches.
+- **Backend:** Render auto-deploys on every push to `main`. Health
+  check on `/api/health`.
+- **DB:** Managed Postgres (connection string in Render env).
 
 </details>
 
-<details open>
-<summary><strong>FAQ </strong></summary>
+---
 
-### 1) How does the app know a new user is registering?
-The app sends `browserId` to `POST /api/users/session`. If no existing `browser_users` row exists for that browser and no name is provided, API returns `requiresName: true`, and the UI prompts for a name.
+## 🗂 File Map
 
-### 2) What does the greenness score really mean?
-In plain English, the greenness score is a rough estimate of how much the drink in the photo looks like matcha.
+<details>
+<summary><strong>Where the important stuff lives</strong></summary>
 
-It is not measuring quality, taste, nutrition, or chemistry. It is a visual proxy based on the photo: more vivid green, more coverage of the drink area, and a stronger matcha-like color all push the score higher.
-
-Think of it like this:
-
-- `0` = no obvious matcha green in the photo, or no photo was analyzed
-- `25` = a little green is visible, but it is weak or patchy
-- `50` = clearly green and matcha-like, but not especially intense
-- `75` = strong green coverage and a rich matcha look
-- `100` = extremely green and visually very matcha-like
-
-The app uses this as a support signal, not as a perfect scientific test. It helps compare photos and adds a second dimension alongside your taste rating.
-
-For rankings, the app combines the star rating and the green score together, with the green score weighted a bit less when the star rating is below `4` stars. In everyday terms: the app is rewarding both “how much you liked it” and “how green the drink looked.”
-
-Explore place rankings use the average score out of 200 for each merged place.
-
-### 3) How do the top 10 places in Explore get ranked?
-Places are ranked by average score out of 200 across all user ratings. Duplicate entries for the same place are merged dynamically before ranking, including variants caused by punctuation, spacing, or appended city/location text. Results then sort highest to lowest by average score.
-
-### 4) Can I click a place in Explore to see all ratings for it?
-Yes. Click any place card in the `Top Places` list to open a popup modal with all ratings matched to that place (including merged name/location variants). Use the `X` button in the top-right of the popup to close it.
-
-### 5) Is the camera always required?
-No. You can upload from photo roll or capture live. After a photo is chosen/captured, live camera access is stopped.
-
-### 6) How do star ratings work in the UI?
-Ratings support half-stars and `0` stars. You can tap a star or press and drag across the star row in both the new-entry form and the edit-entry form.
-
-### 7) Why must each username be unique?
-The `browser_users` table enforces a UNIQUE constraint on `user_name`, so each username belongs to exactly one user. This prevents confusion in Friends search, keeps ratings correctly attributed, and ensures the app maintains a trustworthy social network.
+```
+matchaRatings/
+├── src/
+│   ├── App.tsx                     ← shell, tabs, modals
+│   ├── App.css                     ← all styles
+│   ├── features/
+│   │   ├── OnboardingSlides.tsx    ← 6-slide onboarding
+│   │   ├── FeedPage.tsx            ← Feed tab
+│   │   └── ExplorePage.tsx         ← Explore + Leaderboard
+│   ├── lib/
+│   │   ├── api.ts                  ← apiFetch + onRateLimited
+│   │   ├── palateSummary.ts        ← archetype logic + palettes
+│   │   ├── flavors.ts              ← flavor vocabulary
+│   │   ├── PalateChip.tsx          ← archetype chip
+│   │   └── cache.ts                ← client localStorage cache
+│   └── hooks/
+│       ├── useSession.ts
+│       └── usePreferences.ts
+├── server/
+│   ├── index.js                    ← Express app, routes, limits
+│   └── db.js                       ← pg pool + schema init
+├── public/
+│   ├── service-worker.js           ← SW + isUncachedApi()
+│   ├── manifest.webmanifest
+│   └── ml/drink-area/              ← TF.js segmentation model
+├── .github/workflows/deploy.yml
+├── vite.config.ts
+└── README.md
+```
 
 </details>
+
+---
+
+Made with 🍵 by [@allyyim](https://github.com/allyyim). Questions? Open
+an issue or DM.

@@ -3372,13 +3372,29 @@ function App() {
 
               <div className="profile-drawer-section">
                 <div className="profile-drawer-section-label">App</div>
+                <button
+                  type="button"
+                  className="profile-drawer-row"
+                  onClick={() => {
+                    setCurrentOnboardingSlide(0)
+                    setIsProfileDrawerOpen(false)
+                    setShowOnboarding(true)
+                  }}
+                >
+                  <span>How to <strong>Use</strong> App</span>
+                  <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
+                </button>
                 {(canShowIosInstall || deferredInstallPrompt !== null) && (
                   <button
                     type="button"
                     className="profile-drawer-row"
                     onClick={() => setIsIosInstallModalOpen(true)}
                   >
-                    <span>{deferredInstallPrompt !== null ? 'Install App' : 'How to Install App'}</span>
+                    <span>
+                      {deferredInstallPrompt !== null
+                        ? <><strong>Install</strong> App</>
+                        : <>How to <strong>Install</strong> App</>}
+                    </span>
                     <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
                   </button>
                 )}
@@ -3407,18 +3423,6 @@ function App() {
                   }}
                 >
                   <span>Share App</span>
-                  <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
-                </button>
-                <button
-                  type="button"
-                  className="profile-drawer-row"
-                  onClick={() => {
-                    setCurrentOnboardingSlide(0)
-                    setIsProfileDrawerOpen(false)
-                    setShowOnboarding(true)
-                  }}
-                >
-                  <span>How to Use App</span>
                   <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
                 </button>
               </div>
