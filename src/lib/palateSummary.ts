@@ -164,25 +164,29 @@ export function palateArchetypePalette(cluster: ClusterKey): { bg: string; fg: s
 // green+blue → teal, pink+blue → lavender — so the chip color still hints
 // at the underlying flavor mix.
 const ARCHETYPE_PALETTE: Record<string, { bg: string; fg: string; border: string }> = {
-  // Solo — reuse the cluster palettes.
-  'The Dessert Sipper':  { bg: '#f2e3e0', fg: '#5c3839', border: '#d6bab7' },
-  'The Creamy Dreamer':  { bg: '#f8e3f0', fg: '#5a2a4b', border: '#e0bad7' },
-  'The Purist':          { bg: '#e2eedb', fg: '#2f5b3a', border: '#b7d6a8' },
-  'The Grown-Up':        { bg: '#f8fadc', fg: '#5c5d1c', border: '#dcdd94' },
-  'The Smooth Operator': { bg: '#e0f0fa', fg: '#1e4a5f', border: '#a9def9' },
-  // Combos — each one a distinct pastel blend.
-  'The Wagashi Pair':    { bg: '#fbe4dc', fg: '#6b3838', border: '#eac1b5' }, // brown+pink → peach
-  'The Hojicha Head':    { bg: '#eee4cf', fg: '#4d3b1f', border: '#d1be91' }, // brown+green → warm taupe
-  'The Koicha Kid':      { bg: '#f0e0c2', fg: '#5b3d15', border: '#d6b880' }, // brown+bracing → mustard-brown
-  'The Latte Artist':    { bg: '#ece0d8', fg: '#4a3634', border: '#cfb8ae' }, // brown+silky → milky mauve
-  'The Meadow Sipper':   { bg: '#ede6cf', fg: '#4a4423', border: '#cec48c' }, // sweet+earthy → toasted sage
-  'The Yuzu Sipper':     { bg: '#faeecd', fg: '#6a481c', border: '#e8ce85' }, // sweet+bracing → apricot
-  'The Foam Chaser':     { bg: '#eae0ee', fg: '#3f3160', border: '#c9b8dc' }, // sweet+silky → lavender
-  'The Stone Milled':    { bg: '#e6ecc4', fg: '#454e1c', border: '#c0cb82' }, // earthy+bracing → olive-sage
-  'The Zen Master':      { bg: '#d8ebe6', fg: '#1e4a4e', border: '#a6d1cc' }, // earthy+silky → teal
-  'The Gyokuro':         { bg: '#dcecd6', fg: '#2f523a', border: '#a8ceac' }, // bracing+silky → seafoam
-  // Balanced 3+ — bright neutral so it feels distinct from everyone else.
-  'The Cloud Whisker':   { bg: '#efe4f2', fg: '#402f4d', border: '#cdb8d5' },
+  // Solo — each on its own distinct hue, roughly aligned to its cluster
+  // family but pushed for max separation from the combo pastels below.
+  'The Dessert Sipper':  { bg: '#efdcc8', fg: '#5c3a1f', border: '#d6b78e' }, // cocoa tan
+  'The Creamy Dreamer':  { bg: '#fadbe8', fg: '#6a1f47', border: '#f0aecc' }, // rose pink
+  'The Purist':          { bg: '#d9ecc4', fg: '#2f5b1e', border: '#b0d488' }, // sage green
+  'The Grown-Up':        { bg: '#f0f4b8', fg: '#5c5d10', border: '#d9de78' }, // chartreuse
+  'The Smooth Operator': { bg: '#d3e9f7', fg: '#123c58', border: '#93c9e9' }, // sky blue
+  // Combos — 10 unique hues around the wheel. Each blend still hints at
+  // its two clusters, but hues are pushed apart enough that no two chips
+  // read the same at ~24px.
+  'The Wagashi Pair':    { bg: '#fcd7c5', fg: '#7a2f18', border: '#f5a985' }, // coral peach   (dessert+sweet)
+  'The Hojicha Head':    { bg: '#f4c9a8', fg: '#5a2a10', border: '#dd9866' }, // rust          (dessert+earthy)
+  'The Koicha Kid':      { bg: '#f5deb0', fg: '#5b3b0a', border: '#e0b96a' }, // amber gold    (dessert+bracing)
+  'The Latte Artist':    { bg: '#e6ccc3', fg: '#4a2822', border: '#c99b8c' }, // mocha rose    (dessert+silky)
+  'The Meadow Sipper':   { bg: '#cceecc', fg: '#1e5533', border: '#8fd4a2' }, // mint          (sweet+earthy)
+  'The Yuzu Sipper':     { bg: '#fbf4b1', fg: '#6b5c0a', border: '#e8db6f' }, // lemon         (sweet+bracing)
+  'The Foam Chaser':     { bg: '#e2d0f0', fg: '#3a1e5c', border: '#c19cdd' }, // lavender      (sweet+silky)
+  'The Stone Milled':    { bg: '#dde0a4', fg: '#454819', border: '#b8bd63' }, // olive         (earthy+bracing)
+  'The Zen Master':      { bg: '#b8e0dd', fg: '#103a3a', border: '#7bbfbb' }, // teal          (earthy+silky)
+  'The Gyokuro':         { bg: '#b4e6cf', fg: '#0e4a34', border: '#6ec7a1' }, // seafoam       (bracing+silky)
+  // Balanced 3+ — periwinkle, its own corner of the wheel so nobody
+  // confuses it with Foam Chaser (lavender) or Smooth Operator (sky).
+  'The Cloud Whisker':   { bg: '#d5d4f2', fg: '#22235c', border: '#a1a1e0' }, // periwinkle
 }
 
 // Palette for a specific archetype label, falling back to the primary
