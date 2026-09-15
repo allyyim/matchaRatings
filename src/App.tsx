@@ -3548,126 +3548,121 @@ function App() {
               </div>
             )}
 
-            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
-              <button
-                type="button"
-                className="btn btn-link btn-sm text-start p-0 w-100"
-                onClick={() => setIsPreferencesModalOpen(true)}
-                style={{ textDecoration: 'none', color: '#198754' }}
-              >
-                My Matcha Preferences
-              </button>
-            </div>
-
-            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
-              <button
-                type="button"
-                className="btn btn-link btn-sm text-start p-0 w-100"
-                onClick={() => setIsFaqModalOpen(true)}
-                style={{ textDecoration: 'none', color: '#198754' }}
-              >
-                FAQ
-              </button>
-            </div>
-
-            {(canShowIosInstall || deferredInstallPrompt !== null) && (
-              <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
+            <div className="profile-drawer-body">
+              <div className="profile-drawer-section">
+                <div className="profile-drawer-section-label">Preferences</div>
                 <button
                   type="button"
-                  className="btn btn-link btn-sm text-start p-0 w-100"
-                  onClick={() => setIsIosInstallModalOpen(true)}
-                  style={{ textDecoration: 'none', color: '#198754' }}
+                  className="profile-drawer-row"
+                  onClick={() => setIsPreferencesModalOpen(true)}
                 >
-                  {deferredInstallPrompt !== null ? 'Install App' : 'How to Install App'}
+                  <span>My Matcha Preferences</span>
+                  <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
                 </button>
               </div>
-            )}
 
-            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
-              <button
-                type="button"
-                className="btn btn-link btn-sm text-start p-0 w-100"
-                onClick={async () => {
-                  const shareLink = 'https://allyyim.github.io/matchaRatings/'
-                  const shareData = {
-                    title: 'Sip & Score 🍵',
-                    text: 'I\'m rating every matcha I sip on Sip & Score — come whisk it up with me! 🍵✨',
-                    url: shareLink
-                  }
+              <div className="profile-drawer-section">
+                <div className="profile-drawer-section-label">Account</div>
+                <button
+                  type="button"
+                  className="profile-drawer-row"
+                  onClick={() => {
+                    setChangeUsernameInput(currentUserName)
+                    setChangeUsernameError(null)
+                    setIsChangeUsernameOpen(true)
+                  }}
+                  disabled={isDemoAccount}
+                  title={isDemoAccount ? 'Not available on the demo account' : undefined}
+                >
+                  <span>Change Username</span>
+                  <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
+                </button>
+              </div>
 
-                  if (navigator.share) {
-                    try {
-                      await navigator.share(shareData)
-                    } catch (err) {
-                      if (err instanceof Error && err.name !== 'AbortError') {
-                        console.error('Share failed:', err)
-                      }
+              <div className="profile-drawer-section">
+                <div className="profile-drawer-section-label">App</div>
+                {(canShowIosInstall || deferredInstallPrompt !== null) && (
+                  <button
+                    type="button"
+                    className="profile-drawer-row"
+                    onClick={() => setIsIosInstallModalOpen(true)}
+                  >
+                    <span>{deferredInstallPrompt !== null ? 'Install App' : 'How to Install App'}</span>
+                    <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="profile-drawer-row"
+                  onClick={async () => {
+                    const shareLink = 'https://allyyim.github.io/matchaRatings/'
+                    const shareData = {
+                      title: 'Sip & Score 🍵',
+                      text: 'I\'m rating every matcha I sip on Sip & Score — come whisk it up with me! 🍵✨',
+                      url: shareLink
                     }
-                  } else {
-                    await navigator.clipboard.writeText(shareData.url)
-                    alert('Link copied — go spread the matcha love! 🍵')
-                  }
-                }}
-                style={{ textDecoration: 'none', color: '#198754' }}
-              >
-                Share App
-              </button>
-            </div>
+                    if (navigator.share) {
+                      try {
+                        await navigator.share(shareData)
+                      } catch (err) {
+                        if (err instanceof Error && err.name !== 'AbortError') {
+                          console.error('Share failed:', err)
+                        }
+                      }
+                    } else {
+                      await navigator.clipboard.writeText(shareData.url)
+                      alert('Link copied — go spread the matcha love! 🍵')
+                    }
+                  }}
+                >
+                  <span>Share App</span>
+                  <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
+                </button>
+              </div>
 
-            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
-              <button
-                type="button"
-                className="btn btn-link btn-sm text-start p-0 w-100"
-                onClick={() => {
-                  setChangeUsernameInput(currentUserName)
-                  setChangeUsernameError(null)
-                  setIsChangeUsernameOpen(true)
-                }}
-                style={{ textDecoration: 'none', color: '#198754' }}
-                disabled={isDemoAccount}
-                title={isDemoAccount ? 'Not available on the demo account' : undefined}
-              >
-                Change Username
-              </button>
-            </div>
+              <div className="profile-drawer-section">
+                <div className="profile-drawer-section-label">Help &amp; About</div>
+                <button
+                  type="button"
+                  className="profile-drawer-row"
+                  onClick={() => setIsFaqModalOpen(true)}
+                >
+                  <span>FAQ</span>
+                  <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
+                </button>
+                <button
+                  type="button"
+                  className="profile-drawer-row"
+                  onClick={() => setIsContactSupportModalOpen(true)}
+                >
+                  <span>Contact Support</span>
+                  <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
+                </button>
+                <button
+                  type="button"
+                  className="profile-drawer-row"
+                  onClick={() => setIsPrivacyPolicyModalOpen(true)}
+                >
+                  <span>Privacy Policy</span>
+                  <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
+                </button>
+              </div>
 
-            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
-              <button
-                type="button"
-                className="btn btn-link btn-sm text-start p-0 w-100"
-                onClick={() => setIsContactSupportModalOpen(true)}
-                style={{ textDecoration: 'none', color: '#198754' }}
-              >
-                Contact Support
-              </button>
-            </div>
+              <div style={{ flex: 1, minHeight: 0 }} />
 
-            <div style={{ padding: '0.75rem', borderBottom: '1px solid #e9ecef', flexShrink: 0 }}>
-              <button
-                type="button"
-                className="btn btn-link btn-sm text-start p-0 w-100"
-                onClick={() => setIsPrivacyPolicyModalOpen(true)}
-                style={{ textDecoration: 'none', color: '#198754' }}
-              >
-                Privacy Policy
-              </button>
+              <div className="profile-drawer-section profile-drawer-section-footer">
+                <button
+                  type="button"
+                  className="profile-drawer-row profile-drawer-row-danger"
+                  onClick={() => {
+                    signOut()
+                    setIsProfileDrawerOpen(false)
+                  }}
+                >
+                  <span>Log Out</span>
+                </button>
+              </div>
             </div>
-
-            <div style={{ padding: '0.75rem', flexShrink: 0 }}>
-              <button
-                type="button"
-                className="btn btn-link btn-sm text-start p-0 w-100"
-                onClick={() => {
-                  signOut()
-                  setIsProfileDrawerOpen(false)
-                }}
-                style={{ textDecoration: 'none', color: '#dc3545' }}
-              >
-                Log Out
-              </button>
-            </div>
-
-            <div style={{ flex: 1, minHeight: 0 }} />
 
           </div>
         </>,
