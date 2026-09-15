@@ -449,17 +449,48 @@ Client-side: `apiFetch` emits an `onRateLimited` event on any 429;
 call surfacing its own error.
 
 ### Sanitization
-- `sanitizeUserName()` on every user-supplied name
+- `sanitizeUserName()` on every user-supplied name (whitelist `[A-Za-z0-9._-]`, ≤ 40)
+- `normalizeLocationText()` on every place name (≤ 200, strips control chars)
+- `sanitizeText()` on `thoughts` (≤ 800, strips control chars)
+- `normalizeEmail()` + `isValidEmail()` on every email write (signup, magic link, `/account/email`)
 - `express.json({ limit: '15mb' })` guards against payload attacks
 - Server never returns raw error bodies containing `{` or `<`
 - Client caps server-passthrough messages at 200 chars
 
+### Image uploads
+- **Magic-byte validation** on every uploaded image (`server/lib/imageValidation.js`):
+  PNG/JPEG/GIF/WebP signatures matched against the declared MIME
+- MIME whitelist excludes `image/svg+xml` (XML/JS execution vector)
+- 8 MB decoded / 12 MB base64 hard caps, enforced before Cloudinary hit
+- Cloudinary `resource_type: 'image'` (was `'auto'`) so non-image bytes are rejected at storage too
+- `public_id` server-generated from `crypto.randomBytes(16)` — client filename never trusted
+- No local disk writes; Cloudinary is the only sink and does not execute uploads
+
 ### Headers
+- `Content-Security-Policy` — `default-src 'self'`; scripts limited to self + Google OAuth;
+  images to self/data/blob + Cloudinary + Google avatars; connect to Photon, Nominatim,
+  Google OAuth, Sentry ingest; `frame-ancestors 'none'`; `object-src 'none'`;
+  `base-uri 'self'`; `upgrade-insecure-requests`
 - `X-Content-Type-Options: nosniff`
 - `X-Frame-Options: DENY`
 - `Referrer-Policy: strict-origin-when-cross-origin`
 - `X-XSS-Protection: 0`
 - `x-powered-by` disabled
+
+### Encryption at rest & in transit
+- **Passwords:** none stored — magic-link + Google OAuth only
+- **Magic-link tokens:** SHA-256 hashed in DB (`hashLoginToken`); raw token only ever
+  transits email once, never persisted server-side
+- **Session tokens:** signed JWT (HS256, `JWT_SECRET`), 365-day expiry; stateless, no
+  server-side session table to leak
+- **Emails:** stored plaintext in `accounts.email`, relying on Supabase's disk-level
+  AES-256 encryption at rest. `server/lib/crypto.js` ships an unused AES-256-GCM
+  `encryptField`/`decryptField` pair keyed off `APP_SECRET`, ready to wire to the
+  `email` column when needed
+- **In transit:** HTTPS everywhere (Render → Supabase, Render → Cloudinary,
+  browser → Render, browser → Cloudinary)
+- **Secrets:** every credential (DB URL, Cloudinary, Resend, Google client secret,
+  `APP_SECRET`, `JWT_SECRET`) lives in env vars only — nothing in the repo
 
 ### CORS
 Origin allowlist enforced in `server/index.js`:
