@@ -1103,20 +1103,23 @@ app.post('/api/auth/demo', authRateLimiter, async (req, res) => {
       // Idempotent backfill: sync the three showcase photos + recalculated
       // greenness onto existing seed rows so demo users who logged in
       // before the photos existed still see them. Safe to run every login.
-      const photoUpdates = [
-        { location: 'Ippodo Tea (Kyoto)', photo: `${DEMO_PHOTO_BASE}/ippodo.png`, greenness: 97 },
-        { location: 'Kettl Tea (Brooklyn)', photo: `${DEMO_PHOTO_BASE}/kettl.png`, greenness: 92 },
-        { location: 'Stonemill Matcha (SF)', photo: `${DEMO_PHOTO_BASE}/stonemill.png`, greenness: 80 },
-        { location: 'Cha Cha Matcha (NYC)', photo: `${DEMO_PHOTO_BASE}/chacha.png`, greenness: 78 },
-        { location: 'Blue Bottle (SF)', photo: `${DEMO_PHOTO_BASE}/bluebottle.png`, greenness: 74 },
-        { location: 'Matchaful (NYC)', photo: `${DEMO_PHOTO_BASE}/matchaful.png`, greenness: 88 }
+      const seedUpdates = [
+        { location: 'Ippodo Tea (Kyoto)', photo: `${DEMO_PHOTO_BASE}/ippodo.png`, greenness: 97, flavors: ['nutty', 'velvety', 'umami', 'chocolatey', '__body:full-bodied'] },
+        { location: 'Kettl Tea (Brooklyn)', photo: `${DEMO_PHOTO_BASE}/kettl.png`, greenness: 92, flavors: ['nutty', 'sweet', 'creamy', '__body:full-bodied'] },
+        { location: 'Stonemill Matcha (SF)', photo: `${DEMO_PHOTO_BASE}/stonemill.png`, greenness: 80, flavors: ['earthy', '__body:medium'] },
+        { location: 'Cha Cha Matcha (NYC)', photo: `${DEMO_PHOTO_BASE}/chacha.png`, greenness: 78, flavors: ['earthy', 'bitter', '__body:medium'] },
+        { location: 'Blue Bottle (SF)', photo: `${DEMO_PHOTO_BASE}/bluebottle.png`, greenness: 74, flavors: ['mellow', 'earthy', '__body:milky'] },
+        { location: 'Matchaful (NYC)', photo: `${DEMO_PHOTO_BASE}/matchaful.png`, greenness: 88, flavors: ['smooth', 'umami', 'nutty', 'sweet', '__body:medium'] },
+        { location: 'Boba Guys (SF)', photo: '', greenness: 60, flavors: ['earthy', 'rich'] }
       ]
-      for (const p of photoUpdates) {
+      for (const p of seedUpdates) {
+        const prefs = {}
+        for (const key of p.flavors || []) prefs[String(key)] = 100
         await pool.query(
-          `UPDATE ratings SET photo = $1, greenness = $2
-             WHERE LOWER(user_name) = LOWER($3) AND is_seed = TRUE
-               AND LOWER(location) = LOWER($4)`,
-          [p.photo, p.greenness, DEMO_USER, p.location]
+          `UPDATE ratings SET photo = $1, greenness = $2, flavor_preferences = $3
+             WHERE LOWER(user_name) = LOWER($4) AND is_seed = TRUE
+               AND LOWER(location) = LOWER($5)`,
+          [p.photo, p.greenness, JSON.stringify(prefs), DEMO_USER, p.location]
         )
       }
     }
