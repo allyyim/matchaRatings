@@ -504,10 +504,12 @@ Extend via the `CORS_ORIGINS` env var (comma-separated) to add staging
 or custom-domain origins without a code change. `credentials: true`.
 
 ### Auth
-- Bearer token via `Authorization` header
-- CSRF token via `X-CSRF-Token` when present
-- Ownership check middleware: session user must match `userName` param
-  or the request 403s
+- Bearer JWT via `Authorization` header, HS256-signed, 365-day expiry, stateless (no server-side session table)
+- `requireSession` middleware mounted globally on `/api` (except pre-session auth + admin routes) — the security boundary is one line in `server/index.js`, not scattered across handlers
+- **Caller identity from session only.** Every authed route reads `req.session.userName`; `req.body.userName` / `req.query.userName` are ignored. Makes IDOR (OWASP API #1) structurally impossible — the 403 "ownership mismatch" branches no longer exist because the wrong-user code path can't be constructed
+- **CI guard** (`scripts/check-identity-sources.js`, `npm run check:identity`) fails the build if `req.body.userName` or `req.query.userName` reappears in a non-exempt route
+- Target-user routes (viewing a friend's profile, following) read `req.params.userName` — URL path segments, not caller identity
+- Magic-link tokens: SHA-256 hashed in DB, raw token only ever transits email once
 
 </details>
 
