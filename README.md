@@ -271,12 +271,11 @@ narrowly scoped.
 | [`server/lib/recsCache.js`](./server/lib/recsCache.js) | TTL cache for recs endpoints |
 | [`server/lib/crypto.js`](./server/lib/crypto.js) | AES-256-GCM field encrypt + JWT/token helpers |
 | [`server/lib/session.js`](./server/lib/session.js) | Session middleware + ownership guard |
-| [`server/lib/rateLimits.js`](./server/lib/rateLimits.js) | 3 rate-limiter instances |
-| [`server/lib/mailer.js`](./server/lib/mailer.js) | Resend client + magic-link token/email helpers |
+| [`server/lib/rateLimits.js`](./server/lib/rateLimits.js) | 5 rate-limiter instances |
 | [`server/lib/googleAuth.js`](./server/lib/googleAuth.js) | Shared Google OAuth client |
 | [`server/lib/constants.js`](./server/lib/constants.js) | Shared constants (`DEMO_USER_NAME`, `DEMO_PHOTO_BASE`) |
 | [`server/routes/admin.routes.js`](./server/routes/admin.routes.js) | Ops endpoints (mounted before auth gate) |
-| [`server/routes/auth.routes.js`](./server/routes/auth.routes.js) | Magic-link, Google OAuth, demo, link-email (mounted before auth gate) |
+| [`server/routes/auth.routes.js`](./server/routes/auth.routes.js) | Google OAuth + demo (mounted before auth gate) |
 | [`server/routes/ratings.routes.js`](./server/routes/ratings.routes.js) | Ratings CRUD, upload, dedupe, likes |
 | [`server/routes/explore.routes.js`](./server/routes/explore.routes.js) | Explore places/users, similar-users, similar-places, similar-preferences |
 | [`server/routes/social.routes.js`](./server/routes/social.routes.js) | Friends, follows, feed |
@@ -305,13 +304,10 @@ narrowly scoped.
 ### Auth
 > 🔒 The starred endpoints below use the strict **auth limiter** (5 req/min per IP).
 
-- `POST /auth/request-link` * — magic-link email
-- `POST /auth/verify` * — verify magic link
-- `POST /auth/google/verify` * — Google OAuth
+- `POST /auth/google/verify` * — Google OAuth (sign in / sign up)
 - `POST /auth/verify-account` * — check account exists
 - `POST /auth/google/confirm-account` * — finalize Google signup
 - `POST /auth/demo` * — spin up demo account
-- `POST /auth/link-email` * — link email to session
 - `POST /users/session` * — establish session
 - `GET  /auth/link-status`
 - `GET  /auth/check-username`
@@ -440,7 +436,7 @@ Worker: [`public/service-worker.js`](./public/service-worker.js)
 ### Rate limits (per IP)
 | Tier | Limit | Endpoints | Why |
 | --- | --- | --- | --- |
-| Auth | **5 req/min** | All `/auth/*` mutating (`/request-link`, `/verify`, `/google/verify`, `/link-email`, `/demo`, ...) | Brute-force + Resend email $ cap |
+| Auth | **5 req/min** | All `/auth/*` mutating (`/google/verify`, `/verify-account`, `/google/confirm-account`, `/demo`) | Brute-force protection on the OAuth handshake |
 | Upload | **10 req/min** | `/api/upload-image` | Cloudinary $ cap — a hostile client can't burn 100+ uploads/min |
 | Admin | **20 req/min** | `/api/admin/*` (also require `ADMIN_SECRET`) | Ops endpoints — belt over the secret gate |
 | Recs | **40 req/min** | `/similar-users`, `/similar-preferences`, `/explore/users`, `/similar-places` | Heavy discovery joins, cache-thrash protection |
@@ -463,7 +459,7 @@ call surfacing its own error.
 - `sanitizeUserName()` on every user-supplied name (whitelist `[A-Za-z0-9._-]`, ≤ 40)
 - `normalizeLocationText()` on every place name (≤ 200, strips control chars)
 - `sanitizeText()` on `thoughts` (≤ 800, strips control chars)
-- `normalizeEmail()` + `isValidEmail()` on every email write (signup, magic link, `/account/email`)
+- `normalizeEmail()` + `isValidEmail()` on every email write (Google OAuth signup, `/account/email`)
 - `express.json({ limit: '15mb' })` guards against payload attacks
 - Server never returns raw error bodies containing `{` or `<`
 - Client caps server-passthrough messages at 200 chars
@@ -494,7 +490,6 @@ call surfacing its own error.
 ### Concurrency guards
 | Race | Guard |
 | --- | --- |
-| Magic-link double-consume | Atomic `UPDATE login_tokens SET used_at = NOW() WHERE token_hash = $1 AND used_at IS NULL AND expires_at > NOW() RETURNING ...` — two parallel requests can't both succeed |
 | Signup username collision | `CREATE UNIQUE INDEX idx_accounts_user_name_lower` — DB rejects duplicates even if two verify races land at the same instant |
 | Follow / unfollow | `UNIQUE(follower_email, following_email)` + `error.code === '23505'` → 409 |
 | Rating like | `UNIQUE(rating_id, email)` + 23505 → 409 |
@@ -502,9 +497,8 @@ call surfacing its own error.
 | Rate limiter | In-memory per dyno (fine for one-dyno Render; swap to Redis on scale) |
 
 ### Encryption at rest & in transit
-- **Passwords:** none stored — magic-link + Google OAuth only
-- **Magic-link tokens:** SHA-256 hashed in DB (`hashLoginToken`); raw token only ever
-  transits email once, never persisted server-side
+- **Passwords:** none stored — Google OAuth is the only sign-in path
+- **Google ID tokens:** verified server-side against Google's JWKs on every sign-in; never persisted
 - **Session tokens:** signed JWT (HS256, `JWT_SECRET`), 365-day expiry; stateless, no
   server-side session table to leak
 - **Emails:** stored plaintext in `accounts.email`, relying on Supabase's disk-level
@@ -513,8 +507,8 @@ call surfacing its own error.
   `email` column when needed
 - **In transit:** HTTPS everywhere (Render → Supabase, Render → Cloudinary,
   browser → Render, browser → Cloudinary)
-- **Secrets:** every credential (DB URL, Cloudinary, Resend, Google client secret,
-  `APP_SECRET`, `JWT_SECRET`) lives in env vars only — nothing in the repo
+- **Secrets:** every credential (DB URL, Cloudinary, Google client secret,
+  `APP_SECRET`, `JWT_SECRET`, `ADMIN_SECRET`) lives in env vars only — nothing in the repo
 
 ### CORS
 Origin allowlist enforced in `server/index.js`:
@@ -533,7 +527,6 @@ or custom-domain origins without a code change. `credentials: true`.
 - **Caller identity from session only.** Every authed route reads `req.session.userName`; `req.body.userName` / `req.query.userName` are ignored. Makes IDOR (OWASP API #1) structurally impossible — the 403 "ownership mismatch" branches no longer exist because the wrong-user code path can't be constructed
 - **CI guard** (`scripts/check-identity-sources.js`, `npm run check:identity`) fails the build if `req.body.userName` or `req.query.userName` reappears in a non-exempt route
 - Target-user routes (viewing a friend's profile, following) read `req.params.userName` — URL path segments, not caller identity
-- Magic-link tokens: SHA-256 hashed in DB, raw token only ever transits email once
 
 </details>
 
@@ -604,7 +597,6 @@ matchaRatings/
 │   │   ├── crypto.js
 │   │   ├── session.js
 │   │   ├── rateLimits.js
-│   │   ├── mailer.js
 │   │   ├── googleAuth.js
 │   │   └── constants.js
 │   └── routes/                     ← business route modules

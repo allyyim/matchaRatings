@@ -28,16 +28,3 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_user_name_lower
 ON accounts (LOWER(user_name));
-
--- Single-use magic-link tokens for passwordless sign-in and account linking/migration.
-CREATE TABLE IF NOT EXISTS login_tokens (
-  token_hash TEXT PRIMARY KEY,
-  email TEXT NOT NULL,
-  user_name TEXT,
-  purpose TEXT NOT NULL,
-  expires_at TIMESTAMPTZ NOT NULL,
-  used_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_login_tokens_email ON login_tokens (email);

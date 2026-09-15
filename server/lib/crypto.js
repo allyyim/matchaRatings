@@ -1,6 +1,5 @@
 // Field-level AES-256-GCM encryption for sensitive text (email, etc.)
-// stored in Postgres, plus JWT session-token issuance and one-time
-// magic-link hashing.
+// stored in Postgres, plus JWT session-token issuance.
 //
 // APP_SECRET drives the encryption key (SHA-256 stretched); JWT_SECRET
 // drives session-token signing. Both fall back to APP_SECRET so a
@@ -62,8 +61,4 @@ export function generateToken(userName, browserId) {
 
 export function verifyToken(token) {
   return jwt.verify(token, JWT_SECRET)
-}
-
-export function hashLoginToken(rawToken) {
-  return crypto.createHash('sha256').update(rawToken).digest('hex')
 }

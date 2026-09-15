@@ -83,7 +83,6 @@ router.post('/admin/delete-user', async (req, res) => {
     await pool.query('DELETE FROM rating_likes WHERE email = $1', [email])
     await pool.query('DELETE FROM user_preferences WHERE email = $1', [email])
     await pool.query('DELETE FROM browser_users WHERE LOWER(user_name) = LOWER($1)', [actualUserName])
-    await pool.query('DELETE FROM login_tokens WHERE email = $1', [email])
     await pool.query('DELETE FROM accounts WHERE email = $1', [email])
 
     return res.json({ ok: true, message: `User ${userName} deleted successfully` })

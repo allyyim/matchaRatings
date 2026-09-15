@@ -337,7 +337,7 @@ function App() {
   const [isSubmittingName, setIsSubmittingName] = useState(false)
   const [usernameAvailability, setUsernameAvailability] = useState<'idle' | 'checking' | 'available' | 'taken' | 'invalid'>('idle')
   const [authError, setAuthError] = useState('')
-  const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser' | 'confirm-account' | 'magic-link' | 'magic-link-username'>('choice')
+  const [authMode, setAuthMode] = useState<'choice' | 'signin' | 'newuser' | 'confirm-account'>('choice')
   const [welcomeMessage, setWelcomeMessage] = useState('')
   const [savedEntryToast, setSavedEntryToast] = useState<{ headline: string; highlight: string; connector?: string } | null>(null)
   const [milestoneCelebration, setMilestoneCelebration] = useState<{ count: number; headline: string; subtext: string } | null>(null)
@@ -488,8 +488,6 @@ function App() {
   const [isFriendSearchOpen, setIsFriendSearchOpen] = useState(false)
 
   // Phase 2 & 3 features
-  const [pendingMagicEmail, setPendingMagicEmail] = useState('')
-  const [isMagicLinkSent, setIsMagicLinkSent] = useState(false)
   const [isPreferencesModalOpen, setIsPreferencesModalOpen] = useState(false)
   const [isProfileDrawerOpen, setIsProfileDrawerOpen] = useState(false)
 
@@ -1008,7 +1006,7 @@ function App() {
       setUsernameAvailability('idle')
       return
     }
-    if (authMode !== 'newuser' && authMode !== 'magic-link-username') {
+    if (authMode !== 'newuser') {
       return
     }
     setUsernameAvailability('checking')
@@ -1083,35 +1081,6 @@ function App() {
     }, 600)
     return () => clearTimeout(timer)
   }, [isUserReady, canShowIosInstall, deferredInstallPrompt, showOnboarding])
-
-  useEffect(() => {
-    // Handle magic link verification from URL
-    const params = new URLSearchParams(window.location.search)
-    const authToken = params.get('authToken')
-    const purpose = params.get('purpose')
-
-    if (authToken && (purpose === 'login' || purpose === 'signup')) {
-      const verifyMagicLink = async () => {
-        try {
-          setIsSubmittingName(true)
-          const response = await apiFetch<{ userName: string; email: string; token: string }>('/auth/verify', {
-            method: 'POST',
-            body: JSON.stringify({ token: authToken, browserId })
-          })
-          signIn({ userName: response.userName, token: response.token || '' })
-          sessionStorage.setItem('justSignedUp', 'true')
-          window.history.replaceState({}, document.title, window.location.pathname)
-          void loadRandomForest().catch(() => undefined)
-        } catch (error) {
-          setAuthError(error instanceof Error ? error.message : 'Magic link verification failed')
-          window.history.replaceState({}, document.title, window.location.pathname)
-        } finally {
-          setIsSubmittingName(false)
-        }
-      }
-      void verifyMagicLink()
-    }
-  }, [browserId])
 
   function signOut() {
     // For demo/recruiter sessions, wipe any ratings the visitor added so the
@@ -2460,177 +2429,6 @@ function App() {
                 }}
               >
                 This isn't me, create new account
-              </button>
-              {authError && <div className="alert alert-danger border mt-3 mb-0 small">{authError}</div>}
-            </div>
-          </section>
-        ) : authMode === 'magic-link' ? (
-          <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
-            <div className="card-body p-3 p-md-4">
-              <div className="text-center mb-4">
-                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>✉️</div>
-                <h1 className="h4 fw-bold text-success mb-1">{isMagicLinkSent ? 'Check your email' : 'Email magic link'}</h1>
-              </div>
-              {!isMagicLinkSent ? (
-                <>
-                  <p className="text-muted mb-4 text-center small">
-                    We'll send you a link to sign in or create an account
-                  </p>
-                  <form onSubmit={async (e) => {
-                    e.preventDefault()
-                    if (!pendingMagicEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(pendingMagicEmail)) {
-                      setAuthError('Please enter a valid email')
-                      return
-                    }
-                    try {
-                      setIsSubmittingName(true)
-                      setAuthError('')
-                      const response = await apiFetch<{ ok: boolean; mode?: string }>('/auth/request-link', {
-                        method: 'POST',
-                        body: JSON.stringify({ email: pendingMagicEmail, userName: pendingUserName })
-                      })
-
-                      if (response.mode === 'needs-username') {
-                        setAuthError('')
-                        setPendingUserName('')
-                        setAuthMode('magic-link-username')
-                      } else {
-                        setIsMagicLinkSent(true)
-                      }
-                    } catch (error) {
-                      setAuthError(error instanceof Error ? error.message : 'Failed to send magic link')
-                    } finally {
-                      setIsSubmittingName(false)
-                    }
-                  }}>
-                    <input
-                      type="email"
-                      className="form-control mb-3"
-                      value={pendingMagicEmail}
-                      onChange={(e) => setPendingMagicEmail(e.target.value)}
-                      placeholder="you@example.com"
-                      autoFocus
-                    />
-                    <button
-                      type="submit"
-                      className="btn btn-success w-100"
-                      disabled={!pendingMagicEmail || isSubmittingName}
-                    >
-                      {isSubmittingName ? 'Sending…' : 'Send link'}
-                    </button>
-                  </form>
-                  <button
-                    type="button"
-                    className="btn btn-link text-muted w-100 p-0 small mt-3"
-                    onClick={() => {
-                      setAuthMode('choice')
-                      setAuthError('')
-                      setPendingMagicEmail('')
-                    }}
-                  >
-                    ← Back
-                  </button>
-                </>
-              ) : (
-                <>
-                  <p className="text-muted mb-4 text-center small">
-                    We've sent a link to <strong>{pendingMagicEmail}</strong>. Click it to sign up.
-                  </p>
-                  <button
-                    type="button"
-                    className="btn btn-outline-success w-100"
-                    onClick={() => {
-                      setIsMagicLinkSent(false)
-                      setPendingMagicEmail('')
-                      setAuthError('')
-                    }}
-                  >
-                    Didn't receive it? Try again
-                  </button>
-                </>
-              )}
-              <button
-                type="button"
-                className="btn btn-link text-muted w-100 p-0 small mt-3"
-                onClick={() => {
-                  setAuthMode('choice')
-                  setIsMagicLinkSent(false)
-                  setPendingMagicEmail('')
-                  setAuthError('')
-                }}
-              >
-                ← Back
-              </button>
-              {authError && <div className="alert alert-danger border mt-3 mb-0 small">{authError}</div>}
-            </div>
-          </section>
-        ) : authMode === 'magic-link-username' ? (
-          <section className="card border-0 shadow-sm matcha-shell mx-auto" style={{ maxWidth: '28rem' }}>
-            <div className="card-body p-3 p-md-4">
-              <div className="text-center mb-4">
-                <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🍵</div>
-                <h1 className="h4 fw-bold text-success mb-1">Create your account</h1>
-              </div>
-              <p className="text-muted mb-4 text-center small">
-                Choose a username for your new account
-              </p>
-              <form onSubmit={async (e) => {
-                e.preventDefault()
-                if (!pendingUserName.trim()) {
-                  setAuthError('Please enter a username')
-                  return
-                }
-                if (usernameAvailability === 'taken') {
-                  setAuthError('That username is already taken')
-                  return
-                }
-                try {
-                  setIsSubmittingName(true)
-                  setAuthError('')
-                  await apiFetch<{ ok: boolean }>('/auth/request-link', {
-                    method: 'POST',
-                    body: JSON.stringify({ email: pendingMagicEmail, userName: pendingUserName.trim() })
-                  })
-                  setIsMagicLinkSent(true)
-                  setAuthMode('magic-link')
-                } catch (error) {
-                  setAuthError(error instanceof Error ? error.message : 'Failed to send magic link')
-                } finally {
-                  setIsSubmittingName(false)
-                }
-              }}>
-                <input
-                  type="text"
-                  className={`form-control mb-1 ${usernameAvailability === 'taken' || usernameAvailability === 'invalid' ? 'is-invalid' : usernameAvailability === 'available' ? 'is-valid' : ''}`}
-                  value={pendingUserName}
-                  onChange={(e) => setPendingUserName(e.target.value)}
-                  placeholder="your username"
-                  autoFocus
-                />
-                <div className="mb-3" style={{ minHeight: '1.25rem', fontSize: '0.8125rem' }}>
-                  {usernameAvailability === 'checking' && <span className="text-muted">Checking availability…</span>}
-                  {usernameAvailability === 'available' && <span className="text-success">✓ Username available</span>}
-                  {usernameAvailability === 'taken' && <span className="text-danger">Username already taken</span>}
-                  {usernameAvailability === 'invalid' && <span className="text-danger">Username contains invalid characters</span>}
-                </div>
-                <button
-                  type="submit"
-                  className="btn btn-success w-100"
-                  disabled={!pendingUserName.trim() || isSubmittingName || usernameAvailability === 'taken' || usernameAvailability === 'invalid' || usernameAvailability === 'checking'}
-                >
-                  {isSubmittingName ? 'Sending…' : 'Send link'}
-                </button>
-              </form>
-              <button
-                type="button"
-                className="btn btn-link text-muted w-100 p-0 small mt-3"
-                onClick={() => {
-                  setAuthMode('magic-link')
-                  setPendingUserName('')
-                  setAuthError('')
-                }}
-              >
-                ← Back
               </button>
               {authError && <div className="alert alert-danger border mt-3 mb-0 small">{authError}</div>}
             </div>

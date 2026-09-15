@@ -126,19 +126,11 @@ app.get('/api/warm', async (_req, res) => {
   }
 })
 
-// Periodic cleanup of expired magic-link tokens. Without this the
-// login_tokens table grows forever (every sign-in adds a row). Runs once
-// an hour and only touches rows whose expiry is already in the past.
-setInterval(() => {
-  pool.query(`DELETE FROM login_tokens WHERE expires_at < NOW() - INTERVAL '1 day'`)
-    .catch((err) => console.warn('login_tokens cleanup failed:', err.message))
-}, 60 * 60 * 1000).unref?.()
-
 // ---------------------------------------------------------------------------
 // Router mounting order matters:
 //   1. adminRouter   — no session (ops endpoints)
-//   2. authRouter    — no session for signup/signin; routes that need session
-//                      (link-status, demo/cleanup, link-email) apply
+//   2. authRouter    — no session for Google sign-in; routes that need
+//                      session (link-status, demo/cleanup) apply
 //                      requireSession inline
 //   3. auth gate     — everything past this point requires a session
 //   4. business + accountRouter — session-protected

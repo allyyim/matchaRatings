@@ -1,129 +1,14 @@
 import express from 'express'
 import crypto from 'node:crypto'
 import { pool } from '../db.js'
-import {
-  sanitizeUserName,
-  normalizeEmail,
-  isValidEmail,
-} from '../lib/sanitize.js'
-import {
-  generateToken,
-  hashLoginToken,
-} from '../lib/crypto.js'
+import { sanitizeUserName } from '../lib/sanitize.js'
+import { generateToken } from '../lib/crypto.js'
 import { requireSession } from '../lib/session.js'
 import { authRateLimiter } from '../lib/rateLimits.js'
 import { googleClient } from '../lib/googleAuth.js'
-import {
-  APP_ORIGIN,
-  createLoginToken,
-  sendMagicLinkEmail,
-} from '../lib/mailer.js'
 import { DEMO_USER_NAME, DEMO_PHOTO_BASE } from '../lib/constants.js'
 
 const router = express.Router()
-
-router.post('/api/auth/request-link', authRateLimiter, async (req, res) => {
-  const email = normalizeEmail(req.body?.email)
-  const requestedUserName = sanitizeUserName(String(req.body?.userName || '').trim())
-
-  if (!email || !isValidEmail(email)) {
-    return res.status(400).json({ error: 'A valid email is required' })
-  }
-
-  const existingAccount = await pool.query('SELECT user_name FROM accounts WHERE email = $1', [email])
-
-  if (existingAccount.rowCount > 0) {
-    const rawToken = await createLoginToken(email, 'login', existingAccount.rows[0].user_name)
-    await sendMagicLinkEmail(email, rawToken, 'login')
-    return res.json({ ok: true, mode: 'login' })
-  }
-
-  if (!requestedUserName) {
-    return res.status(200).json({ ok: true, mode: 'needs-username' })
-  }
-
-  const nameTaken = await pool.query(
-    'SELECT 1 FROM accounts WHERE LOWER(user_name) = LOWER($1)',
-    [requestedUserName]
-  )
-  if (nameTaken.rowCount > 0) {
-    return res.status(409).json({ error: 'That username is already linked to another account' })
-  }
-
-  const rawToken = await createLoginToken(email, 'signup', requestedUserName)
-  await sendMagicLinkEmail(email, rawToken, 'signup')
-  return res.json({ ok: true, mode: 'signup' })
-})
-
-router.post('/api/auth/verify', authRateLimiter, async (req, res) => {
-  const rawToken = String(req.body?.token || '').trim()
-  const browserId = String(req.body?.browserId || '').trim()
-
-  if (!rawToken) {
-    return res.status(400).json({ error: 'token is required' })
-  }
-
-  const tokenHash = hashLoginToken(rawToken)
-  // Atomic consume: flip used_at to NOW() only if the row exists AND is
-  // still unused AND unexpired, and return the row we captured. Two
-  // parallel requests with the same token can't both succeed — only the
-  // UPDATE that actually flipped used_at gets a row back; the loser
-  // sees rowCount=0 and 400s. This closes the tiny window between
-  // "SELECT confirms unused" and "UPDATE marks used" that a separate
-  // read-then-write pattern exposes.
-  const claimed = await pool.query(
-    `UPDATE login_tokens
-        SET used_at = NOW()
-      WHERE token_hash = $1
-        AND used_at IS NULL
-        AND expires_at > NOW()
-      RETURNING email, user_name, purpose, expires_at`,
-    [tokenHash]
-  )
-
-  if (claimed.rowCount === 0) {
-    return res.status(400).json({ error: 'This link is invalid or has expired. Please request a new one.' })
-  }
-
-  const record = claimed.rows[0]
-
-  const existingAccount = await pool.query('SELECT user_name FROM accounts WHERE email = $1', [record.email])
-  let userName = existingAccount.rows[0]?.user_name
-
-  if (!userName) {
-    if (!record.user_name) {
-      return res.status(400).json({ error: 'No username on file for this link. Please sign up again.' })
-    }
-
-    const nameTaken = await pool.query(
-      'SELECT 1 FROM accounts WHERE LOWER(user_name) = LOWER($1)',
-      [record.user_name]
-    )
-    if (nameTaken.rowCount > 0) {
-      return res.status(409).json({ error: 'That username was just claimed by another account. Please sign up again.' })
-    }
-
-    // Create new account with email and username
-    await pool.query(
-      'INSERT INTO accounts (email, user_name) VALUES ($1, $2)',
-      [record.email, record.user_name]
-    )
-    userName = record.user_name
-  } else {
-    // Existing account found - verify email matches before using it
-    const existingAccount = await pool.query(
-      'SELECT email, user_name FROM accounts WHERE LOWER(user_name) = LOWER($1)',
-      [userName]
-    )
-    if (existingAccount.rowCount > 0 && existingAccount.rows[0].email && existingAccount.rows[0].email !== record.email) {
-      // Email mismatch - prevent overwriting
-      return res.status(409).json({ error: 'This username is already linked to a different email address.' })
-    }
-  }
-
-  const token = generateToken(userName, browserId)
-  return res.json({ userName, email: record.email, token })
-})
 
 router.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
   const googleToken = String(req.body?.token || '').trim()
@@ -495,30 +380,5 @@ router.post('/api/auth/demo/cleanup', requireSession, async (_req, res) => {
     return res.status(500).json({ error: 'Demo cleanup failed' })
   }
 })
-
-router.post('/api/auth/link-email', authRateLimiter, requireSession, async (req, res) => {
-  const email = normalizeEmail(req.body?.email)
-  if (!email || !isValidEmail(email)) {
-    return res.status(400).json({ error: 'A valid email is required' })
-  }
-
-  const emailInUse = await pool.query('SELECT 1 FROM accounts WHERE email = $1', [email])
-  if (emailInUse.rowCount > 0) {
-    return res.status(409).json({ error: 'That email is already linked to an account' })
-  }
-
-  const nameInUse = await pool.query(
-    'SELECT 1 FROM accounts WHERE LOWER(user_name) = LOWER($1)',
-    [req.session.userName]
-  )
-  if (nameInUse.rowCount > 0) {
-    return res.status(409).json({ error: 'This account already has an email on file' })
-  }
-
-  const rawToken = await createLoginToken(email, 'link', req.session.userName)
-  const verificationLink = await sendMagicLinkEmail(email, rawToken, 'link')
-  return res.json({ ok: true, verificationLink: verificationLink || undefined })
-})
-
 
 export default router

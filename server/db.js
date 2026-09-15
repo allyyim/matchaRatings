@@ -181,32 +181,14 @@ export async function initDb() {
     ON accounts (google_id);
   `)
 
-  // Single-use magic-link tokens for passwordless sign-in and account linking/migration.
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS login_tokens (
-      token_hash TEXT PRIMARY KEY,
-      email TEXT NOT NULL,
-      user_name TEXT,
-      purpose TEXT NOT NULL,
-      expires_at TIMESTAMPTZ NOT NULL,
-      used_at TIMESTAMPTZ,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-    );
-  `)
-
-  await pool.query(`
-    CREATE INDEX IF NOT EXISTS idx_login_tokens_email ON login_tokens (email);
-  `)
-
-  await pool.query(`
-    CREATE INDEX IF NOT EXISTS idx_login_tokens_expires_at
-    ON login_tokens (expires_at);
-  `)
-
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_browser_users_user_name
     ON browser_users (user_name);
   `)
+
+  // Legacy magic-link auth removed; drop the table if it lingers from an
+  // older deploy. Google OAuth is now the only sign-in path.
+  await pool.query(`DROP TABLE IF EXISTS login_tokens;`)
 
   await pool.query(`
     DO $$
