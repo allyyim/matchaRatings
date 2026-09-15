@@ -666,10 +666,12 @@ function App() {
         setIsSubmittingName(true)
         setAuthError('')
 
-        console.log('=== Google OAuth Debug ===')
-        console.log('Full codeResponse:', JSON.stringify(codeResponse))
-        console.log('Has access_token?', !!codeResponse.access_token)
-        console.log('All keys:', Object.keys(codeResponse))
+        if (__DEV__) {
+          console.log('=== Google OAuth Debug ===')
+          console.log('Full codeResponse:', JSON.stringify(codeResponse))
+          console.log('Has access_token?', !!codeResponse.access_token)
+          console.log('All keys:', Object.keys(codeResponse))
+        }
 
         if (!codeResponse.access_token) {
           console.error('❌ No access_token in response!')
@@ -681,7 +683,7 @@ function App() {
         const requestBody = verifiedAccountName
           ? { token: codeResponse.access_token, browserId, confirmedUserName: verifiedAccountName }
           : { token: codeResponse.access_token, browserId }
-        console.log('Sending to backend:', JSON.stringify(requestBody))
+        if (__DEV__) console.log('Sending to backend:', JSON.stringify(requestBody))
 
         try {
           const response = await apiFetch<{ userName: string; email: string; token: string; isNewUser?: boolean; potentialAccounts?: string[] }>('/auth/google/verify', {
@@ -804,7 +806,7 @@ function App() {
       navigator.serviceWorker.onmessage = (event) => {
         if (event.data.type === 'APP_UPDATED') {
           // Don't auto-reload - user can manually refresh when ready
-          console.log('App updated - refresh to see latest version')
+          if (__DEV__) console.log('App updated - refresh to see latest version')
         }
       }
 
@@ -820,11 +822,11 @@ function App() {
         const savedName = localStorage.getItem('matchaUserName') || ''
         const savedToken = getSessionToken()
 
-        console.log('Session restore attempt:', { savedName: !!savedName, savedToken: !!savedToken })
+        if (__DEV__) console.log('Session restore attempt:', { savedName: !!savedName, savedToken: !!savedToken })
 
         if (savedName && savedToken) {
           // Returning user with a cached session: skip the login prompt entirely.
-          console.log('Restoring session for:', savedName)
+          if (__DEV__) console.log('Restoring session for:', savedName)
           if (mounted) {
             signIn({ userName: savedName, persistUserName: false })
             setRequiresManualName(false)
@@ -833,7 +835,7 @@ function App() {
           return
         }
 
-        console.log('No saved session found')
+        if (__DEV__) console.log('No saved session found')
         if (mounted) {
           setRequiresManualName(false)
         }
@@ -915,13 +917,15 @@ function App() {
         if (cancelled) return
         setFeedFollowingRatings(res.ratings || [])
         setFeedLastLoadedAt(Date.now())
-        console.log('[feed]', {
-          following: follows.following,
-          followingCount: follows.following.length,
-          feedRatingsReturned: res.ratings?.length ?? 0,
-          userNamesInFeed: Array.from(new Set((res.ratings || []).map(r => r.userName))),
-          newest: (res.ratings || []).slice(0, 5).map(r => ({ user: r.userName, place: r.location, createdAt: r.createdAt }))
-        })
+        if (__DEV__) {
+          console.log('[feed]', {
+            following: follows.following,
+            followingCount: follows.following.length,
+            feedRatingsReturned: res.ratings?.length ?? 0,
+            userNamesInFeed: Array.from(new Set((res.ratings || []).map(r => r.userName))),
+            newest: (res.ratings || []).slice(0, 5).map(r => ({ user: r.userName, place: r.location, createdAt: r.createdAt }))
+          })
+        }
       } catch (err) {
         console.warn('[feed] fetch failed', err)
         // Silent — keep the previous snapshot instead of clearing the feed on a
@@ -1743,7 +1747,7 @@ function App() {
             method: 'POST',
             body: JSON.stringify({ image: resolvedPhoto })
           })
-          console.log('Image upload successful:', uploadRes.url)
+          if (__DEV__) console.log('Image upload successful:', uploadRes.url)
           photoUrl = uploadRes.url
         } catch (error) {
           console.error('Image upload failed:', error)
@@ -1832,14 +1836,16 @@ function App() {
       // Debug snapshot — surface these in DevTools so we can prove whether
       // the miss is a state issue vs the user's true DB count being lower
       // than the "@N" rank badge shown on the log entry.
-      console.log('[milestone]', {
-        rawCurrentCount,
-        uniquePlacesCount: currentPlaces.size,
-        effectiveCount,
-        shownMilestones,
-        eligible,
-        firing: crossedMilestone
-      })
+      if (__DEV__) {
+        console.log('[milestone]', {
+          rawCurrentCount,
+          uniquePlacesCount: currentPlaces.size,
+          effectiveCount,
+          shownMilestones,
+          eligible,
+          firing: crossedMilestone
+        })
+      }
 
       if (crossedMilestone) {
         const milestone = MILESTONES[crossedMilestone]
@@ -1892,7 +1898,7 @@ function App() {
 
     try {
       const response = await apiFetch<{ friends: Array<{ userName: string; placeCount: number }> }>(`/friends/search?q=${encodeURIComponent(query.trim())}`)
-      console.log('Search response:', response)
+      if (__DEV__) console.log('Search response:', response)
       setFriendSuggestions(response.friends || [])
     } catch (error) {
       console.error('Search failed:', error)
@@ -2099,7 +2105,7 @@ function App() {
             method: 'POST',
             body: JSON.stringify({ image: editEntryPhoto })
           })
-          console.log('Image upload successful:', uploadRes.url)
+          if (__DEV__) console.log('Image upload successful:', uploadRes.url)
           photoUrl = uploadRes.url
         } catch (error) {
           console.error('Image upload failed:', error)
@@ -4528,7 +4534,7 @@ function App() {
                     }}
                   >
                     {friendModalPrefs.avatarUrl ? (
-                      <img src={friendModalPrefs.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img src={friendModalPrefs.avatarUrl} alt="" loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
                       (friendModalUser || '?').charAt(0).toUpperCase()
                     )}

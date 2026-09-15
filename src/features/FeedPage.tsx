@@ -220,7 +220,7 @@ export default function FeedPage(props: {
                   >
                     {entry.userAvatarUrl ? (
                       <div className="feed-item-icon feed-item-avatar" aria-hidden="true">
-                        <img src={entry.userAvatarUrl} alt="" />
+                        <img src={entry.userAvatarUrl} alt="" loading="lazy" decoding="async" />
                       </div>
                     ) : (
                       <div className="feed-item-icon" aria-hidden="true">👥</div>

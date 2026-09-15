@@ -25,10 +25,10 @@ export async function loadRandomForest() {
     try {
       const response = await fetch(`${import.meta.env.BASE_URL}ml/drink-area/forest.json`)
       const model = await response.json()
-      console.log('DEBUG: Random Forest loaded!')
+      if (__DEV__) console.log('DEBUG: Random Forest loaded!')
       return model
     } catch (e) {
-      console.log('DEBUG: Failed to load forest:', e)
+      if (__DEV__) console.log('DEBUG: Failed to load forest:', e)
       return null
     }
   })()
@@ -77,7 +77,7 @@ async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResul
 
   const forest = await loadRandomForest()
   if (!forest) {
-    console.log('DEBUG: Forest not loaded')
+    if (__DEV__) console.log('DEBUG: Forest not loaded')
     return {
       region: fallbackRegion,
       statusMessage: 'ML model not found. Using heuristic drink area.',
@@ -86,7 +86,7 @@ async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResul
     }
   }
 
-  console.log('DEBUG: Using Random Forest for drink detection')
+  if (__DEV__) console.log('DEBUG: Using Random Forest for drink detection')
 
   // Create canvas to extract pixel data
   const canvas = document.createElement('canvas')
@@ -121,7 +121,7 @@ async function detectDrinkAreaRegion(img: HTMLImageElement): Promise<DetectResul
     totalPixels++
   }
 
-  console.log(`DEBUG: Random Forest detected ${drinkPixels}/${totalPixels} pixels as drink area`)
+  if (__DEV__) console.log(`DEBUG: Random Forest detected ${drinkPixels}/${totalPixels} pixels as drink area`)
 
   if (drinkPixels < totalPixels * 0.01) {
     return {
