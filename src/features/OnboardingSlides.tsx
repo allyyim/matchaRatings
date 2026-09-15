@@ -83,7 +83,27 @@ export default function OnboardingSlides({ currentSlide, setCurrentSlide, onClos
               <p className="onboarding-lead">Log your favorite spot first — the first sip unlocks a little celebration 🎊</p>
               <ul className="onboarding-list">
                 <li><span className="onboarding-bullet">👤</span> Profile icon (top-right) — Preferences, Account &amp; Help</li>
-                <li><span className="onboarding-bullet">🎯</span> Set flavors, body &amp; ideal shade to sharpen your recs</li>
+                <li>
+                  <span className="onboarding-bullet">🎯</span>
+                  Set your flavors to unlock a palate archetype
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      marginLeft: '0.35rem',
+                      padding: '0.1rem 0.5rem',
+                      borderRadius: '999px',
+                      background: '#e2eedb',
+                      color: '#2f5b3a',
+                      border: '1px solid #b7d6a8',
+                      fontSize: '0.7rem',
+                      fontWeight: 600,
+                      verticalAlign: 'baseline',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    The Purist
+                  </span>
+                </li>
                 <li><span className="onboarding-bullet">📱</span> Add to home screen for the full app feel</li>
               </ul>
             </div>

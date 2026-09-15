@@ -3459,7 +3459,15 @@ function App() {
                   <span className="text-muted" style={{ fontSize: '0.7rem' }}>Pick any that fit</span>
                 </div>
                 <div className="pref-chip-grid pref-chip-grid-2">
-                {['sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'creamy', 'floral', 'earthy', 'chocolatey', 'velvety', 'rich', 'smooth', 'mellow'].map((flavor) => {
+                {/*
+                  Ordered by color group to match the new-rating flavor
+                  grid — same left-to-right rainbow (brown → pink → green
+                  → blue) so users learn one visual vocabulary. Astringent
+                  + bitter are intentionally omitted here since prefs are
+                  about what you *seek out*, not descriptors that show up
+                  in a rating.
+                */}
+                {['chocolatey', 'nutty', 'velvety', 'rich', 'sweet', 'sugary', 'creamy', 'floral', 'earthy', 'vegetal', 'grassy', 'mellow', 'smooth', 'umami'].map((flavor) => {
                   const isSelected = userFlavors.map(f => f.toLowerCase()).includes(flavor.toLowerCase())
                   return (
                     <button

@@ -1,8 +1,27 @@
 // Flavor + body vocabulary shared across the app. Kept in a single module
 // so App.tsx, FeedPage, ExplorePage, etc. all read the same source of truth
 // when rendering chips, computing recommendations, or seeding demo data.
+//
+// Order matters — this is the exact left-to-right / top-to-bottom order
+// the flavor grid renders in every surface (new-rating modal, edit modal,
+// My Matcha Preferences). Grouped by color family so tags of the same
+// palette sit adjacent, then the whole grid reads as a rainbow strip.
 
-export const FLAVOR_LIST = ['Chocolatey', 'nutty', 'velvety', 'rich', 'sweet', 'sugary', 'creamy', 'umami', 'earthy', 'vegetal', 'floral', 'astringent', 'bitter', 'mellow', 'smooth'] as const
+export const FLAVOR_LIST = [
+  // brown / dessert
+  'Chocolatey', 'nutty', 'velvety', 'rich',
+  // pink / sweet — floral joined this cluster because it's a delicate,
+  // fragrant top-note that groups tonally with sweet/creamy, not umami.
+  'sweet', 'sugary', 'creamy', 'floral',
+  // green / earthy — grassy is new; sits between vegetal and astringent
+  // as the classic "fresh cut lawn" note tea drinkers ask for.
+  'earthy', 'vegetal', 'grassy',
+  // yellow / bracing
+  'astringent', 'bitter',
+  // blue / silky — umami joined this cluster because its savory, mouth-
+  // filling character reads as smooth/silky rather than green/earthy.
+  'mellow', 'smooth', 'umami',
+] as const
 
 export type BodyProfileValue = 'full-bodied' | 'medium' | 'milky'
 
@@ -13,12 +32,13 @@ export const BODY_PROFILE_OPTIONS: Array<{ value: BodyProfileValue; label: strin
 ]
 
 // Ordering by color group so tags of the same palette sit next to each other.
+// Kept in sync with FLAVOR_LIST — same grouping, same order.
 export const FLAVOR_COLOR_ORDER: Record<string, number> = {
   chocolatey: 0, nutty: 1, velvety: 2, rich: 3,
-  sweet: 4, sugary: 5, creamy: 6,
-  umami: 7, earthy: 8, vegetal: 9, floral: 10,
+  sweet: 4, sugary: 5, creamy: 6, floral: 7,
+  earthy: 8, vegetal: 9, grassy: 10,
   astringent: 11, bitter: 12,
-  mellow: 13, smooth: 14,
+  mellow: 13, smooth: 14, umami: 15,
 }
 
 export function sortFlavorsByColor(flavors: string[]): string[] {
@@ -29,8 +49,14 @@ export function sortFlavorsByColor(flavors: string[]): string[] {
   })
 }
 
+// Case-insensitive so legacy records (e.g. `Chocolatey`) match the current
+// lowercase vocabulary. Without this, mixed-case flavors get filtered out
+// of friend-modal chips even though the same data renders fine elsewhere,
+// which caused the "palate chip appears on the leaderboard but disappears
+// after tapping a user" inconsistency.
 export function isKnownFlavor(key: string): boolean {
-  return FLAVOR_LIST.some((f) => f === key)
+  const norm = String(key || '').toLowerCase()
+  return FLAVOR_LIST.some((f) => String(f).toLowerCase() === norm)
 }
 
 export function getBodyProfile(prefs?: Record<string, number>): '' | BodyProfileValue {
@@ -58,13 +84,19 @@ export function bodyProfileLabel(body: string): string {
 export type ChipPalette = { bg: string; fg: string; border: string }
 
 // Per-flavor palette. Returns background + text + border color for a tag/bubble.
+// Groups mirror FLAVOR_LIST clusters:
+//   dessert (brown): chocolatey, nutty, velvety, rich
+//   sweet (pink):    sweet, sugary, creamy, floral
+//   earthy (green):  earthy, vegetal, grassy
+//   bracing (yellow):astringent, bitter
+//   silky (blue):    mellow, smooth, umami
 export function flavorColor(flavor: string): ChipPalette {
   const key = String(flavor || '').toLowerCase()
   if (key === 'chocolatey' || key === 'nutty' || key === 'velvety' || key === 'rich') return { bg: '#815355', fg: '#ffffff', border: '#5c3839' }
-  if (key === 'sugary' || key === 'sweet' || key === 'creamy') return { bg: '#E0BAD7', fg: '#5a2a4b', border: '#c290b3' }
-  if (['earthy', 'vegetal', 'floral', 'umami'].includes(key)) return { bg: '#63a375', fg: '#ffffff', border: '#4a7d5a' }
+  if (key === 'sugary' || key === 'sweet' || key === 'creamy' || key === 'floral') return { bg: '#E0BAD7', fg: '#5a2a4b', border: '#c290b3' }
+  if (key === 'earthy' || key === 'vegetal' || key === 'grassy') return { bg: '#63a375', fg: '#ffffff', border: '#4a7d5a' }
   if (key === 'astringent' || key === 'bitter') return { bg: '#F8FA90', fg: '#5c5d1c', border: '#c9cb6d' }
-  if (key === 'mellow' || key === 'smooth') return { bg: '#A9DEF9', fg: '#1e4a5f', border: '#7fbbdc' }
+  if (key === 'mellow' || key === 'smooth' || key === 'umami') return { bg: '#A9DEF9', fg: '#1e4a5f', border: '#7fbbdc' }
   return { bg: '#82D99E', fg: '#0b6e4f', border: '#0b6e4f' }
 }
 
