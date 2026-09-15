@@ -1,10 +1,10 @@
-// One-line palate description generated from the user's flavor preferences.
+// One-line palate identity generated from the user's flavor preferences.
 // This is the "signal" moat vs Yelp / Beli: they show ratings, we show
-// *what your palate actually is* in plain English. Rule-based (no LLM) so
-// it's instant, offline-safe, and demo-reliable.
+// *who your palate actually is* in plain English, with attitude. Each
+// archetype is a short character name plus a punchy tagline so the line
+// reads like a personality quiz result, not a data summary.
 //
-// Clusters mirror the color groups in flavors.ts so the summary rhymes
-// with what the user sees in their chip grid.
+// Rule-based (no LLM) so it's instant, offline-safe, and demo-reliable.
 
 import type { BodyProfileValue } from './flavors'
 
@@ -24,39 +24,42 @@ const CLUSTER_MAP: Record<string, ClusterKey> = {
   mellow: 'silky', smooth: 'silky',
 }
 
-// Adjective + noun phrases each cluster contributes. Two variants so the
-// primary and secondary slots read naturally rather than repeating the
-// same word twice ("dessert-leaning with a hint of dessert-leaning").
-const CLUSTER_LEAD: Record<ClusterKey, string> = {
-  dessert: 'dessert-leaning',
-  sweet:   'sweet-toothed',
-  earthy:  'savory and earthy',
-  bracing: 'bracing and bright',
-  silky:   'silky and mellow',
+// Archetype names — the personality-quiz style label. Kept short so they
+// fit alongside the avatar in the profile drawer header.
+const PRIMARY_ARCHETYPE: Record<ClusterKey, string> = {
+  dessert: 'The Dessert Sipper',
+  sweet:   'The Creamy Dreamer',
+  earthy:  'The Purist',
+  bracing: 'The Grown-Up',
+  silky:   'The Smooth Operator',
 }
 
-const CLUSTER_SECONDARY: Record<ClusterKey, string> = {
-  dessert: 'chocolate-nutty warmth',
-  sweet:   'creamy sweetness',
-  earthy:  'grassy umami',
-  bracing: 'brisk astringency',
-  silky:   'soft mellowness',
+// Punchy sub-tagline for when there's a clear secondary cluster.
+// Reads "Primary Archetype with a X streak" — small extra flavor.
+const SECONDARY_STREAK: Record<ClusterKey, string> = {
+  dessert: 'chocolatey',
+  sweet:   'sweet-tooth',
+  earthy:  'grassy',
+  bracing: 'sharp',
+  silky:   'mellow',
 }
 
-const BODY_PHRASE: Record<BodyProfileValue, string> = {
-  'full-bodied': 'a bold, matcha-forward mouthfeel',
-  'medium':      'a balanced medium body',
-  'milky':       'a lighter, milky finish',
+// Punchy body-line addenda. Each is a self-contained clause we can pin
+// to the end of any sentence.
+const BODY_TAIL: Record<BodyProfileValue, string> = {
+  'full-bodied': 'Bold and matcha-forward.',
+  'medium':      'Balanced — never over the top.',
+  'milky':       'Softer, milkier finishes only.',
 }
 
 export function summarizePalate({ flavors, body, shade }: PalateInput): string {
   const knownFlavors = (flavors || []).map((f) => String(f).toLowerCase()).filter((f) => f in CLUSTER_MAP)
 
-  // Empty-state — user hasn't set any preferences yet. Return '' so the
-  // caller can hide the line entirely rather than showing a placeholder.
+  // Empty state — return '' so the caller hides the line entirely rather
+  // than showing a placeholder.
   if (knownFlavors.length === 0 && !body && !shade) return ''
 
-  // Count how many picks landed in each cluster, then rank.
+  // Count picks per cluster, rank.
   const counts = new Map<ClusterKey, number>()
   for (const f of knownFlavors) {
     const c = CLUSTER_MAP[f]
@@ -64,34 +67,29 @@ export function summarizePalate({ flavors, body, shade }: PalateInput): string {
   }
   const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1])
 
-  // Compose the flavor half.
-  let flavorPhrase = ''
-  if (ranked.length === 1) {
-    flavorPhrase = `You lean ${CLUSTER_LEAD[ranked[0][0]]}`
-  } else if (ranked.length >= 2) {
+  let head = ''
+  if (ranked.length >= 1) {
     const [top, second] = ranked
-    // Only mention the secondary if it's non-trivial vs the top (at least
-    // half as strong). Otherwise the "hint of" reads misleadingly loud.
-    if (second[1] >= Math.max(1, Math.ceil(top[1] / 2))) {
-      flavorPhrase = `You lean ${CLUSTER_LEAD[top[0]]} with a hint of ${CLUSTER_SECONDARY[second[0]]}`
-    } else {
-      flavorPhrase = `You lean ${CLUSTER_LEAD[top[0]]}`
-    }
+    const archetype = PRIMARY_ARCHETYPE[top[0]]
+    const hasStreak = second && second[1] >= Math.max(1, Math.ceil(top[1] / 2))
+    head = hasStreak
+      ? `${archetype} · ${SECONDARY_STREAK[second[0]]} streak`
+      : archetype
   }
 
-  // Compose the body / shade half.
+  // Body / shade addenda. Prefer a body clause; only add shade note if
+  // there's no body clause AND the shade is at an extreme.
   const tail: string[] = []
-  if (body) tail.push(BODY_PHRASE[body])
-  if (typeof shade === 'number' && shade >= 1 && shade <= 9) {
-    if (shade <= 3) tail.push('pale-jade shades')
-    else if (shade >= 7) tail.push('deep, vivid greens')
+  if (body) {
+    tail.push(BODY_TAIL[body])
+  } else if (typeof shade === 'number') {
+    if (shade <= 3) tail.push('Drawn to pale-jade shades.')
+    else if (shade >= 7) tail.push('Drawn to deep, vivid greens.')
   }
 
-  if (!flavorPhrase && tail.length === 0) return ''
-  if (!flavorPhrase) {
-    // Only body/shade set — write a body-first sentence.
-    return `You favor ${tail.join(' and ')}.`
-  }
-  if (tail.length === 0) return `${flavorPhrase}.`
-  return `${flavorPhrase}, with ${tail.join(' and ')}.`
+  if (!head && tail.length === 0) return ''
+  if (!head) return tail.join(' ')
+  if (tail.length === 0) return head
+  return `${head}. ${tail.join(' ')}`
 }
+

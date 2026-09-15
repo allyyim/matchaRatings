@@ -3190,30 +3190,7 @@ function App() {
                     (currentUserName || '?').charAt(0).toUpperCase()
                   )}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, gap: '0.1rem' }}>
-                  <h6 className="fw-bold text-success mb-0 text-truncate" title={currentUserName}>{currentUserName}</h6>
-                  {(() => {
-                    const summary = summarizePalate({ flavors: userFlavors, body: userBodyPref, shade: userShade })
-                    return summary ? (
-                      <div
-                        className="palate-summary"
-                        title={summary}
-                        style={{
-                          fontSize: '0.72rem',
-                          color: '#4c6b52',
-                          lineHeight: 1.3,
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          display: '-webkit-box',
-                          WebkitLineClamp: 2,
-                          WebkitBoxOrient: 'vertical',
-                        }}
-                      >
-                        {summary}
-                      </div>
-                    ) : null
-                  })()}
-                </div>
+                <h6 className="fw-bold text-success mb-0 text-truncate" title={currentUserName}>{currentUserName}</h6>
               </div>
               <button
                 type="button"
@@ -3224,6 +3201,28 @@ function App() {
                 ✕
               </button>
             </div>
+
+            {(() => {
+              const summary = summarizePalate({ flavors: userFlavors, body: userBodyPref, shade: userShade })
+              if (!summary) return null
+              return (
+                <div
+                  className="palate-summary-band"
+                  style={{
+                    padding: '0.65rem 0.9rem',
+                    background: 'linear-gradient(135deg, #f4faf1 0%, #eaf5e4 100%)',
+                    borderBottom: '1px solid #e2eedb',
+                    fontSize: '0.78rem',
+                    color: '#2f5b3a',
+                    lineHeight: 1.35,
+                    fontStyle: 'italic',
+                    flexShrink: 0,
+                  }}
+                >
+                  {summary}
+                </div>
+              )
+            })()}
 
             {!isDemoAccount && (
               <input
