@@ -490,10 +490,14 @@ call surfacing its own error.
 ### Concurrency guards
 | Race | Guard |
 | --- | --- |
-| Signup username collision | `CREATE UNIQUE INDEX idx_accounts_user_name_lower` — DB rejects duplicates even if two verify races land at the same instant |
-| Follow / unfollow | `UNIQUE(follower_email, following_email)` + `error.code === '23505'` → 409 |
-| Rating like | `UNIQUE(rating_id, email)` + 23505 → 409 |
-| Username rename | Explicit `BEGIN`/`COMMIT` transaction spans account + ratings updates |
+| Signup username collision | `CREATE UNIQUE INDEX idx_accounts_user_name_lower` — DB rejects duplicates; INSERT is wrapped in try/catch that translates `23505` → 409 (no 500s) |
+| Signup email collision | `accounts.email UNIQUE` — parallel Google signups with the same email get 409 not 500 |
+| Google identity re-link | `CREATE UNIQUE INDEX idx_accounts_google_id_unique ON accounts(google_id) WHERE google_id IS NOT NULL` — one Google account ↔ one sipandscore account; `/google/confirm-account` UPDATE catches `23505` → 409 |
+| Username rename | `BEGIN`/`COMMIT` spans account + ratings updates; pre-flight SELECT dropped (was racy) — UNIQUE index is the authoritative guard, `23505` → 409 |
+| Email change | `accounts.email UNIQUE` — parallel `/account/email` attempts on a shared email get 409 not 500 |
+| Demo account create | `INSERT ... ON CONFLICT DO NOTHING` — two parallel `/auth/demo` requests won't 500 on the second one |
+| Follow / unfollow | `UNIQUE(follower_email, following_email)` + `23505` → 409 |
+| Rating like | `UNIQUE(rating_id, email)` + `23505` → 409 |
 | Rate limiter | In-memory per dyno (fine for one-dyno Render; swap to Redis on scale) |
 
 ### Encryption at rest & in transit

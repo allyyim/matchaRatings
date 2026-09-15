@@ -129,7 +129,10 @@ router.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
           return res.status(400).json({ error: 'Invalid username - must contain alphanumeric characters' })
         }
 
-        // Check if username is available
+        // Check if username is available. This is a pre-flight courtesy
+        // check for a fast, user-friendly 409; the actual race guard is
+        // the try/catch on the INSERT below (a parallel signup with the
+        // same name will bounce off the UNIQUE index there).
         const nameTaken = await pool.query(
           'SELECT 1 FROM accounts WHERE LOWER(user_name) = LOWER($1)',
           [sanitizedName]
@@ -139,10 +142,22 @@ router.post('/api/auth/google/verify', authRateLimiter, async (req, res) => {
           return res.status(409).json({ error: 'Username already taken' })
         }
 
-        await pool.query(
-          'INSERT INTO accounts (email, user_name, google_id) VALUES ($1, $2, $3)',
-          [email, sanitizedName, googleId]
-        )
+        try {
+          await pool.query(
+            'INSERT INTO accounts (email, user_name, google_id) VALUES ($1, $2, $3)',
+            [email, sanitizedName, googleId]
+          )
+        } catch (insertError) {
+          // 23505 = unique_violation. Two parallel signups (same username
+          // or same email) will both pass the SELECT above; only one wins
+          // at the DB. The loser gets a clean 409 instead of a 500.
+          if (insertError?.code === '23505') {
+            const detail = String(insertError.detail || '')
+            const field = detail.includes('user_name') ? 'Username' : 'Email'
+            return res.status(409).json({ error: `${field} already taken` })
+          }
+          throw insertError
+        }
         userName = sanitizedName
       }
     }
@@ -210,11 +225,21 @@ router.post('/api/auth/google/confirm-account', authRateLimiter, async (req, res
       return res.status(400).json({ error: 'User not found' })
     }
 
-    // Update the account to link Google ID and email
-    await pool.query(
-      'UPDATE accounts SET google_id = $1, email = $2 WHERE LOWER(user_name) = LOWER($3)',
-      [googleId, email, confirmedUserName]
-    )
+    // Update the account to link Google ID and email. Wrapped in try/catch
+    // to translate a unique-violation (a parallel confirm race that already
+    // bound this Google ID or email to another sipandscore account) into
+    // a clean 409 rather than a 500.
+    try {
+      await pool.query(
+        'UPDATE accounts SET google_id = $1, email = $2 WHERE LOWER(user_name) = LOWER($3)',
+        [googleId, email, confirmedUserName]
+      )
+    } catch (updateError) {
+      if (updateError?.code === '23505') {
+        return res.status(409).json({ error: 'This Google account or email is already linked to another user' })
+      }
+      throw updateError
+    }
 
     console.log(`Linked Google ID to existing account: ${confirmedUserName}`)
 
@@ -287,16 +312,15 @@ router.post('/api/auth/demo', authRateLimiter, async (req, res) => {
   const DEMO_USER = 'demo'
   const DEMO_EMAIL = 'demo@sipandscore.local'
   try {
-    const existing = await pool.query(
-      'SELECT 1 FROM accounts WHERE LOWER(user_name) = LOWER($1)',
-      [DEMO_USER]
+    // Idempotent create: two parallel demo requests both attempt the
+    // INSERT; the loser hits ON CONFLICT and silently continues instead
+    // of 500-ing on a UNIQUE violation.
+    await pool.query(
+      `INSERT INTO accounts (email, user_name)
+       VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [DEMO_EMAIL, DEMO_USER]
     )
-    if (existing.rowCount === 0) {
-      await pool.query(
-        'INSERT INTO accounts (email, user_name) VALUES ($1, $2)',
-        [DEMO_EMAIL, DEMO_USER]
-      )
-    }
     const ratingCount = await pool.query(
       'SELECT COUNT(*)::int AS c FROM ratings WHERE LOWER(user_name) = LOWER($1)',
       [DEMO_USER]

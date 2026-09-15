@@ -28,3 +28,8 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_user_name_lower
 ON accounts (LOWER(user_name));
+
+-- One Google identity can link to at most one sipandscore account.
+-- Partial index so NULL google_id (non-Google accounts) is unconstrained.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_google_id_unique
+ON accounts (google_id) WHERE google_id IS NOT NULL;

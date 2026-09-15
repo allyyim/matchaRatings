@@ -181,6 +181,15 @@ export async function initDb() {
     ON accounts (google_id);
   `)
 
+  // Partial UNIQUE index on google_id: one Google identity may link to at
+  // most one sipandscore account. NULLs are ignored (accounts without a
+  // Google link are unconstrained). Enforces the concurrency guard that
+  // the /google/confirm-account race check relies on.
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_google_id_unique
+    ON accounts (google_id) WHERE google_id IS NOT NULL;
+  `)
+
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_browser_users_user_name
     ON browser_users (user_name);

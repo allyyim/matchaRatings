@@ -79,6 +79,11 @@ router.post('/api/account/email', async (req, res) => {
     await pool.query('UPDATE accounts SET email = $1 WHERE LOWER(user_name) = LOWER($2)', [newEmail, req.session.userName])
     return res.json({ ok: true, message: 'Email updated successfully' })
   } catch (error) {
+    // 23505: another account already owns this email. The `accounts.email`
+    // UNIQUE constraint is the race guard; we translate to 409 instead of 500.
+    if (error?.code === '23505') {
+      return res.status(409).json({ error: 'That email is already linked to another account' })
+    }
     console.error('Failed to update email:', error)
     return res.status(500).json({ error: 'Failed to update email' })
   }
@@ -116,11 +121,10 @@ router.post('/api/account/username', async (req, res) => {
   const client = await pool.connect()
   try {
     await client.query('BEGIN')
-    const taken = await client.query('SELECT 1 FROM accounts WHERE LOWER(user_name) = LOWER($1)', [newUserName])
-    if (taken.rowCount > 0) {
-      await client.query('ROLLBACK')
-      return res.status(409).json({ error: 'That username is already taken' })
-    }
+    // No pre-flight SELECT — it's racy (another signup or rename can
+    // insert between our check and UPDATE). The UNIQUE index on
+    // LOWER(user_name) is the authoritative guard; we let the UPDATE
+    // hit it and translate the 23505 into a clean 409.
     await client.query('UPDATE accounts SET user_name = $1 WHERE LOWER(user_name) = LOWER($2)', [newUserName, currentUserName])
     await client.query('UPDATE ratings SET user_name = $1 WHERE LOWER(user_name) = LOWER($2)', [newUserName, currentUserName])
     await client.query('COMMIT')
@@ -128,6 +132,9 @@ router.post('/api/account/username', async (req, res) => {
     return res.json({ ok: true, userName: newUserName })
   } catch (error) {
     await client.query('ROLLBACK').catch(() => {})
+    if (error?.code === '23505') {
+      return res.status(409).json({ error: 'That username is already taken' })
+    }
     console.error('Failed to rename user:', error)
     return res.status(500).json({ error: 'Failed to update username' })
   } finally {
