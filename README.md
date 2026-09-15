@@ -252,11 +252,25 @@ Client (GitHub Pages) ──HTTPS──► Express API (Render) ──pg pool─
                                        └─ In-process recsCache (5-min TTL, 500 entry LRU cap)
 ```
 
+The Express app boots from `server/index.js` but pure helpers now live in
+`server/lib/*` and admin/maintenance endpoints are mounted from
+`server/routes/admin.routes.js`. This makes helpers unit-testable in
+isolation and keeps the root file focused on wiring + business routes.
+
 ### Key files
 | Path | Role |
 | --- | --- |
-| [`server/index.js`](./server/index.js) | All routes, rate limiters, recsCache, auth |
+| [`server/index.js`](./server/index.js) | App wiring + business routes (auth, ratings, explore, prefs, feed, social) |
 | [`server/db.js`](./server/db.js) | pg pool + schema init |
+| [`server/lib/sanitize.js`](./server/lib/sanitize.js) | Text/email/name sanitization |
+| [`server/lib/scoring.js`](./server/lib/scoring.js) | Weighted Sip Score math |
+| [`server/lib/places.js`](./server/lib/places.js) | Location normalization + fuzzy merge |
+| [`server/lib/mappers.js`](./server/lib/mappers.js) | DB row → API shape |
+| [`server/lib/recsCache.js`](./server/lib/recsCache.js) | TTL cache for recs endpoints |
+| [`server/lib/crypto.js`](./server/lib/crypto.js) | AES-256-GCM field encrypt + JWT/token helpers |
+| [`server/lib/session.js`](./server/lib/session.js) | Session middleware + ownership guard |
+| [`server/lib/rateLimits.js`](./server/lib/rateLimits.js) | 3 rate-limiter instances |
+| [`server/routes/admin.routes.js`](./server/routes/admin.routes.js) | Ops endpoints (mounted before auth gate) |
 
 </details>
 
@@ -371,6 +385,9 @@ erDiagram
 - Relationships are logical (`user_name`), not enforced as SQL FKs
 - Explore normalizes place names (spacing/punctuation/location) before aggregation
 - `flavors` is JSONB — stored as an array of strings
+- `/explore/users` aggregates ratings in a CTE first, then `LEFT JOIN`s
+  preferences once with `DISTINCT ON (user_key)` — returns native JSONB
+  instead of the old `MAX(flavors::text)` text-cast round trip
 
 </details>
 
@@ -501,8 +518,19 @@ matchaRatings/
 │       ├── useSession.ts
 │       └── usePreferences.ts
 ├── server/
-│   ├── index.js                    ← Express app, routes, limits
-│   └── db.js                       ← pg pool + schema init
+│   ├── index.js                    ← Express app, business routes
+│   ├── db.js                       ← pg pool + schema init
+│   ├── lib/                        ← extracted pure helpers
+│   │   ├── sanitize.js
+│   │   ├── scoring.js
+│   │   ├── places.js
+│   │   ├── mappers.js
+│   │   ├── recsCache.js
+│   │   ├── crypto.js
+│   │   ├── session.js
+│   │   └── rateLimits.js
+│   └── routes/
+│       └── admin.routes.js         ← ops endpoints
 ├── public/
 │   ├── service-worker.js           ← SW + isUncachedApi()
 │   ├── manifest.webmanifest
