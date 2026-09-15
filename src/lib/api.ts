@@ -80,6 +80,30 @@ function emitRateLimited(): void {
   }
 }
 
+// Fires exactly once when we detect the stored session token has been
+// rejected by the server (401 while sending a Bearer). UI subscribes to
+// tear down local state and prompt re-sign-in instead of letting every
+// pending fetch surface its own "Authentication required" toast.
+type SessionExpiredListener = () => void
+const sessionExpiredListeners = new Set<SessionExpiredListener>()
+export function onSessionExpired(listener: SessionExpiredListener): () => void {
+  sessionExpiredListeners.add(listener)
+  return () => sessionExpiredListeners.delete(listener)
+}
+let sessionExpiredEmitted = false
+function emitSessionExpired(): void {
+  if (sessionExpiredEmitted) return
+  sessionExpiredEmitted = true
+  // Clear the bad token immediately so no further apiFetch call sends it.
+  setSessionToken('')
+  for (const l of sessionExpiredListeners) {
+    try { l() } catch { /* listener errors mustn't break the fetch path */ }
+  }
+  // Allow the flag to reset after the current tick so a fresh sign-in
+  // followed by a later 401 will re-trigger the flow.
+  setTimeout(() => { sessionExpiredEmitted = false }, 0)
+}
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   if (typeof window !== 'undefined' && window.location.protocol === 'http:' && !window.location.hostname.match(/^(localhost|127\.0\.0\.1)$/)) {
     console.warn('Warning: Using HTTP in production. Consider using HTTPS.')
@@ -95,6 +119,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   }
 
   const token = getSessionToken()
+  const sentToken = !!token
   if (token) {
     headers.set('Authorization', `Bearer ${token}`)
   }
@@ -143,6 +168,12 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
         !serverMessage.includes('<')
       const userMessage = isSafeServerMessage ? serverMessage : friendlyErrorMessage(response.status)
       if (response.status === 429) emitRateLimited()
+      // The stored token was rejected. Clear it and let the UI prompt a
+      // fresh sign-in instead of every pending fetch bubbling its own
+      // "Authentication required" toast. Only fires when we actually sent
+      // a Bearer — genuine "not signed in yet" flows (e.g. Google verify
+      // itself) don't trigger the session-expired path.
+      if (response.status === 401 && sentToken) emitSessionExpired()
       throw new ApiError(response.status, data, userMessage)
     }
 

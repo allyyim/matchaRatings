@@ -17,6 +17,7 @@ import {
   friendlyErrorMessage,
   getSessionToken,
   onRateLimited,
+  onSessionExpired,
 } from './lib/api'
 import { readCache, writeCache } from './lib/cache'
 import {
@@ -475,6 +476,20 @@ function App() {
     const t = window.setTimeout(() => setRateLimitedAt(null), 4000)
     return () => window.clearTimeout(t)
   }, [rateLimitedAt])
+
+  // Global recovery from a stale/rejected session token. When any authed
+  // fetch returns 401 while carrying a Bearer, api.ts clears the token
+  // and emits this event. We tear down local session state so the app
+  // drops back to the sign-in screen instead of retrying the same bad
+  // token forever and showing "Authentication required" on every fetch.
+  useEffect(() => {
+    return onSessionExpired(() => {
+      sessionSignOut()
+      setAuthError('Your session expired. Please sign in again.')
+      setAuthMode('choice')
+      setRequiresManualName(false)
+    })
+  }, [])
   const [selectedExplorePlaceName, setSelectedExplorePlaceName] = useState('')
   const [selectedExplorePlaceEntries, setSelectedExplorePlaceEntries] = useState<RatingEntry[]>([])
   const [isExplorePlaceModalOpen, setIsExplorePlaceModalOpen] = useState(false)
