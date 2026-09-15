@@ -2041,9 +2041,16 @@ function App() {
     }
 
     try {
+      // Cache-bust the /preferences fetch with a per-open nonce. The
+      // service worker caches /api/* GETs under the request URL, so a
+      // stale response from before a server change can keep serving a
+      // filtered flavors[] and cause the "chip differs between Explore
+      // leaderboard and friend modal" issue. Fresh URL every open =
+      // fresh network fetch, no SW-cached staleness.
+      const nonce = Date.now().toString(36)
       const [ratingsResp, prefsResp] = await Promise.all([
         apiFetch<{ friendName: string; ratings: RatingEntry[] }>(`/friends/${encodeURIComponent(friendName)}/ratings`),
-        apiFetch<{ userName: string; flavors: string[]; body: string; avatarUrl: string | null }>(`/users/${encodeURIComponent(friendName)}/preferences`).catch(() => ({ userName: friendName, flavors: [], body: '', avatarUrl: null })),
+        apiFetch<{ userName: string; flavors: string[]; body: string; avatarUrl: string | null }>(`/users/${encodeURIComponent(friendName)}/preferences?_v=${nonce}`).catch(() => ({ userName: friendName, flavors: [], body: '', avatarUrl: null })),
       ])
       setFriendModalEntries(ratingsResp.ratings)
       setFriendModalUserPrefs({ flavors: prefsResp.flavors || [], body: prefsResp.body || '', avatarUrl: prefsResp.avatarUrl || null })
