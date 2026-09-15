@@ -8,6 +8,7 @@ import { SHADE_OPTIONS, shadeColorForGreenness } from './lib/shade'
 import { analyzeGreennessFromDataUrl, loadRandomForest } from './lib/greenness'
 import type { RatingEntry } from './lib/types'
 import { useDemoCleanup } from './hooks/useDemoCleanup'
+import { usePreferences } from './hooks/usePreferences'
 import {
   FLAVOR_LIST,
   BODY_PROFILE_OPTIONS,
@@ -613,20 +614,22 @@ function App() {
   const [isDemoMode, setIsDemoMode] = useState(false)
   const isDemoAccount = currentUserName.toLowerCase() === 'demo'
 
-  const [userFlavors, setUserFlavors] = useState<string[]>([])
-  const [userBodyPref, setUserBodyPref] = useState<'' | 'full-bodied' | 'medium' | 'milky'>(() => {
-    try {
-      const v = localStorage.getItem('matchaBodyPref')
-      if (v === 'full-bodied' || v === 'medium' || v === 'milky') return v
-    } catch { /* ignore */ }
-    return ''
-  })
-  const [userShade, setUserShade] = useState<number>(() => {
-    try {
-      const v = Number(localStorage.getItem('matchaShadePref'))
-      if (Number.isInteger(v) && v >= 1 && v <= 9) return v
-    } catch { /* ignore */ }
-    return 0
+  // Bumped whenever the Preferences modal opens so usePreferences reloads
+  // server-truth (edits from another device would otherwise be stale).
+  const [prefsReloadKey, setPrefsReloadKey] = useState(0)
+  const {
+    userFlavors, setUserFlavors,
+    userBodyPref, setUserBodyPref,
+    userShade, setUserShade,
+    savePreferences,
+  } = usePreferences({
+    apiFetch,
+    readCache,
+    writeCache,
+    currentUserName,
+    isUserReady,
+    reloadKey: prefsReloadKey,
+    onSaved: () => setRecsRefreshKey((k) => k + 1),
   })
   const [likedRatingsSet, setLikedRatingsSet] = useState<Set<number>>(new Set())
   const [followingSet, setFollowingSet] = useState<Set<string>>(new Set())
@@ -1679,74 +1682,10 @@ function App() {
 
   useEffect(() => {
     if (!isPreferencesModalOpen) return
-
-    async function loadPreferences() {
-      try {
-        const data = await apiFetch<{ flavors?: string[] }>('/preferences')
-        if (data?.flavors && Array.isArray(data.flavors)) {
-          const bodyEntry = data.flavors.find((f) => typeof f === 'string' && f.startsWith('__body:'))
-          const shadeEntry = data.flavors.find((f) => typeof f === 'string' && f.startsWith('__shade:'))
-          const cleanFlavors = data.flavors.filter((f) => typeof f === 'string' && !f.startsWith('__'))
-          setUserFlavors(cleanFlavors)
-          if (bodyEntry) {
-            const b = bodyEntry.slice('__body:'.length)
-            if (b === 'full-bodied' || b === 'medium' || b === 'milky') setUserBodyPref(b)
-          }
-          if (shadeEntry) {
-            const s = Number(shadeEntry.slice('__shade:'.length))
-            if (Number.isInteger(s) && s >= 1 && s <= 9) setUserShade(s)
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load preferences:', error)
-      }
-    }
-
-    loadPreferences()
+    // Bump reload key so usePreferences refetches server truth when the
+    // modal opens (edits from another device could otherwise stay stale).
+    setPrefsReloadKey((k) => k + 1)
   }, [isPreferencesModalOpen])
-
-  useEffect(() => {
-    if (!isUserReady || !currentUserName) return
-
-    // Hydrate from cache first so preferences stick across offline/data
-    // switches even if the server fetch fails or returns empty on a
-    // brand-new session.
-    const cachedFlavors = readCache<string[]>(currentUserName, 'flavors')
-    if (cachedFlavors && Array.isArray(cachedFlavors) && cachedFlavors.length > 0) {
-      setUserFlavors(cachedFlavors)
-    }
-
-    async function loadUserPreferences() {
-      try {
-        const data = await apiFetch<{ flavors?: string[] }>('/preferences')
-        if (data?.flavors && Array.isArray(data.flavors)) {
-          const bodyEntry = data.flavors.find((f) => typeof f === 'string' && f.startsWith('__body:'))
-          const shadeEntry = data.flavors.find((f) => typeof f === 'string' && f.startsWith('__shade:'))
-          const cleanFlavors = data.flavors.filter((f) => typeof f === 'string' && !f.startsWith('__'))
-          setUserFlavors(cleanFlavors)
-          writeCache(currentUserName, 'flavors', cleanFlavors)
-          if (bodyEntry) {
-            const b = bodyEntry.slice('__body:'.length)
-            if (b === 'full-bodied' || b === 'medium' || b === 'milky') {
-              setUserBodyPref(b)
-              localStorage.setItem('matchaBodyPref', b)
-            }
-          }
-          if (shadeEntry) {
-            const s = Number(shadeEntry.slice('__shade:'.length))
-            if (Number.isInteger(s) && s >= 1 && s <= 9) {
-              setUserShade(s)
-              localStorage.setItem('matchaShadePref', String(s))
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Failed to load user preferences (keeping cached copy):', error)
-      }
-    }
-
-    loadUserPreferences()
-  }, [isUserReady, currentUserName])
 
   // Mirror followingSet + myEntries to localStorage whenever they change,
   // so the very next launch (esp. offline) starts with the last-known-good
@@ -3716,34 +3655,7 @@ function App() {
                     try {
                       setIsPreferencesModalOpen(false)
                       setIsProfileDrawerOpen(false)
-                      try {
-                        if (userBodyPref) {
-                          localStorage.setItem('matchaBodyPref', userBodyPref)
-                        } else {
-                          localStorage.removeItem('matchaBodyPref')
-                        }
-                        if (userShade >= 1 && userShade <= 9) {
-                          localStorage.setItem('matchaShadePref', String(userShade))
-                        } else {
-                          localStorage.removeItem('matchaShadePref')
-                        }
-                      } catch { /* ignore */ }
-                      // Persist locally BEFORE the network call. If the API
-                      // request fails on a bad connection, we still have the
-                      // user's picks on-device and can re-sync on next launch.
-                      writeCache(currentUserName, 'flavors', userFlavors)
-                      const virtualTags: string[] = []
-                      if (userBodyPref) virtualTags.push(`__body:${userBodyPref}`)
-                      if (userShade >= 1 && userShade <= 9) virtualTags.push(`__shade:${userShade}`)
-                      const flavorsToSave = [...userFlavors, ...virtualTags]
-                      const response = await apiFetch('/preferences', {
-                        method: 'POST',
-                        body: JSON.stringify({
-                          flavors: flavorsToSave
-                        })
-                      })
-                      console.log('Preferences saved:', response)
-                      setRecsRefreshKey((k) => k + 1)
+                      await savePreferences()
                     } catch (error) {
                       console.error('Failed to save preferences:', error)
                       setIsPreferencesModalOpen(true)
