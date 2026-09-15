@@ -106,7 +106,11 @@ function isApiRequest(url) {
 // or follower state). We route these straight to the network and never
 // touch the SW cache, so mobile PWAs can't get "stuck" on an old copy.
 function isUncachedApi(url) {
-  return url.includes('/api/users/') && url.includes('/preferences');
+  return (
+    (url.includes('/api/users/') && url.includes('/preferences')) ||
+    url.includes('/api/similar-users') ||
+    url.includes('/api/explore/users')
+  );
 }
 
 function timestampedResponse(response, ts) {

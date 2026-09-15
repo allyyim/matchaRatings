@@ -2077,7 +2077,10 @@ app.get('/api/similar-users', async (req, res) => {
     return res.status(400).json({ error: 'userName is required' })
   }
 
-  const cacheKey = `u:${userName.toLowerCase()}|similar-users`
+  // v2 in the cache key retires any entries built under the old flavor
+  // filter — makes the un-filter fix take effect immediately without
+  // waiting on the 5-min TTL to expire per-user.
+  const cacheKey = `u:${userName.toLowerCase()}|similar-users|v2`
   const cached = recsCacheGet(cacheKey)
   if (cached) return res.json(cached)
 
