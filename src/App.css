@@ -3425,8 +3425,18 @@ main#main-content {
 }
 
 .feed-like-heart {
-  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
   line-height: 1;
+}
+
+.feed-like-heart svg {
+  display: block;
+  transition: transform 0.15s ease;
+}
+
+.feed-like-btn:active .feed-like-heart svg {
+  transform: scale(0.85);
 }
 
 .feed-like-count {
