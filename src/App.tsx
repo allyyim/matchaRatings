@@ -10,6 +10,16 @@ import type { RatingEntry } from './lib/types'
 import { useDemoCleanup } from './hooks/useDemoCleanup'
 import { usePreferences } from './hooks/usePreferences'
 import {
+  API_BASE_URL,
+  API_REQUEST_TIMEOUT_MS,
+  ApiError,
+  apiFetch,
+  friendlyErrorMessage,
+  getSessionToken,
+  setSessionToken,
+} from './lib/api'
+import { readCache, writeCache } from './lib/cache'
+import {
   FLAVOR_LIST,
   BODY_PROFILE_OPTIONS,
   sortFlavorsByColor,
@@ -135,26 +145,6 @@ type ExplorePlaceRatingsResponse = {
 }
 
 
-const rawApiBaseUrl = String(import.meta.env.VITE_API_BASE_URL || '/api')
-const API_BASE_URL = (() => {
-  if (typeof window === 'undefined') return rawApiBaseUrl
-
-  const host = window.location.hostname
-  const isPhoneOrLanClient = host !== 'localhost' && host !== '127.0.0.1'
-  const apiPointsToLocalhost = /https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(rawApiBaseUrl)
-
-  // If on GitHub Pages, use Render backend
-  if (host.includes('github.io')) {
-    return 'https://matcharatings.onrender.com/api'
-  }
-
-  // If opened from a phone/LAN host, never call localhost from env config.
-  if (isPhoneOrLanClient && apiPointsToLocalhost) {
-    return '/api'
-  }
-
-  return rawApiBaseUrl
-})()
 const pixelStarUrl = `${import.meta.env.BASE_URL}blank.png`
 const pixelStarFilledUrl = `${import.meta.env.BASE_URL}filled.png`
 const pencilIconUrl = `${import.meta.env.BASE_URL}pencil.svg`
@@ -178,7 +168,6 @@ const hasEntryPhoto = (photo?: string | null): boolean => {
 
 const FULL_GREENNESS_WEIGHT = 1
 const LOW_RATING_GREENNESS_WEIGHT = 0.8
-const API_REQUEST_TIMEOUT_MS = 45000
 const IMAGE_PROCESS_TIMEOUT_MS = 15000
 const LOCATION_LOOKUP_DEBOUNCE_MS = 180
 const LOCATION_RESULTS_LIMIT = 5
@@ -186,27 +175,7 @@ const INITIAL_GREENSCORE_REFRESH_LIMIT = 4
 const MIN_BACKGROUND_GREENSCORE_DIFF = 5
 const BACKGROUND_GREENSCORE_TIMEOUT_MS = 5000
 
-// Per-user localStorage cache keys so critical UI state (ratings list,
-// preferences, following list) survives a bad network / offline restart
-// and reappears instantly on next launch instead of flashing empty.
-function cacheKey(userName: string, kind: string): string {
-  const safe = String(userName || '').toLowerCase().trim()
-  return `matcha:${safe}:${kind}`
-}
-function readCache<T>(userName: string, kind: string): T | null {
-  if (!userName) return null
-  try {
-    const raw = localStorage.getItem(cacheKey(userName, kind))
-    if (!raw) return null
-    return JSON.parse(raw) as T
-  } catch { return null }
-}
-function writeCache(userName: string, kind: string, value: unknown): void {
-  if (!userName) return
-  try {
-    localStorage.setItem(cacheKey(userName, kind), JSON.stringify(value))
-  } catch { /* quota exceeded / private mode — ignore */ }
-}
+// Per-user localStorage cache lives in src/lib/cache.ts.
 
 function normalizeForSearch(value: string) {
   // Fold accents (café → cafe, crème → creme), lowercase, AND strip
@@ -315,42 +284,8 @@ function getGreennessRefreshKey(userName: string) {
   return `matchaGreennessRefreshed:${userName.trim().toLowerCase()}`
 }
 
-function getSessionToken() {
-  if (typeof window === 'undefined') return ''
-  // Only check localStorage (persistent storage)
-  return window.localStorage.getItem('matchaAuthToken') || ''
-}
-
-function setSessionToken(token: string) {
-  if (typeof window === 'undefined') return
-  if (token) {
-    window.localStorage.setItem('matchaAuthToken', token)
-    return
-  }
-
-  // Clear on logout
-  window.localStorage.removeItem('matchaAuthToken')
-}
-
-class ApiError extends Error {
-  status: number
-  data: Record<string, unknown>
-
-  constructor(status: number, data: Record<string, unknown>, message: string) {
-    super(message)
-    this.name = 'ApiError'
-    this.status = status
-    this.data = data
-  }
-}
-
-function friendlyErrorMessage(status: number): string {
-  if (status === 401 || status === 403) return 'Please sign in again to continue.'
-  if (status === 404) return 'We couldn\'t find what you were looking for.'
-  if (status === 409) return 'That name is already taken. Please choose another.'
-  if (status >= 500) return 'Something went wrong on our end. Please try again.'
-  return 'Something went wrong. Please try again.'
-}
+// getSessionToken / setSessionToken / ApiError / friendlyErrorMessage /
+// apiFetch all live in src/lib/api.ts.
 
 function isPlausibleLocationName(value: string): boolean {
   const trimmed = value.trim()
@@ -367,85 +302,7 @@ function isPlausibleLocationName(value: string): boolean {
   return true
 }
 
-async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  if (typeof window !== 'undefined' && window.location.protocol === 'http:' && !window.location.hostname.match(/^(localhost|127\.0\.0\.1)$/)) {
-    console.warn('Warning: Using HTTP in production. Consider using HTTPS.')
-  }
-
-  const headers = new Headers(init?.headers || {})
-  headers.set('Content-Type', 'application/json')
-  headers.set('X-Requested-With', 'XMLHttpRequest')
-
-  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-  if (csrfToken) {
-    headers.set('X-CSRF-Token', csrfToken)
-  }
-
-  const token = getSessionToken()
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`)
-  }
-
-  const controller = new AbortController()
-  const timeoutId = window.setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS)
-
-  const requestSignal = init?.signal
-  const stopAbortListener = () => controller.abort()
-  if (requestSignal) {
-    if (requestSignal.aborted) {
-      controller.abort()
-    } else {
-      requestSignal.addEventListener('abort', stopAbortListener, { once: true })
-    }
-  }
-
-  try {
-    const response = await fetch(`${API_BASE_URL}${path}`, {
-      ...init,
-      headers,
-      credentials: 'same-origin',
-      signal: controller.signal
-    })
-
-    if (!response.ok) {
-      const text = await response.text()
-      let data: Record<string, unknown> = {}
-      let serverMessage = ''
-      try {
-        const parsed = JSON.parse(text)
-        if (parsed && typeof parsed === 'object') {
-          data = parsed as Record<string, unknown>
-          if (typeof data.error === 'string') {
-            serverMessage = data.error
-          }
-        }
-      } catch {
-        // Non-JSON body — ignore it; never surface raw HTML/text to the user.
-      }
-
-      const isSafeServerMessage =
-        !!serverMessage &&
-        serverMessage.length <= 200 &&
-        !serverMessage.includes('{') &&
-        !serverMessage.includes('<')
-      const userMessage = isSafeServerMessage ? serverMessage : friendlyErrorMessage(response.status)
-      throw new ApiError(response.status, data, userMessage)
-    }
-
-    return response.json() as Promise<T>
-  } catch (error) {
-    if (controller.signal.aborted) {
-      throw new Error('The request timed out or was cancelled.')
-    }
-
-    throw error
-  } finally {
-    window.clearTimeout(timeoutId)
-    if (requestSignal) {
-      requestSignal.removeEventListener('abort', stopAbortListener)
-    }
-  }
-}
+// apiFetch lives in src/lib/api.ts.
 
 function App() {
   const [activePage, setActivePage] = useState<Page>('home')
@@ -623,9 +480,6 @@ function App() {
     userShade, setUserShade,
     savePreferences,
   } = usePreferences({
-    apiFetch,
-    readCache,
-    writeCache,
     currentUserName,
     isUserReady,
     reloadKey: prefsReloadKey,

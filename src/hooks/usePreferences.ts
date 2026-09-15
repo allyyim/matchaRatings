@@ -1,4 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
+import { apiFetch } from '../lib/api'
+import { readCache, writeCache } from '../lib/cache'
 
 // User-preferences slice. Owns the three "how I like my matcha" fields that
 // drive Recs + Explore filtering + the Save Preferences modal. Extracted
@@ -30,9 +32,6 @@ export type PreferencesApi = {
 }
 
 type Deps = {
-  apiFetch: <T>(path: string, init?: RequestInit) => Promise<T>
-  readCache: <T>(userName: string, kind: string) => T | null
-  writeCache: (userName: string, kind: string, value: unknown) => void
   currentUserName: string
   isUserReady: boolean
   // Bump to force a reload — e.g. when the preferences modal opens so a
@@ -59,7 +58,7 @@ function readInitialShade(): number {
 }
 
 export function usePreferences(deps: Deps): PreferencesApi {
-  const { apiFetch, readCache, writeCache, currentUserName, isUserReady, reloadKey, onSaved } = deps
+  const { currentUserName, isUserReady, reloadKey, onSaved } = deps
 
   const [userFlavors, setUserFlavors] = useState<string[]>([])
   const [userBodyPref, setUserBodyPref] = useState<BodyPref>(readInitialBody)
@@ -110,7 +109,7 @@ export function usePreferences(deps: Deps): PreferencesApi {
 
     loadUserPreferences()
     return () => { cancelled = true }
-  }, [isUserReady, currentUserName, reloadKey, apiFetch, readCache, writeCache])
+  }, [isUserReady, currentUserName, reloadKey])
 
   const savePreferences = useCallback(async () => {
     try {
@@ -140,7 +139,7 @@ export function usePreferences(deps: Deps): PreferencesApi {
       body: JSON.stringify({ flavors: flavorsToSave })
     })
     onSaved?.()
-  }, [apiFetch, writeCache, currentUserName, userFlavors, userBodyPref, userShade, onSaved])
+  }, [currentUserName, userFlavors, userBodyPref, userShade, onSaved])
 
   return {
     userFlavors,
