@@ -3633,12 +3633,29 @@ function App() {
                   type="button"
                   className="profile-drawer-row"
                   onClick={async () => {
-                    const candidates = myEntries.filter((e) => e.photo && e.photo !== noPhotoPlaceholderUrl && !e.photo.startsWith('data:'))
+                    const targetInput = window.prompt(`Recompute greenness for which user? (leave blank for yourself)`)
+                    if (targetInput === null) return
+                    const target = targetInput.trim()
+                    const isSelf = !target || target.toLowerCase() === currentUserName.toLowerCase()
+
+                    let entries: RatingEntry[] = []
+                    if (isSelf) {
+                      entries = myEntries
+                    } else {
+                      try {
+                        const resp = await apiFetch<{ ratings: RatingEntry[] }>(`/admin/ratings?userName=${encodeURIComponent(target)}`)
+                        entries = resp.ratings || []
+                      } catch (err) {
+                        alert(`Failed to fetch ${target}'s ratings: ${err instanceof Error ? err.message : 'unknown error'}`)
+                        return
+                      }
+                    }
+                    const candidates = entries.filter((e) => e.photo && e.photo !== noPhotoPlaceholderUrl && !e.photo.startsWith('data:'))
                     if (!candidates.length) {
-                      alert('No hosted photos found on your logs to recompute.')
+                      alert(`No hosted photos found for ${isSelf ? 'yourself' : target}.`)
                       return
                     }
-                    if (!window.confirm(`Recompute greenness for ${candidates.length} photo(s)?`)) return
+                    if (!window.confirm(`Recompute greenness for ${candidates.length} photo(s) on ${isSelf ? 'your' : target + "'s"} account?`)) return
 
                     let updated = 0
                     let failed = 0
@@ -3651,17 +3668,24 @@ function App() {
                         }
                         const rounded = Math.round(score)
                         if (rounded === entry.greenness) continue
-                        await apiFetch(`/ratings/${entry.id}`, {
-                          method: 'PUT',
-                          body: JSON.stringify({
-                            userName: currentUserName,
-                            rating: entry.rating,
-                            greenness: rounded,
-                            location: entry.location,
-                            thoughts: entry.thoughts
+                        if (isSelf) {
+                          await apiFetch(`/ratings/${entry.id}`, {
+                            method: 'PUT',
+                            body: JSON.stringify({
+                              userName: currentUserName,
+                              rating: entry.rating,
+                              greenness: rounded,
+                              location: entry.location,
+                              thoughts: entry.thoughts
+                            })
                           })
-                        })
-                        setMyEntries((prev) => prev.map((e) => e.id === entry.id ? { ...e, greenness: rounded } : e))
+                          setMyEntries((prev) => prev.map((e) => e.id === entry.id ? { ...e, greenness: rounded } : e))
+                        } else {
+                          await apiFetch(`/admin/ratings/${entry.id}/greenness`, {
+                            method: 'PUT',
+                            body: JSON.stringify({ greenness: rounded })
+                          })
+                        }
                         updated += 1
                       } catch (err) {
                         console.error('Recompute failed for entry', entry.id, err)
