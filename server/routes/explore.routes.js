@@ -6,6 +6,7 @@ import { normalizeLocationName, getCanonicalPlaceData, shouldMergePlaces } from 
 import { mapRatingRow } from '../lib/mappers.js'
 import { recsCacheGet, recsCacheSet } from '../lib/recsCache.js'
 import { recsRateLimiter } from '../lib/rateLimits.js'
+import { requireSession } from '../lib/session.js'
 import { DEMO_USER_NAME } from '../lib/constants.js'
 
 const router = express.Router()
@@ -207,7 +208,7 @@ router.get('/api/explore/users', recsRateLimiter, async (req, res) => {
   }
 })
 
-router.get('/api/similar-users', recsRateLimiter, async (req, res) => {
+router.get('/api/similar-users', requireSession, recsRateLimiter, async (req, res) => {
   const userName = req.session.userName
 
   // v2 in the cache key retires any entries built under the old flavor
@@ -347,7 +348,7 @@ router.get('/api/similar-users', recsRateLimiter, async (req, res) => {
 })
 
 // Find places with similar flavor profiles
-router.get('/api/similar-places', async (req, res) => {
+router.get('/api/similar-places', requireSession, async (req, res) => {
   const flavorsParam = String(req.query.flavors || '').trim()
   const userBody = String(req.query.body || '').trim()
   // Caller identity from the session, not the query string.
@@ -583,7 +584,7 @@ router.get('/api/similar-places', async (req, res) => {
   }
 })
 
-router.get('/api/users/similar-preferences', recsRateLimiter, async (req, res) => {
+router.get('/api/users/similar-preferences', requireSession, recsRateLimiter, async (req, res) => {
   const limit = Math.max(1, Math.min(50, Number(req.query.limit) || 20))
 
   try {

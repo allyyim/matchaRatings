@@ -141,12 +141,19 @@ app.get('/api/warm', async (_req, res) => {
 //   2. authRouter    — no session for Google sign-in; routes that need
 //                      session (link-status, demo/cleanup) apply
 //                      requireSession inline
-//   3. auth gate     — everything past this point requires a session
-//   4. business + accountRouter — session-protected
+//   3. exploreRouter — mixed. Public discovery endpoints (/explore/*)
+//                      show the same data to signed-out visitors as
+//                      signed-in ones, so they must sit BEFORE the gate.
+//                      Personalized recs (/similar-users, /similar-places,
+//                      /users/similar-preferences) apply requireSession
+//                      inline.
+//   4. auth gate     — everything past this point requires a session
+//   5. business + accountRouter — session-protected
 // ---------------------------------------------------------------------------
 
 app.use('/api', adminRouter)
 app.use('/api', authRouter)
+app.use('/api', exploreRouter)
 
 // Auth gate. Any /api request that reaches this middleware is a
 // session-protected route; pre-gate routers already handled the public ones.
@@ -154,7 +161,6 @@ app.use('/api', requireSession)
 
 app.use('/api', ratingsRouter)
 app.use('/api', socialRouter)
-app.use('/api', exploreRouter)
 app.use('/api', accountRouter)
 
 app.use((err, _req, res, _next) => {
