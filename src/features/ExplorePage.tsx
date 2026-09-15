@@ -105,7 +105,7 @@ export default function ExplorePage(props: ExplorePageProps) {
           </div>
 
           {exploreActiveTab === 'places' && (
-            <section>
+            <section className="motion-tab-fade" key="explore-tab-places">
               <div className="explore-places-subtitle-wrapper mb-3">
                 <p className="explore-places-subtitle">
                   <span className="explore-places-badge">Top 10</span>
@@ -155,7 +155,7 @@ export default function ExplorePage(props: ExplorePageProps) {
           )}
 
           {exploreActiveTab === 'users' && (
-            <section>
+            <section className="motion-tab-fade" key="explore-tab-users">
               <div className="explore-places-subtitle-wrapper mb-3">
                 <p className="explore-places-subtitle">
                   <span className="explore-places-badge">Leaderboard</span>
@@ -165,7 +165,7 @@ export default function ExplorePage(props: ExplorePageProps) {
 
               {archetypeFilter && filterChipFlavors && (
                 <div
-                  className="d-flex align-items-center gap-2 mb-3 p-2 rounded"
+                  className="motion-filter-banner d-flex align-items-center gap-2 mb-3 p-2 rounded"
                   style={{
                     background: 'rgba(139, 195, 74, 0.08)',
                     border: '1px solid rgba(139, 195, 74, 0.2)',
