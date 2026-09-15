@@ -1,6 +1,6 @@
 import express from 'express'
 import { pool } from '../db.js'
-import { sanitizeUserName, normalizeLocationText } from '../lib/sanitize.js'
+import { normalizeLocationText } from '../lib/sanitize.js'
 import { getWeightedScore } from '../lib/scoring.js'
 import { normalizeLocationName, getCanonicalPlaceData, shouldMergePlaces } from '../lib/places.js'
 import { mapRatingRow } from '../lib/mappers.js'
@@ -208,10 +208,7 @@ router.get('/api/explore/users', recsRateLimiter, async (req, res) => {
 })
 
 router.get('/api/similar-users', recsRateLimiter, async (req, res) => {
-  const userName = sanitizeUserName(String(req.query.userName || '').trim())
-  if (!userName) {
-    return res.status(400).json({ error: 'userName is required' })
-  }
+  const userName = req.session.userName
 
   // v2 in the cache key retires any entries built under the old flavor
   // filter — makes the un-filter fix take effect immediately without
@@ -353,7 +350,8 @@ router.get('/api/similar-users', recsRateLimiter, async (req, res) => {
 router.get('/api/similar-places', async (req, res) => {
   const flavorsParam = String(req.query.flavors || '').trim()
   const userBody = String(req.query.body || '').trim()
-  const userName = String(req.query.userName || '').trim()
+  // Caller identity from the session, not the query string.
+  const userName = req.session.userName
   const userShade = Number.parseInt(String(req.query.shade || '0'), 10) || 0
   // Target greenness % per shade (1..9). Must stay in sync with SHADE_OPTIONS
   // in the client (src/App.tsx).

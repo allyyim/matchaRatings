@@ -9,6 +9,7 @@
     "dev:full": "concurrently \"npm run server\" \"npm run dev\"",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "check:identity": "node scripts/check-identity-sources.js",
     "preview": "vite preview"
   },
   "dependencies": {

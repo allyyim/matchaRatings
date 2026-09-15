@@ -2,7 +2,7 @@ import express from 'express'
 import crypto from 'node:crypto'
 import { v2 as cloudinary } from 'cloudinary'
 import { pool } from '../db.js'
-import { sanitizeText, sanitizeUserName, normalizeLocationText } from '../lib/sanitize.js'
+import { sanitizeText, normalizeLocationText } from '../lib/sanitize.js'
 import { getWeightedScore } from '../lib/scoring.js'
 import { getCanonicalPlaceData, shouldMergePlaces } from '../lib/places.js'
 import { mapRatingRow } from '../lib/mappers.js'
@@ -13,7 +13,11 @@ import { validateImageDataUrl } from '../lib/imageValidation.js'
 const router = express.Router()
 
 router.post('/api/ratings', requireSession, async (req, res) => {
-  const userName = sanitizeUserName(String(req.body?.userName || '').trim())
+  // Identity is taken from the session, not the request body. The client
+  // can send whatever userName it wants; we ignore it. This makes it
+  // structurally impossible to log a rating under another user's name
+  // even if the ownership-check line were ever accidentally removed.
+  const userName = req.session.userName
   const photo = String(req.body?.photo || '').trim()
   const rating = Number(req.body?.rating)
   const greenness = Number(req.body?.greenness)
@@ -21,7 +25,7 @@ router.post('/api/ratings', requireSession, async (req, res) => {
   const thoughts = sanitizeText(req.body?.thoughts || '', 800)
   const flavorPreferences = typeof req.body?.flavorPreferences === 'object' ? req.body.flavorPreferences : {}
 
-  if (!userName || Number.isNaN(rating) || Number.isNaN(greenness)) {
+  if (Number.isNaN(rating) || Number.isNaN(greenness)) {
     return res.status(400).json({ error: 'Missing required rating fields' })
   }
 
@@ -31,10 +35,6 @@ router.post('/api/ratings', requireSession, async (req, res) => {
 
   if (photo.length > 500) {
     return res.status(413).json({ error: 'Photo URL is too long' })
-  }
-
-  if (userName.toLowerCase() !== req.session.userName.toLowerCase()) {
-    return res.status(403).json({ error: 'Forbidden: user ownership mismatch' })
   }
 
   const inserted = await pool.query(
@@ -99,7 +99,8 @@ router.post('/api/upload-image', requireSession, async (req, res) => {
 
 router.put('/api/ratings/:id', requireSession, async (req, res) => {
   const id = Number(req.params.id)
-  const userName = sanitizeUserName(String(req.body?.userName || '').trim())
+  // Identity from session, never from the request body.
+  const userName = req.session.userName
   const rating = Number(req.body?.rating)
   const incomingGreenness = req.body?.greenness
   const greenness = incomingGreenness === undefined || incomingGreenness === null ? null : Number(incomingGreenness)
@@ -123,12 +124,8 @@ router.put('/api/ratings/:id', requireSession, async (req, res) => {
     return res.status(400).json({ error: 'Valid rating id is required' })
   }
 
-  if (!userName || Number.isNaN(rating)) {
-    return res.status(400).json({ error: 'userName and rating are required' })
-  }
-
-  if (userName.toLowerCase() !== req.session.userName.toLowerCase()) {
-    return res.status(403).json({ error: 'Forbidden: user ownership mismatch' })
+  if (Number.isNaN(rating)) {
+    return res.status(400).json({ error: 'rating is required' })
   }
 
   if (greenness !== null && Number.isNaN(greenness)) {
@@ -146,6 +143,8 @@ router.put('/api/ratings/:id', requireSession, async (req, res) => {
     return res.status(413).json({ error: 'Photo URL is too long' })
   }
 
+  // WHERE user_name = $2 uses the session name, so a stolen id from another
+  // user still resolves to 0 rows → 404, never an accidental edit.
   const updated = await pool.query(
     `
       UPDATE ratings
@@ -171,18 +170,10 @@ router.put('/api/ratings/:id', requireSession, async (req, res) => {
 
 router.delete('/api/ratings/:id', requireSession, async (req, res) => {
   const id = Number(req.params.id)
-  const userName = sanitizeUserName(String(req.query.userName || '').trim())
+  const userName = req.session.userName
 
   if (!Number.isInteger(id) || id <= 0) {
     return res.status(400).json({ error: 'Valid rating id is required' })
-  }
-
-  if (!userName) {
-    return res.status(400).json({ error: 'userName query parameter is required' })
-  }
-
-  if (userName.toLowerCase() !== req.session.userName.toLowerCase()) {
-    return res.status(403).json({ error: 'Forbidden: user ownership mismatch' })
   }
 
   const deleted = await pool.query(
@@ -207,15 +198,7 @@ router.delete('/api/ratings/:id', requireSession, async (req, res) => {
 // double-submit case where a network retry inserted a second copy of the same
 // tap. We keep the earliest id in each cluster and delete the rest.
 router.post('/api/ratings/dedupe', requireSession, async (req, res) => {
-  const userName = sanitizeUserName(String(req.body?.userName || req.query.userName || '').trim())
-
-  if (!userName) {
-    return res.status(400).json({ error: 'userName is required' })
-  }
-
-  if (userName.toLowerCase() !== req.session.userName.toLowerCase()) {
-    return res.status(403).json({ error: 'Forbidden: user ownership mismatch' })
-  }
+  const userName = req.session.userName
 
   try {
     const result = await pool.query(
@@ -254,14 +237,7 @@ router.post('/api/ratings/dedupe', requireSession, async (req, res) => {
 })
 
 router.get('/api/ratings', async (req, res) => {
-  const userName = sanitizeUserName(String(req.query.userName || '').trim())
-  if (!userName) {
-    return res.status(400).json({ error: 'userName query parameter is required' })
-  }
-
-  if (userName.toLowerCase() !== req.session.userName.toLowerCase()) {
-    return res.status(403).json({ error: 'Forbidden: user ownership mismatch' })
-  }
+  const userName = req.session.userName
 
   const result = await pool.query(
     `
