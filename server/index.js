@@ -2017,11 +2017,12 @@ app.get('/api/users/:userName/preferences', async (req, res) => {
   }
 
   try {
-    const KNOWN_FLAVORS = new Set([
-      'sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent',
-      'creamy', 'floral', 'earthy', 'chocolatey', 'mellow', 'bitter',
-      'rich', 'velvety', 'grassy', 'smooth'
-    ])
+    // NOTE: no server-side KNOWN_FLAVORS filter here. The client is the
+    // single source of truth (isKnownFlavor in src/lib/flavors.ts) — we
+    // return every non-`__` key and let the client decide what to render.
+    // This avoids the "chip differs between Explore and friend modal"
+    // bug that happened when we added a flavor to the client vocabulary
+    // but the server allowlist was still stale until the next deploy.
 
     // Fetch the account's avatar_url alongside preferences so the friend
     // modal can render a profile picture without a second round-trip.
@@ -2052,7 +2053,7 @@ app.get('/api/users/:userName/preferences', async (req, res) => {
       const k = String(rawKey || '').toLowerCase()
       if (k.startsWith('__body:')) {
         body = k.slice('__body:'.length)
-      } else if (KNOWN_FLAVORS.has(k)) {
+      } else if (k && !k.startsWith('__')) {
         if (!flavors.includes(k)) flavors.push(k)
       }
     }
@@ -2081,12 +2082,10 @@ app.get('/api/similar-users', async (req, res) => {
   if (cached) return res.json(cached)
 
   try {
-    // Canonical flavor allowlist - keep in sync with client + similar-places
-    const KNOWN_FLAVORS = new Set([
-      'sweet', 'nutty', 'umami', 'vegetal', 'sugary', 'astringent',
-      'creamy', 'floral', 'earthy', 'chocolatey', 'mellow', 'bitter',
-      'rich', 'velvety', 'grassy', 'smooth'
-    ])
+    // No server-side flavor allowlist — client (isKnownFlavor in
+    // src/lib/flavors.ts) owns the vocabulary. Similarity scoring works
+    // on the raw intersection either way; keeping this filter-free means
+    // adding a flavor to the client no longer requires a server deploy.
 
     // Parse a stored flavor prefs blob (array or object) into
     // { flavors:Set, body:string }. The client sends flavors as an array
@@ -2100,7 +2099,7 @@ app.get('/api/similar-users', async (req, res) => {
         const k = String(rawKey || '').toLowerCase()
         if (k.startsWith('__body:')) {
           body = k.slice('__body:'.length)
-        } else if (KNOWN_FLAVORS.has(k)) {
+        } else if (k && !k.startsWith('__')) {
           flavors.add(k)
         }
       }

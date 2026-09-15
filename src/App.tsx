@@ -4580,7 +4580,7 @@ function App() {
                         <PalateChip flavors={friendModalPrefs.flavors} size="xs" />
                       </div>
                     )}
-                    <div className="small text-muted" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div className="small text-muted" style={{ lineHeight: 1.3 }}>
                       {isLoadingFriendModal ? (
                         <span className="fst-italic">Loading profile…</span>
                       ) : (

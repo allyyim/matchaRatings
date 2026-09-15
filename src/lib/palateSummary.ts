@@ -59,8 +59,9 @@ const COMBO_ARCHETYPE: Record<string, string> = {
 
 // Three-plus-cluster balanced palates get their own label so we don't
 // force a false "top" cluster. Fires when 3+ clusters all sit within
-// ~66% of the leader. Named after the bamboo whisk that blends everything.
-const BALANCED_ARCHETYPE = 'The Chasen'
+// ~66% of the leader. Named "Tea Master" because whoever this fires
+// on knows every corner of the vocabulary.
+const BALANCED_ARCHETYPE = 'The Tea Master'
 
 // Punchy sub-tagline for when there's a *modest* secondary cluster
 // (not competitive enough for a combo, but present). Reads "Primary
@@ -178,7 +179,7 @@ const ARCHETYPE_PALETTE: Record<string, { bg: string; fg: string; border: string
   'The Zen Master':      { bg: '#d8ebe6', fg: '#1e4a4e', border: '#a6d1cc' }, // earthy+silky → teal
   'The Gyokuro':         { bg: '#dcecd6', fg: '#2f523a', border: '#a8ceac' }, // bracing+silky → seafoam
   // Balanced 3+ — bright neutral so it feels distinct from everyone else.
-  'The Chasen':          { bg: '#efe4f2', fg: '#402f4d', border: '#cdb8d5' },
+  'The Tea Master':      { bg: '#efe4f2', fg: '#402f4d', border: '#cdb8d5' },
 }
 
 // Palette for a specific archetype label, falling back to the primary
