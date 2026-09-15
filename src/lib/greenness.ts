@@ -456,6 +456,9 @@ export function analyzeGreennessFromDataUrl(dataUrl: string): Promise<{
       resolve({ score, statusMessage, coveragePercent, confidencePercent })
     }
     img.onerror = () => resolve({ score: 0, statusMessage: 'Failed to load image.', coveragePercent: null, confidencePercent: null })
+    if (dataUrl && !dataUrl.startsWith('data:')) {
+      img.crossOrigin = 'anonymous'
+    }
     img.src = dataUrl
   })
 }

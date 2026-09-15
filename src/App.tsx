@@ -3627,6 +3627,55 @@ function App() {
                 </button>
               </div>
 
+              <div className="profile-drawer-section">
+                <div className="profile-drawer-section-label">Admin (temporary)</div>
+                <button
+                  type="button"
+                  className="profile-drawer-row"
+                  onClick={async () => {
+                    const candidates = myEntries.filter((e) => e.photo && e.photo !== noPhotoPlaceholderUrl && !e.photo.startsWith('data:'))
+                    if (!candidates.length) {
+                      alert('No hosted photos found on your logs to recompute.')
+                      return
+                    }
+                    if (!window.confirm(`Recompute greenness for ${candidates.length} photo(s)?`)) return
+
+                    let updated = 0
+                    let failed = 0
+                    for (const entry of candidates) {
+                      try {
+                        const { score } = await analyzeGreennessFromDataUrl(entry.photo)
+                        if (!score || Number.isNaN(score)) {
+                          failed += 1
+                          continue
+                        }
+                        const rounded = Math.round(score)
+                        if (rounded === entry.greenness) continue
+                        await apiFetch(`/ratings/${entry.id}`, {
+                          method: 'PUT',
+                          body: JSON.stringify({
+                            userName: currentUserName,
+                            rating: entry.rating,
+                            greenness: rounded,
+                            location: entry.location,
+                            thoughts: entry.thoughts
+                          })
+                        })
+                        setMyEntries((prev) => prev.map((e) => e.id === entry.id ? { ...e, greenness: rounded } : e))
+                        updated += 1
+                      } catch (err) {
+                        console.error('Recompute failed for entry', entry.id, err)
+                        failed += 1
+                      }
+                    }
+                    alert(`Recompute done — updated ${updated}, unchanged ${candidates.length - updated - failed}, failed ${failed}.`)
+                  }}
+                >
+                  <span>Recompute greenness</span>
+                  <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
+                </button>
+              </div>
+
               <div className="profile-drawer-section profile-drawer-section-footer">
                 <button
                   type="button"
