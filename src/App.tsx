@@ -400,7 +400,7 @@ function App() {
   const [exploreUsers, setExploreUsers] = useState<ExploreUser[]>([])
   const [exploreActiveTab, setExploreActiveTab] = useState<'places' | 'users'>('places')
   const [communityActiveTab, setCommunityActiveTab] = useState<'search' | 'following' | 'recommendations'>('recommendations')
-  const [similarUsers, setSimilarUsers] = useState<Array<{ userName: string; flavors: string[]; body?: string; matchScore: number }>>([])
+  const [similarUsers, setSimilarUsers] = useState<Array<{ userName: string; flavors: string[]; sharedFlavors?: string[]; body?: string; matchScore: number }>>([])
   const [isLoadingSimilarUsers, setIsLoadingSimilarUsers] = useState(false)
   const [similarPlaces, setSimilarPlaces] = useState<Array<{ location: string; flavors: string[]; body?: string; matchScore: number; avgGreenness?: number | null }>>([])
   const [isLoadingSimilarPlaces, setIsLoadingSimilarPlaces] = useState(false)
@@ -1485,7 +1485,7 @@ function App() {
       setIsLoadingSimilarPlaces(true)
 
       Promise.all([
-        apiFetch<{ similarUsers: Array<{ userName: string; flavors: string[]; body?: string; matchScore: number }> }>(`/similar-users?userName=${encodeURIComponent(currentUserName)}&_r=${recsRefreshKey}`),
+        apiFetch<{ similarUsers: Array<{ userName: string; flavors: string[]; sharedFlavors?: string[]; body?: string; matchScore: number }> }>(`/similar-users?userName=${encodeURIComponent(currentUserName)}&_r=${recsRefreshKey}`),
         apiFetch<{ similarPlaces: Array<{ location: string; flavors: string[]; body?: string; matchScore: number; avgGreenness?: number }> }>(`/similar-places?userName=${encodeURIComponent(currentUserName)}&flavors=${encodeURIComponent(userFlavors.join(','))}&body=${encodeURIComponent(userBodyPref)}&shade=${userShade}&_r=${recsRefreshKey}`)
       ])
         .then(([usersData, placesData]) => {
@@ -5660,7 +5660,13 @@ function App() {
                                         </span>
                                       </div>
                                       {(() => {
-                                        const cleanFlavors = sortFlavorsByColor(user.flavors.filter((f) => !f.startsWith('__') && isKnownFlavor(f)))
+                                        // Archetype chip renders from user.flavors (full set).
+                                        // "Shared flavors" section renders from sharedFlavors —
+                                        // the intersection with the viewer — so the label
+                                        // matches its meaning. Fall back to user.flavors for
+                                        // any cached response from before the server split.
+                                        const sharedRaw = user.sharedFlavors ?? user.flavors
+                                        const cleanFlavors = sortFlavorsByColor(sharedRaw.filter((f) => !f.startsWith('__') && isKnownFlavor(f)))
                                         if (cleanFlavors.length === 0 && !user.body) return null
                                         return (
                                           <>

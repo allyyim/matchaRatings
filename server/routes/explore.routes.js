@@ -211,10 +211,9 @@ router.get('/api/explore/users', recsRateLimiter, async (req, res) => {
 router.get('/api/similar-users', requireSession, recsRateLimiter, async (req, res) => {
   const userName = req.session.userName
 
-  // v2 in the cache key retires any entries built under the old flavor
-  // filter — makes the un-filter fix take effect immediately without
-  // waiting on the 5-min TTL to expire per-user.
-  const cacheKey = `u:${userName.toLowerCase()}|similar-users|v2`
+  // v3 in the cache key retires v2 entries whose `flavors` field was
+  // the intersection instead of the target user's full flavor set.
+  const cacheKey = `u:${userName.toLowerCase()}|similar-users|v3`
   const cached = recsCacheGet(cacheKey)
   if (cached) return res.json(cached)
 
@@ -327,7 +326,14 @@ router.get('/api/similar-users', requireSession, recsRateLimiter, async (req, re
 
         return {
           userName: row.user_name,
-          flavors: sharedCount > 0 ? shared : [...them.flavors],
+          // Full flavor set — the client renders the archetype chip
+          // (PalateChip) from this. Sending only the intersection here
+          // would make Jason's archetype flip based on the viewer's
+          // palate, which caused chip labels to disagree across tabs
+          // and to visibly shift whenever the viewer updated their
+          // own prefs. sharedFlavors below is what the "Shared flavors"
+          // section renders.
+          flavors: [...them.flavors],
           sharedFlavors: shared,
           body: them.body,
           ratingCount,
