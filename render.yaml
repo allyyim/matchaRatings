@@ -1,0 +1,62 @@
+# Render service definition (Infrastructure-as-Code).
+#
+# Render reads this file on push to reconcile the dashboard configuration
+# with what's in the repo. It's the source of truth for build/start
+# commands, health checks, and the list of environment variables the
+# service expects. Secrets are NOT stored here — they stay in the Render
+# dashboard, but declaring them with `sync: false` means the dashboard
+# UI will warn if any of them go missing.
+#
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: matcharatings
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    # `npm ci` is deterministic (uses package-lock.json exactly) and
+    # faster than `npm install` in CI-like environments.
+    buildCommand: npm ci && npm run build
+    startCommand: node server/index.js
+    # Render will restart the service if this returns non-2xx.
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Postgres connection (Supabase / Render Postgres / any pg URL).
+      - key: DATABASE_URL
+        sync: false
+      # HS256 secret used to sign session JWTs. Rotating this invalidates
+      # every active session — good for incident response, disruptive
+      # otherwise. Must be at least 32 random bytes.
+      - key: JWT_SECRET
+        sync: false
+      # Fallback / legacy secret. If JWT_SECRET is unset the app falls
+      # back to APP_SECRET, so having one of them is the minimum.
+      - key: APP_SECRET
+        sync: false
+      # Gate for /api/admin/* ops endpoints. Sent as
+      # `X-Admin-Secret: <value>` header. Not tied to any user account.
+      - key: ADMIN_SECRET
+        sync: false
+      # Google OAuth (implicit flow) — client-side popup returns an
+      # access token that the server exchanges for user info.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      # Cloudinary — signed image uploads for rating photos.
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      # Sentry — server-side error + performance monitoring.
+      - key: SENTRY_DSN
+        sync: false
+      # Optional: comma-separated extra CORS origins beyond the built-in
+      # allowlist (github.io + Render URL). Leave unset in prod.
+      - key: CORS_ORIGINS
+        sync: false

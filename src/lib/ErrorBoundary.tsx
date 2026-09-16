@@ -11,14 +11,17 @@ import { Component, type ErrorInfo, type ReactNode } from 'react'
 //     because the old hashed asset URL is guaranteed to keep 404-ing on
 //     origin. We use sessionStorage to guarantee we only try this once
 //     per session so we can't get stuck in a reload loop.
-//   - Everything else ⇒ show a small recovery card with a Reload button,
-//     which is way better UX than a blank screen and gives the user a
-//     way out without needing to know how to force-refresh a PWA.
+//   - Everything else ⇒ show a small recovery card with a Reload button
+//     AND a "copy error details" button. The details capture message +
+//     stack + component stack + URL + timestamp, which is enough for
+//     the user to paste into a bug report (or for us to reproduce
+//     even if Sentry is misconfigured / rate-limited / offline).
 
 type Props = { children: ReactNode }
-type State = { error: Error | null }
+type State = { error: Error | null; info: ErrorInfo | null; copied: boolean }
 
 const RELOAD_SENTINEL = 'matcha:chunkReloadedAt'
+const LAST_ERROR_KEY = 'matcha:lastError'
 
 function isChunkLoadError(err: unknown): boolean {
   if (!err || typeof err !== 'object') return false
@@ -48,15 +51,40 @@ async function hardReload(): Promise<void> {
   window.location.reload()
 }
 
-export class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null }
+function buildErrorReport(error: Error, info: ErrorInfo | null): string {
+  const lines = [
+    `Sip & Score error report`,
+    `When: ${new Date().toISOString()}`,
+    `URL: ${typeof window !== 'undefined' ? window.location.href : '(no window)'}`,
+    `UA: ${typeof navigator !== 'undefined' ? navigator.userAgent : '(no navigator)'}`,
+    ``,
+    `Error: ${error.name}: ${error.message}`,
+    ``,
+    `Stack:`,
+    error.stack || '(no stack)',
+  ]
+  if (info?.componentStack) {
+    lines.push('', 'Component stack:', info.componentStack)
+  }
+  return lines.join('\n')
+}
 
-  static getDerivedStateFromError(error: Error): State {
+export class ErrorBoundary extends Component<Props, State> {
+  state: State = { error: null, info: null, copied: false }
+
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { error }
   }
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     console.error('App error boundary caught:', error, info.componentStack)
+    this.setState({ info })
+
+    // Persist the last error so support can retrieve it out-of-band
+    // (e.g. via DevTools localStorage) even if Sentry never delivered.
+    try {
+      localStorage.setItem(LAST_ERROR_KEY, buildErrorReport(error, info))
+    } catch { /* ignore quota / privacy-mode errors */ }
 
     if (isChunkLoadError(error)) {
       // Only auto-reload once per browser session so a genuinely broken
@@ -75,6 +103,28 @@ export class ErrorBoundary extends Component<Props, State> {
   handleReload = (): void => {
     try { sessionStorage.removeItem(RELOAD_SENTINEL) } catch { /* ignore */ }
     void hardReload()
+  }
+
+  handleCopyDetails = async (): Promise<void> => {
+    if (!this.state.error) return
+    const report = buildErrorReport(this.state.error, this.state.info)
+    try {
+      if (navigator?.clipboard?.writeText) {
+        await navigator.clipboard.writeText(report)
+      } else {
+        // Fallback for browsers without Clipboard API (older Safari, etc.)
+        const ta = document.createElement('textarea')
+        ta.value = report
+        ta.style.position = 'fixed'
+        ta.style.opacity = '0'
+        document.body.appendChild(ta)
+        ta.select()
+        document.execCommand('copy')
+        document.body.removeChild(ta)
+      }
+      this.setState({ copied: true })
+      window.setTimeout(() => this.setState({ copied: false }), 2000)
+    } catch { /* ignore */ }
   }
 
   render(): ReactNode {
@@ -106,22 +156,43 @@ export class ErrorBoundary extends Component<Props, State> {
         <p style={{ maxWidth: 320, marginBottom: '1.5rem', color: '#4c6b52' }}>
           The app hit an error. Reloading usually fixes it.
         </p>
-        <button
-          type="button"
-          onClick={this.handleReload}
-          style={{
-            background: '#2f7a44',
-            color: 'white',
-            border: 0,
-            borderRadius: 999,
-            padding: '0.75rem 1.5rem',
-            fontWeight: 600,
-            fontSize: '1rem',
-            cursor: 'pointer',
-          }}
-        >
-          Reload app
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <button
+            type="button"
+            onClick={this.handleReload}
+            style={{
+              background: '#2f7a44',
+              color: 'white',
+              border: 0,
+              borderRadius: 999,
+              padding: '0.75rem 1.5rem',
+              fontWeight: 600,
+              fontSize: '1rem',
+              cursor: 'pointer',
+            }}
+          >
+            Reload app
+          </button>
+          <button
+            type="button"
+            onClick={() => void this.handleCopyDetails()}
+            style={{
+              background: 'transparent',
+              color: '#2f7a44',
+              border: '1px solid #2f7a44',
+              borderRadius: 999,
+              padding: '0.75rem 1.5rem',
+              fontWeight: 600,
+              fontSize: '1rem',
+              cursor: 'pointer',
+            }}
+          >
+            {this.state.copied ? 'Copied ✓' : 'Copy error details'}
+          </button>
+        </div>
+        <p style={{ marginTop: '1.25rem', fontSize: '0.75rem', color: '#7a8e7f', maxWidth: 320 }}>
+          Copying the details makes it easy to paste them into a bug report.
+        </p>
       </div>
     )
   }
