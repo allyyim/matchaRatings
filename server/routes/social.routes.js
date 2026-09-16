@@ -1,7 +1,7 @@
 import express from 'express'
 import { pool } from '../db.js'
 import { sanitizeText } from '../lib/sanitize.js'
-import { getWeightedScore } from '../lib/scoring.js'
+import { getWeightedScore, FULL_GREENNESS_WEIGHT, LOW_RATING_GREENNESS_WEIGHT } from '../lib/scoring.js'
 import { mapRatingRow } from '../lib/mappers.js'
 import { requireSession } from '../lib/session.js'
 import { DEMO_USER_NAME } from '../lib/constants.js'
