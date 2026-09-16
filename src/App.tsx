@@ -36,6 +36,8 @@ import { TruncatedThought } from './lib/TruncatedThought'
 import { summarizePalate } from './lib/palateSummary'
 import { PalateChip } from './lib/PalateChip'
 import { EmptyState } from './lib/EmptyState'
+import { MatchBadge } from './lib/MatchBadge'
+import { OnboardingChecklist } from './lib/OnboardingChecklist'
 
 // Feature tabs — code-split so first paint doesn't pay for them. Each chunk
 // is only fetched when the user navigates into that tab.
@@ -4469,20 +4471,22 @@ function App() {
                       className={`btn btn-sm rounded-pill ${followingSet.has(friendModalUser) ? 'btn-success' : 'btn-outline-success'}`}
                       onClick={async (e) => {
                         e.stopPropagation()
-                        const isFollowing = followingSet.has(friendModalUser)
+                        const wasFollowing = followingSet.has(friendModalUser)
+                        const optimistic = new Set(followingSet)
+                        if (wasFollowing) optimistic.delete(friendModalUser); else optimistic.add(friendModalUser)
+                        setFollowingSet(optimistic)
+                        setSavedEntryToast({ headline: wasFollowing ? 'Unfollowed' : 'Now following', connector: ' ', highlight: friendModalUser })
+                        window.setTimeout(() => setSavedEntryToast(null), 3500)
                         try {
-                          if (isFollowing) {
+                          if (wasFollowing) {
                             await apiFetch(`/follows/${friendModalUser}`, { method: 'DELETE' })
-                            followingSet.delete(friendModalUser)
-                            setSavedEntryToast({ headline: 'Unfollowed', connector: ' ', highlight: friendModalUser })
                           } else {
                             await apiFetch(`/follows/${friendModalUser}`, { method: 'POST' })
-                            followingSet.add(friendModalUser)
-                            setSavedEntryToast({ headline: 'Now following', connector: ' ', highlight: friendModalUser })
                           }
-                          window.setTimeout(() => setSavedEntryToast(null), 3500)
-                          setFollowingSet(new Set(followingSet))
                         } catch (error) {
+                          const rollback = new Set(optimistic)
+                          if (wasFollowing) rollback.add(friendModalUser); else rollback.delete(friendModalUser)
+                          setFollowingSet(rollback)
                           console.error('Failed to update follow status:', error)
                           const msg = error instanceof Error ? error.message : ''
                           if (/your account not found/i.test(msg)) {
@@ -5035,6 +5039,20 @@ function App() {
             </div>,
             document.body
           )}
+
+          <OnboardingChecklist
+            currentUserName={currentUserName}
+            isDemoAccount={isDemoAccount}
+            ratingCount={myEntries.length}
+            flavorCount={userFlavors.filter((f) => !f.startsWith('__')).length}
+            followingCount={followingSet.size}
+            onGoToPrefs={() => {
+              setIsProfileDrawerOpen(true)
+              setIsPreferencesModalOpen(true)
+            }}
+            onGoToNewLog={() => setIsNewLogOpen(true)}
+            onGoToExplore={() => setActivePage('explore')}
+          />
 
           <section className="mb-5">
             <div className="d-flex flex-column gap-2 mb-3">
@@ -5646,18 +5664,14 @@ function App() {
                                           </h6>
                                           <PalateChip flavors={user.flavors} size="xs" />
                                         </div>
-                                        <span className="badge" style={{
-                                          flexShrink: 0,
-                                          fontSize: '0.72rem',
-                                          background: 'linear-gradient(90deg, #E8A085 0%, #F0C389 25%, #E8D689 50%, #B8D9B3 75%, #7FD1C1 100%)',
-                                          color: '#4a5c5a',
-                                          fontWeight: 700,
-                                          padding: '0.3rem 0.55rem',
-                                          borderRadius: '999px',
-                                          boxShadow: '0 1px 3px rgba(200, 150, 130, 0.18)'
-                                        }}>
-                                          {(user.matchScore * 100).toFixed(0)}% match
-                                        </span>
+                                        <MatchBadge
+                                          score={user.matchScore}
+                                          myFlavors={userFlavors}
+                                          theirFlavors={user.flavors}
+                                          myBody={userBodyPref}
+                                          theirBody={user.body}
+                                          kind="user"
+                                        />
                                       </div>
                                       {(() => {
                                         // Archetype chip renders from user.flavors (full set).
@@ -5775,18 +5789,14 @@ function App() {
                                             {place.location}
                                           </h6>
                                         </div>
-                                        <span className="badge" style={{
-                                          flexShrink: 0,
-                                          fontSize: '0.72rem',
-                                          background: 'linear-gradient(90deg, #E8A085 0%, #F0C389 25%, #E8D689 50%, #B8D9B3 75%, #7FD1C1 100%)',
-                                          color: '#4a5c5a',
-                                          fontWeight: 700,
-                                          padding: '0.3rem 0.55rem',
-                                          borderRadius: '999px',
-                                          boxShadow: '0 1px 3px rgba(200, 150, 130, 0.18)'
-                                        }}>
-                                          {(place.matchScore * 100).toFixed(0)}% match
-                                        </span>
+                                        <MatchBadge
+                                          score={place.matchScore}
+                                          myFlavors={userFlavors}
+                                          theirFlavors={place.flavors || []}
+                                          myBody={userBodyPref}
+                                          theirBody={derivedBody}
+                                          kind="place"
+                                        />
                                       </div>
                                       {derivedBody && (() => {
                                         const _c = bodyColor(derivedBody)

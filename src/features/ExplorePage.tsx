@@ -253,7 +253,9 @@ export default function ExplorePage(props: ExplorePageProps) {
                             </div>
                           )}
                           <div className="explore-place-meta">
-                            {user.placeCount} {user.placeCount === 1 ? 'place explored' : 'places explored'}
+                            {user.placeCount}{' '}
+                            <span className="explore-place-meta-noun">{user.placeCount === 1 ? 'place' : 'places'}</span>
+                            <span className="explore-place-meta-suffix"> explored</span>
                           </div>
                         </div>
                         <div className="explore-user-actions">
@@ -263,19 +265,22 @@ export default function ExplorePage(props: ExplorePageProps) {
                               className={`explore-follow-btn ${isFollowing ? 'is-following' : ''}`}
                               onClick={async (event) => {
                                 event.stopPropagation()
+                                const wasFollowing = isFollowing
+                                const optimistic = new Set(followingSet)
+                                if (wasFollowing) optimistic.delete(user.userName); else optimistic.add(user.userName)
+                                setFollowingSet(optimistic)
+                                setSavedEntryToast({ headline: wasFollowing ? 'Unfollowed' : 'Now following', connector: ' ', highlight: user.userName })
+                                window.setTimeout(() => setSavedEntryToast(null), 3500)
                                 try {
-                                  if (isFollowing) {
+                                  if (wasFollowing) {
                                     await apiFetch(`/follows/${user.userName}`, { method: 'DELETE' })
-                                    followingSet.delete(user.userName)
-                                    setSavedEntryToast({ headline: 'Unfollowed', connector: ' ', highlight: user.userName })
                                   } else {
                                     await apiFetch(`/follows/${user.userName}`, { method: 'POST' })
-                                    followingSet.add(user.userName)
-                                    setSavedEntryToast({ headline: 'Now following', connector: ' ', highlight: user.userName })
                                   }
-                                  window.setTimeout(() => setSavedEntryToast(null), 3500)
-                                  setFollowingSet(new Set(followingSet))
                                 } catch (error) {
+                                  const rollback = new Set(optimistic)
+                                  if (wasFollowing) rollback.add(user.userName); else rollback.delete(user.userName)
+                                  setFollowingSet(rollback)
                                   console.error('Failed to update follow status:', error)
                                   const msg = error instanceof Error ? error.message : ''
                                   if (/your account not found/i.test(msg)) {
