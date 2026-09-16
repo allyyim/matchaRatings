@@ -102,7 +102,7 @@ export function OnboardingChecklist(props: OnboardingChecklistProps) {
             style={{
               background: 'transparent',
               border: 0,
-              color: '#6b7280',
+              color: 'var(--text-muted)',
               fontSize: '1.1rem',
               lineHeight: 1,
               cursor: 'pointer',
@@ -158,7 +158,7 @@ export function OnboardingChecklist(props: OnboardingChecklistProps) {
                 style={{
                   flex: 1,
                   fontSize: '0.9rem',
-                  color: item.done ? '#6b7280' : '#1f2937',
+                  color: item.done ? 'var(--text-muted)' : '#1f2937',
                   textDecoration: item.done ? 'line-through' : 'none',
                 }}
               >

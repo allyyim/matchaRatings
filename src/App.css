@@ -21,6 +21,24 @@
   --shadow-lg: 0 8px 24px rgba(18, 63, 39, 0.12);
   --shadow-warm: 0 4px 12px rgba(212, 155, 74, 0.08);
 
+  /* ---------- Design tokens (v1) ---------------------------------------
+     Single source of truth. Anything that used to be an inline
+     `fontSize`, `color: 'var(--text-muted)'`, or one-off card padding should reach
+     for these instead. Kept tiny on purpose — three sizes, one accent,
+     one muted grey. If a new value shows up here, question it first. */
+  --accent: #1f5f34;                 /* the ONE brand accent */
+  --accent-hover: #123f27;
+  --text-body: #1a1a1a;
+  --text-muted: #64748b;             /* the ONE muted grey */
+  --text-subtle: #94a3b8;            /* for supporting metadata only */
+  --fs-sm: 0.75rem;                  /* 12px — metadata, chips */
+  --fs-md: 0.875rem;                 /* 14px — body copy */
+  --fs-lg: 1rem;                     /* 16px — emphasised body */
+  --card-radius: 12px;
+  --card-padding-sm: 0.75rem;
+  --card-padding-md: 1rem;
+  --card-padding-lg: 1.25rem;
+
   /* Motion language — shared duration + easing tokens.
      Anything with visible motion should use these so the app has a
      consistent rhythm and personality instead of Bootstrap defaults. */
@@ -32,6 +50,47 @@
   --ease-in: cubic-bezier(0.7, 0, 0.84, 0);          /* acceleration — for exits */
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);     /* smooth transitions */
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);  /* slight overshoot — for taps + pops */
+}
+
+/* Tabular figures globally so ranks, scores, percentages, and greenness
+   never jitter when digits change width (`1` vs `8`). Invisible until
+   you see the before/after — but it's the difference between a hobby
+   app and a product. */
+html {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Normalize Bootstrap's default muted colour to our single muted grey.
+   Every `text-muted` in the app now points at one hue instead of the
+   ~4 different greys we accreted. */
+.text-muted {
+  color: var(--text-muted) !important;
+}
+
+/* Card anatomy utilities. Two sizes, fixed padding + radius, so the
+   ~40 inline `style={{ padding: '0.75rem' }}` overrides can shrink to
+   one class. Composes on top of Bootstrap `.card` — no need to strip
+   Bootstrap first. */
+.card--sm {
+  padding: var(--card-padding-sm);
+  border-radius: var(--card-radius);
+}
+.card--md {
+  padding: var(--card-padding-md);
+  border-radius: var(--card-radius);
+}
+.card--sm > .card-body,
+.card--md > .card-body {
+  padding: 0;
+}
+
+/* Metric text helper — for a "12 places rated", "62% match", "4.3/100"
+   rendering. Adds the tabular figures guarantee even inside spans that
+   inherit a different font. */
+.metric,
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
 }
 
 /* Animations */
@@ -1757,7 +1816,7 @@ textarea.form-control {
   border-radius: 999px;
   background: #fff7d6;
   border: 1px solid #f2d872;
-  color: #8a6a12;
+  color: var(--text-muted);
   font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -1866,7 +1925,7 @@ textarea.form-control {
 
 .explore-place-meta {
   font-size: 0.78rem;
-  color: #6b7280;
+  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -3581,7 +3640,7 @@ main#main-content {
   padding: 0.15rem 0;
   border-radius: 0;
   font-size: 0.72rem;
-  color: #6b7280;
+  color: var(--text-muted);
   text-transform: none;
   letter-spacing: normal;
   cursor: pointer;
@@ -3600,7 +3659,7 @@ main#main-content {
 }
 
 .feed-like-btn.is-liked {
-  color: #6b7280;
+  color: var(--text-muted);
   font-weight: 500;
 }
 
