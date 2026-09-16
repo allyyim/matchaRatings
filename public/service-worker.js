@@ -109,7 +109,10 @@ function isUncachedApi(url) {
   return (
     (url.includes('/api/users/') && url.includes('/preferences')) ||
     url.includes('/api/similar-users') ||
-    url.includes('/api/explore/users')
+    url.includes('/api/explore/users') ||
+    url.includes('/api/friends/') ||
+    url.includes('/api/feed/') ||
+    (url.includes('/api/explore/places/') && url.includes('/ratings'))
   );
 }
 

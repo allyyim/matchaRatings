@@ -963,8 +963,9 @@ function App() {
       if (cancelled) return
       if (isInitial) setIsLoadingFeed(true)
       try {
+        const feedNonce = Date.now().toString(36)
         const [res, follows] = await Promise.all([
-          apiFetch<{ ratings: RatingEntry[] }>(`/feed/following?limit=30`),
+          apiFetch<{ ratings: RatingEntry[] }>(`/feed/following?limit=30&_v=${feedNonce}`),
           apiFetch<{ following: string[] }>(`/follows/list`).catch(() => ({ following: [] as string[] }))
         ])
         if (cancelled) return
@@ -1986,7 +1987,11 @@ function App() {
     setIsLoadingExplorePlaceEntries(true)
 
     try {
-      const response = await apiFetch<ExplorePlaceRatingsResponse>(`/explore/places/${encodeURIComponent(trimmedPlace)}/ratings`)
+      // Cache-bust every open with a fresh nonce. Layered defense on top of
+      // the service-worker allowlist so even users on a stale SW get fresh
+      // data instead of an empty modal.
+      const nonce = Date.now().toString(36)
+      const response = await apiFetch<ExplorePlaceRatingsResponse>(`/explore/places/${encodeURIComponent(trimmedPlace)}/ratings?_v=${nonce}`)
       setSelectedExplorePlaceName(response.placeName || trimmedPlace)
       setSelectedExplorePlaceEntries(response.ratings)
     } catch {

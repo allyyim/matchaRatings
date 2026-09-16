@@ -169,6 +169,7 @@ router.get('/api/feed/following', async (req, res) => {
         LIMIT $3`,
       [email, DEMO_USER_NAME, limit]
     )
+    res.setHeader('Cache-Control', 'no-store')
     return res.json({
       ratings: result.rows.map(r => {
         const rating = Number(r.rating)

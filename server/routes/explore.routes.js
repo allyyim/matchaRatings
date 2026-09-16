@@ -140,6 +140,7 @@ router.get('/api/explore/places/:placeName/ratings', async (req, res) => {
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     })
 
+  res.setHeader('Cache-Control', 'no-store')
   return res.json({
     placeName: displayName,
     ratings
