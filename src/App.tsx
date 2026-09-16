@@ -110,7 +110,7 @@ function InfoIcon({ label, tip }: { label: string; tip: string }) {
           borderRadius: '50%',
           background: '#e9ecef',
           color: '#495057',
-          fontSize: '0.75rem',
+          fontSize: 'var(--fs-sm)',
           fontWeight: 700,
           border: '1px solid #ced4da',
           padding: 0,
@@ -134,7 +134,7 @@ function InfoIcon({ label, tip }: { label: string; tip: string }) {
             color: '#fff',
             padding: '0.5rem 0.65rem',
             borderRadius: '0.4rem',
-            fontSize: '0.75rem',
+            fontSize: 'var(--fs-sm)',
             fontWeight: 400,
             lineHeight: 1.35,
             width: 'max-content',
@@ -2277,7 +2277,7 @@ function App() {
                 type="button"
                 className="btn btn-success w-100 mb-2 fw-semibold"
                 onClick={() => setAuthMode('signin')}
-                style={{ padding: '0.875rem 1rem', fontSize: '1.05rem' }}
+                style={{ padding: '0.875rem 1rem', fontSize: 'var(--fs-lg)' }}
               >
                 I already have an account
               </button>
@@ -2285,7 +2285,7 @@ function App() {
                 type="button"
                 className="btn btn-outline-success w-100 fw-semibold"
                 onClick={() => setAuthMode('newuser')}
-                style={{ padding: '0.875rem 1rem', fontSize: '1.05rem' }}
+                style={{ padding: '0.875rem 1rem', fontSize: 'var(--fs-lg)' }}
               >
                 I'm new here
               </button>
@@ -2305,7 +2305,7 @@ function App() {
                   >
                     {isSubmittingName ? 'Loading demo…' : 'View demo (no signup)'}
                   </button>
-                  <p className="text-muted text-center small mb-0" style={{ fontSize: '0.75rem' }}>
+                  <p className="text-muted text-center small mb-0" style={{ fontSize: 'var(--fs-sm)' }}>
                     Explore Sip &amp; Score with sample ratings — no account required.
                   </p>
                 </>
@@ -2508,7 +2508,7 @@ function App() {
                   disabled={isSubmittingName}
                   autoFocus
                 />
-                <div className="mb-3" style={{ minHeight: '1.25rem', fontSize: '0.8125rem' }}>
+                <div className="mb-3" style={{ minHeight: '1.25rem', fontSize: 'var(--fs-md)' }}>
                   {usernameAvailability === 'checking' && <span className="text-muted">Checking availability…</span>}
                   {usernameAvailability === 'available' && <span className="text-success">✓ Username available</span>}
                   {usernameAvailability === 'taken' && <span className="text-danger">Username already taken</span>}
@@ -2714,7 +2714,7 @@ function App() {
                                   key={flavor}
                                   className="badge"
                                   style={{
-                                    fontSize: '0.65rem',
+                                    fontSize: 'var(--fs-sm)',
                                     background: flavorColor(flavor).bg,
                                     border: '1px solid ' + flavorColor(flavor).border,
                                     color: flavorColor(flavor).fg,
@@ -2731,7 +2731,7 @@ function App() {
                             </div>
                           )}
                           {getBodyProfile(entry.flavorPreferences) && (
-                            <div className="mt-2"><span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
+                            <div className="mt-2"><span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: 'var(--fs-sm)', padding: '0.25rem 0.55rem' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span></div>
                           )}
                         </div>
                         {hasEntryPhoto(entry.photo) && (
@@ -3070,7 +3070,7 @@ function App() {
                     background: currentAvatarUrl ? '#f5f5f5' : 'var(--accent-teal-subtle, #d9f0e5)',
                     color: 'var(--accent-teal, #1f5f34)',
                     fontWeight: 700,
-                    fontSize: '0.9rem',
+                    fontSize: 'var(--fs-md)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -3107,7 +3107,7 @@ function App() {
                     padding: '0.65rem 0.9rem',
                     background: 'linear-gradient(135deg, #f4faf1 0%, #eaf5e4 100%)',
                     borderBottom: '1px solid #e2eedb',
-                    fontSize: '0.78rem',
+                    fontSize: 'var(--fs-sm)',
                     color: '#2f5b3a',
                     lineHeight: 1.35,
                     fontStyle: 'italic',
@@ -3347,8 +3347,8 @@ function App() {
             <div style={{ padding: '0.85rem 1.25rem 1rem', overflowY: 'auto', flex: 1 }}>
               <section className="mb-2">
                 <div className="d-flex align-items-baseline justify-content-between mb-2">
-                  <label className="form-label fw-semibold text-success mb-0" style={{ fontSize: '0.85rem' }}>Flavors</label>
-                  <span className="text-muted" style={{ fontSize: '0.7rem' }}>Pick any that fit</span>
+                  <label className="form-label fw-semibold text-success mb-0" style={{ fontSize: 'var(--fs-md)' }}>Flavors</label>
+                  <span className="text-muted" style={{ fontSize: 'var(--fs-sm)' }}>Pick any that fit</span>
                 </div>
                 <div className="pref-chip-grid pref-chip-grid-2">
                 {/*
@@ -3380,11 +3380,11 @@ function App() {
 
               <section className="mb-2 pt-2" style={{ borderTop: '1px solid #f1f3f5' }}>
                 <div className="d-flex align-items-center justify-content-between mb-2">
-                  <label className="form-label fw-semibold text-success mb-0 d-inline-flex align-items-center gap-2" style={{ fontSize: '0.85rem' }}>
+                  <label className="form-label fw-semibold text-success mb-0 d-inline-flex align-items-center gap-2" style={{ fontSize: 'var(--fs-md)' }}>
                     Body
                     <BodyInfoIcon />
                   </label>
-                  <span className="text-muted" style={{ fontSize: '0.7rem' }}>Pick one</span>
+                  <span className="text-muted" style={{ fontSize: 'var(--fs-sm)' }}>Pick one</span>
                 </div>
                 <div className="pref-chip-grid pref-chip-grid-3">
                 {BODY_PROFILE_OPTIONS.map((opt) => {
@@ -3406,18 +3406,18 @@ function App() {
 
               <section className="pt-2" style={{ borderTop: '1px solid #f1f3f5' }}>
                 <div className="d-flex align-items-center justify-content-between mb-1">
-                  <label className="form-label fw-semibold text-success mb-0" style={{ fontSize: '0.85rem' }}>Preferred shade</label>
+                  <label className="form-label fw-semibold text-success mb-0" style={{ fontSize: 'var(--fs-md)' }}>Preferred shade</label>
                   <button
                     type="button"
                     className="btn btn-link btn-sm p-0 text-muted"
-                    style={{ fontSize: '0.7rem', textDecoration: 'none' }}
+                    style={{ fontSize: 'var(--fs-sm)', textDecoration: 'none' }}
                     onClick={() => setUserShade(0)}
                     disabled={userShade === 0}
                   >
                     {userShade === 0 ? 'No preference' : 'Clear'}
                   </button>
                 </div>
-                <p className="text-muted mb-2" style={{ fontSize: '0.7rem', lineHeight: 1.3 }}>
+                <p className="text-muted mb-2" style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.3 }}>
                   Tap the shade closest to your ideal cup.
                 </p>
                 <div className="shade-grid">
@@ -3511,7 +3511,7 @@ function App() {
                   style={{ borderRadius: '8px' }}
                 />
                 <div>
-                  <div style={{ fontWeight: 700, color: '#212529', fontSize: '0.9375rem', lineHeight: 1.2 }}>Install Sip &amp; Score</div>
+                  <div style={{ fontWeight: 700, color: '#212529', fontSize: 'var(--fs-md)', lineHeight: 1.2 }}>Install Sip &amp; Score</div>
                 </div>
               </div>
               <button
@@ -3522,7 +3522,7 @@ function App() {
                   border: 'none',
                   background: 'transparent',
                   color: '#6c757d',
-                  fontSize: '1.125rem',
+                  fontSize: 'var(--fs-lg)',
                   cursor: 'pointer',
                   padding: '0.25rem 0.5rem',
                   lineHeight: 1
@@ -3533,13 +3533,13 @@ function App() {
             </div>
 
             <div style={{ padding: '0.5rem 1.25rem 1rem 1.25rem' }}>
-              <p style={{ color: '#495057', fontSize: '0.875rem', margin: '0 0 1rem 0', lineHeight: 1.5 }}>
+              <p style={{ color: '#495057', fontSize: 'var(--fs-md)', margin: '0 0 1rem 0', lineHeight: 1.5 }}>
                 Get one-tap access from your Home Screen.
               </p>
 
               {deferredInstallPrompt !== null ? (
                 <>
-                  <p style={{ color: '#6c757d', fontSize: '0.8125rem', margin: '0 0 0.75rem 0' }}>
+                  <p style={{ color: '#6c757d', fontSize: 'var(--fs-md)', margin: '0 0 0.75rem 0' }}>
                     Tap the button below and confirm the install prompt.
                   </p>
                   <button
@@ -3571,7 +3571,7 @@ function App() {
                     type="button"
                     onClick={() => setIsIosInstallModalOpen(false)}
                     className="btn btn-link w-100 mt-1"
-                    style={{ color: '#6c757d', fontSize: '0.8125rem', textDecoration: 'none' }}
+                    style={{ color: '#6c757d', fontSize: 'var(--fs-md)', textDecoration: 'none' }}
                   >
                     Not now
                   </button>
@@ -3588,12 +3588,12 @@ function App() {
                         background: '#20c997',
                         color: 'white',
                         fontWeight: 700,
-                        fontSize: '0.8125rem',
+                        fontSize: 'var(--fs-md)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
                       }}>1</div>
-                      <div style={{ flex: 1, fontSize: '0.875rem', color: '#212529' }}>
+                      <div style={{ flex: 1, fontSize: 'var(--fs-md)', color: '#212529' }}>
                         Tap the Share icon
                         <svg
                           aria-hidden="true"
@@ -3623,12 +3623,12 @@ function App() {
                         background: '#20c997',
                         color: 'white',
                         fontWeight: 700,
-                        fontSize: '0.8125rem',
+                        fontSize: 'var(--fs-md)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
                       }}>2</div>
-                      <div style={{ flex: 1, fontSize: '0.875rem', color: '#212529' }}>
+                      <div style={{ flex: 1, fontSize: 'var(--fs-md)', color: '#212529' }}>
                         Choose <strong>Add to Home Screen</strong>.
                       </div>
                     </li>
@@ -3641,19 +3641,19 @@ function App() {
                         background: '#20c997',
                         color: 'white',
                         fontWeight: 700,
-                        fontSize: '0.8125rem',
+                        fontSize: 'var(--fs-md)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center'
                       }}>3</div>
-                      <div style={{ flex: 1, fontSize: '0.875rem', color: '#212529' }}>
+                      <div style={{ flex: 1, fontSize: 'var(--fs-md)', color: '#212529' }}>
                         Tap <strong>Add</strong> in the top-right corner.
                       </div>
                     </li>
                   </ol>
 
                   {isIosDevice && (
-                    <p style={{ color: '#6c757d', fontSize: '0.75rem', margin: '0.75rem 0 0 0' }}>
+                    <p style={{ color: '#6c757d', fontSize: 'var(--fs-sm)', margin: '0.75rem 0 0 0' }}>
                       Not seeing the share icon? Open this site in Safari — Chrome and Firefox on iPhone use the same iOS share sheet.
                     </p>
                   )}
@@ -3718,7 +3718,7 @@ function App() {
               </button>
             </div>
 
-            <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, fontSize: '0.875rem', lineHeight: '1.5' }}>
+            <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, fontSize: 'var(--fs-md)', lineHeight: '1.5' }}>
               <p className="text-muted mb-3" style={{ fontStyle: 'italic' }}>
                 A few quick answers so you can get back to sipping.
               </p>
@@ -4038,7 +4038,7 @@ function App() {
               </button>
             </div>
 
-            <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, fontSize: '0.875rem', lineHeight: '1.55' }}>
+            <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, fontSize: 'var(--fs-md)', lineHeight: '1.55' }}>
               <p className="text-muted mb-3" style={{ fontStyle: 'italic' }}>
                 Hit a snag, spotted a bug, or have a matcha idea you can't stop thinking about? We'd love to hear from you.
               </p>
@@ -4115,7 +4115,7 @@ function App() {
               </button>
             </div>
 
-            <div style={{ padding: '1rem', overflowY: 'auto', flex: 1, fontSize: '0.875rem', lineHeight: '1.6' }}>
+            <div style={{ padding: '1rem', overflowY: 'auto', flex: 1, fontSize: 'var(--fs-md)', lineHeight: '1.6' }}>
               <p className="text-muted mb-3">
                 <strong>Last Updated: September 2024</strong>
               </p>
@@ -4322,7 +4322,7 @@ function App() {
                           color: active ? c.fg : '#495057',
                           borderRadius: '999px',
                           padding: '0.35rem 0.75rem',
-                          fontSize: '0.8rem',
+                          fontSize: 'var(--fs-sm)',
                           fontWeight: active ? 600 : 500,
                           textTransform: 'capitalize',
                           minWidth: '70px'
@@ -4353,7 +4353,7 @@ function App() {
                           color: active ? c.fg : '#495057',
                           borderRadius: '999px',
                           padding: '0.35rem 0.75rem',
-                          fontSize: '0.8rem',
+                          fontSize: 'var(--fs-sm)',
                           fontWeight: active ? 600 : 500,
                           minWidth: '90px'
                         }}
@@ -4430,7 +4430,7 @@ function App() {
                       background: friendModalPrefs.avatarUrl ? '#f5f5f5' : 'var(--accent-teal-subtle, #d9f0e5)',
                       color: 'var(--accent-teal, #1f5f34)',
                       fontWeight: 700,
-                      fontSize: '1rem',
+                      fontSize: 'var(--fs-lg)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -4520,13 +4520,13 @@ function App() {
                     {friendModalPrefs.flavors.map((flavor) => {
                       const _c = flavorColor(flavor)
                       return (
-                        <span key={flavor} className="badge" style={{ fontSize: '0.7rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.25rem 0.55rem' }}>
+                        <span key={flavor} className="badge" style={{ fontSize: 'var(--fs-sm)', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.25rem 0.55rem' }}>
                           {flavor}
                         </span>
                       )
                     })}
                     {friendModalPrefs.body && (
-                      <span className="badge" style={{ ...(function(){ const _c = bodyColor(friendModalPrefs.body); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.7rem', padding: '0.25rem 0.55rem' }; })() }}>
+                      <span className="badge" style={{ ...(function(){ const _c = bodyColor(friendModalPrefs.body); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: 'var(--fs-sm)', padding: '0.25rem 0.55rem' }; })() }}>
                         Body: {bodyProfileLabel(friendModalPrefs.body)}
                       </span>
                     )}
@@ -4624,7 +4624,7 @@ function App() {
                                   key={flavor}
                                   className="badge"
                                   style={{
-                                    fontSize: '0.72rem',
+                                    fontSize: 'var(--fs-sm)',
                                     background: flavorColor(flavor).bg,
                                     border: '1px solid ' + flavorColor(flavor).border,
                                     color: flavorColor(flavor).fg,
@@ -4638,7 +4638,7 @@ function App() {
                                 </span>
                               ))}
                               {getBodyProfile(entry.flavorPreferences) && (
-                                <span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.72rem', padding: '0.3rem 0.65rem', borderRadius: '999px' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span>
+                                <span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: 'var(--fs-sm)', padding: '0.3rem 0.65rem', borderRadius: '999px' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span>
                               )}
                             </div>
                           )}
@@ -4883,7 +4883,7 @@ function App() {
                           padding: '0.25rem 0.65rem',
                           transition: 'all 0.2s ease',
                           textTransform: 'capitalize',
-                          fontSize: '0.72rem',
+                          fontSize: 'var(--fs-sm)',
                           fontWeight: isActive ? 600 : 500,
                           cursor: 'pointer'
                         }}
@@ -4933,7 +4933,7 @@ function App() {
                           border: active ? '1px solid ' + c.border : 'none',
                           borderRadius: '20px',
                           padding: '0.3rem 0.7rem',
-                          fontSize: '0.75rem',
+                          fontSize: 'var(--fs-sm)',
                           fontWeight: active ? 600 : 500,
                           minWidth: '95px'
                         }}
@@ -5236,7 +5236,7 @@ function App() {
                               key={flavor}
                               className="badge"
                               style={{
-                                fontSize: '0.72rem',
+                                fontSize: 'var(--fs-sm)',
                                 background: flavorColor(flavor).bg,
                                 border: '1px solid ' + flavorColor(flavor).border,
                                 color: flavorColor(flavor).fg,
@@ -5250,7 +5250,7 @@ function App() {
                             </span>
                           ))}
                           {getBodyProfile(entry.flavorPreferences) && (
-                            <span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.72rem', padding: '0.3rem 0.65rem', borderRadius: '999px' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span>
+                            <span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: 'var(--fs-sm)', padding: '0.3rem 0.65rem', borderRadius: '999px' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span>
                           )}
                         </div>
                       )}
@@ -5680,7 +5680,7 @@ function App() {
                                         />
                                       </div>
                                       {user.sharedPlaces && user.sharedPlaces.length > 0 && (
-                                        <div className="mb-2" style={{ fontSize: '0.72rem', color: 'var(--text-body, #334155)', lineHeight: 1.35 }}>
+                                        <div className="mb-2" style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-body, #334155)', lineHeight: 1.35 }}>
                                           <span aria-hidden="true" style={{ marginRight: '0.35rem' }}>🤝</span>
                                           You both love{' '}
                                           {user.sharedPlaces.map((p, i) => (
@@ -5709,8 +5709,8 @@ function App() {
                                               const _c = bodyColor(user.body!)
                                               return (
                                                 <div className="mb-2">
-                                                  <div className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '0.2rem' }}>Matcha body profile</div>
-                                                  <span className="badge" style={{ background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.68rem', padding: '0.24rem 0.55rem', borderRadius: '999px' }}>
+                                                  <div className="text-muted" style={{ fontSize: 'var(--fs-sm)', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '0.2rem' }}>Matcha body profile</div>
+                                                  <span className="badge" style={{ background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: 'var(--fs-sm)', padding: '0.24rem 0.55rem', borderRadius: '999px' }}>
                                                     {bodyProfileLabel(user.body!)}
                                                   </span>
                                                 </div>
@@ -5718,12 +5718,12 @@ function App() {
                                             })()}
                                             {cleanFlavors.length > 0 && (
                                               <div>
-                                                <div className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '0.2rem' }}>Shared flavors</div>
+                                                <div className="text-muted" style={{ fontSize: 'var(--fs-sm)', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '0.2rem' }}>Shared flavors</div>
                                                 <div className="d-flex flex-wrap gap-1">
                                                   {cleanFlavors.map((flavor) => {
                                                     const _c = flavorColor(flavor)
                                                     return (
-                                                      <span key={flavor} className="badge" style={{ fontSize: '0.68rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.24rem 0.55rem', borderRadius: '999px' }}>
+                                                      <span key={flavor} className="badge" style={{ fontSize: 'var(--fs-sm)', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.24rem 0.55rem', borderRadius: '999px' }}>
                                                         {flavor}
                                                       </span>
                                                     )
@@ -5823,8 +5823,8 @@ function App() {
                                         const _c = bodyColor(derivedBody)
                                         return (
                                           <div className="mb-2">
-                                            <div className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '0.2rem' }}>Matcha body profile</div>
-                                            <span className="badge" style={{ background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.68rem', padding: '0.24rem 0.55rem', borderRadius: '999px' }}>
+                                            <div className="text-muted" style={{ fontSize: 'var(--fs-sm)', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '0.2rem' }}>Matcha body profile</div>
+                                            <span className="badge" style={{ background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: 'var(--fs-sm)', padding: '0.24rem 0.55rem', borderRadius: '999px' }}>
                                               {bodyProfileLabel(derivedBody)}
                                             </span>
                                           </div>
@@ -5832,12 +5832,12 @@ function App() {
                                       })()}
                                       {cleanFlavors.length > 0 && (
                                         <div>
-                                          <div className="text-muted" style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '0.2rem' }}>Featured flavors</div>
+                                          <div className="text-muted" style={{ fontSize: 'var(--fs-sm)', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '0.2rem' }}>Featured flavors</div>
                                           <div className="d-flex flex-wrap gap-1">
                                             {cleanFlavors.map((flavor) => {
                                               const _c = flavorColor(flavor)
                                               return (
-                                                <span key={flavor} className="badge" style={{ fontSize: '0.68rem', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.24rem 0.55rem', borderRadius: '999px' }}>
+                                                <span key={flavor} className="badge" style={{ fontSize: 'var(--fs-sm)', textTransform: 'capitalize', background: _c.bg, color: _c.fg, border: '1px solid ' + _c.border, fontWeight: 600, padding: '0.24rem 0.55rem', borderRadius: '999px' }}>
                                                   {flavor}
                                                 </span>
                                               )
@@ -5987,7 +5987,7 @@ function App() {
                               key={flavor}
                               className="badge"
                               style={{
-                                fontSize: '0.72rem',
+                                fontSize: 'var(--fs-sm)',
                                 background: flavorColor(flavor).bg,
                                 border: '1px solid ' + flavorColor(flavor).border,
                                 color: flavorColor(flavor).fg,
@@ -6001,7 +6001,7 @@ function App() {
                             </span>
                           ))}
                           {getBodyProfile(entry.flavorPreferences) && (
-                            <span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: '0.72rem', padding: '0.3rem 0.65rem', borderRadius: '999px' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span>
+                            <span className="badge" style={{ ...(function(){ const _b = getBodyProfile(entry.flavorPreferences); const _c = bodyColor(_b); return { background: _c.bg, border: '1px solid ' + _c.border, color: _c.fg, fontWeight: 600, fontSize: 'var(--fs-sm)', padding: '0.3rem 0.65rem', borderRadius: '999px' }; })() }}>Body: {bodyProfileLabel(getBodyProfile(entry.flavorPreferences))}</span>
                           )}
                         </div>
                       )}
