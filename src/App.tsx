@@ -5634,7 +5634,7 @@ function App() {
 
                       {/* People like you */}
                       <div className="mb-4">
-                        <h6 className="fw-bold text-success mb-3">🍵 People like you</h6>
+                        <h6 className="fw-bold text-success mb-3">People like you</h6>
                         {isLoadingSimilarUsers ? (
                           <div className="alert alert-light border">
                             <p className="mb-0 text-muted small">Finding sippers with your palate…</p>
@@ -5736,7 +5736,7 @@ function App() {
 
                       {/* Places for you */}
                       <div className="mb-3">
-                        <h6 className="fw-bold text-success mb-3">📍 Places for you</h6>
+                        <h6 className="fw-bold text-success mb-3">Places for you</h6>
                         {isLoadingSimilarPlaces ? (
                           <div className="alert alert-light border">
                             <p className="mb-0 text-muted small">Scoring places against your palate…</p>
