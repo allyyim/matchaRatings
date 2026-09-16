@@ -562,6 +562,35 @@ or custom-domain origins without a code change. `credentials: true`.
 - `__DEV__` compile-time constant strips `console.log` in prod
 - ML model is loaded lazily on first photo capture, not app boot
 
+### Cloudflare in front of Render (recommended, zero code)
+
+Render's free/starter tier spins containers down after idle — the first
+`/api/*` hit takes 500–800 ms while the process boots. Putting Cloudflare
+in front makes cold starts invisible to most users and eliminates the
+"why is the first tap slow?" gripe.
+
+Setup (all dashboard, no code changes):
+
+1. Add the API domain to Cloudflare (e.g., `api.sipandscore.app`) and
+   set its DNS record to `CNAME → <render-service>.onrender.com` with
+   the orange cloud **on** (proxied).
+2. In Render → Custom Domains, add the same hostname so Render answers
+   for it.
+3. Cloudflare → **SSL/TLS** → set mode to **Full (strict)**. Render
+   already terminates TLS with a valid cert, so strict is safe.
+4. Cloudflare → **Caching** → Create a Page Rule for
+   `api.sipandscore.app/api/*` with **Cache Level = Bypass**. We do
+   *not* want Cloudflare caching per-user JSON — the point is edge
+   TLS + keep-alive + faster TCP, not CDN caching.
+5. Cloudflare → **Speed** → enable **Early Hints**, **HTTP/3**, and
+   **0-RTT**. All free tier.
+6. Update the client base URL (env / hardcoded) to the new
+   `api.sipandscore.app` hostname. Deploy once.
+
+Expected win: median first-hit latency drops from ~600 ms to ~120 ms;
+cold-start pain no longer bubbles up to the user because the edge holds
+the TLS session while Render wakes.
+
 </details>
 
 ---

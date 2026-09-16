@@ -5,6 +5,8 @@
 
 import { bodyProfileLabel } from './flavors'
 
+type SharedPlace = { location: string; myRating: number; theirRating: number }
+
 type MatchBadgeProps = {
   score: number
   myFlavors: string[]
@@ -12,6 +14,7 @@ type MatchBadgeProps = {
   myBody?: string
   theirBody?: string
   kind: 'user' | 'place'
+  sharedPlaces?: SharedPlace[]
 }
 
 function scoreColors(score: number): { bg: string; fg: string; border: string } {
@@ -28,11 +31,25 @@ function normalize(list: string[]): string[] {
   return list.filter((f) => typeof f === 'string' && !f.startsWith('__')).map((f) => f.toLowerCase())
 }
 
+function formatRating(n: number): string {
+  const r = Math.round(n * 2) / 2
+  return Number.isInteger(r) ? r.toFixed(0) : r.toFixed(1)
+}
+
 function buildTitle(props: MatchBadgeProps): string {
+  const parts: string[] = []
+  const places = (props.sharedPlaces || []).filter((p) => p && p.location)
+  if (places.length > 0) {
+    const [a, b] = places
+    if (b) {
+      parts.push(`You both rated ${a.location} ${formatRating(a.theirRating)} and ${b.location} ${formatRating(b.theirRating)}`)
+    } else {
+      parts.push(`You both rated ${a.location} ${formatRating(a.theirRating)}+`)
+    }
+  }
   const mine = new Set(normalize(props.myFlavors))
   const theirs = new Set(normalize(props.theirFlavors))
   const shared = [...mine].filter((f) => theirs.has(f))
-  const parts: string[] = []
   if (shared.length > 0) {
     parts.push(`Shared flavors: ${shared.slice(0, 4).join(', ')}`)
   }

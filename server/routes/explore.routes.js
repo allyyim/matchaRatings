@@ -344,6 +344,63 @@ router.get('/api/similar-users', requireSession, recsRateLimiter, async (req, re
       .filter((u) => u.matchScore > 0)
       .sort((a, b) => b.matchScore - a.matchScore)
 
+    // Enrich the top slice with mutual highly-rated places. One SQL round-trip
+    // for all candidates, then bucketed in JS. Keeps "why this match?" concrete
+    // ("You both rated Stonemill 4.5+") instead of the templated "shared umami".
+    const topSlice = similarUsers.slice(0, 24)
+    const topNames = topSlice.map((u) => u.userName.toLowerCase())
+    if (topNames.length > 0) {
+      try {
+        const overlapResult = await pool.query(
+          `
+            SELECT LOWER(r2.user_name) AS their_name_lc,
+                   r2.user_name AS their_name,
+                   COALESCE(NULLIF(r1.location, ''), '') AS my_loc,
+                   COALESCE(NULLIF(r2.location, ''), '') AS their_loc,
+                   r1.rating AS my_rating,
+                   r2.rating AS their_rating
+              FROM ratings r1
+              JOIN ratings r2
+                ON LOWER(TRIM(COALESCE(r1.location, ''))) = LOWER(TRIM(COALESCE(r2.location, '')))
+               AND COALESCE(r1.location, '') <> ''
+             WHERE LOWER(r1.user_name) = LOWER($1)
+               AND LOWER(r2.user_name) = ANY($2)
+               AND r1.rating >= 4
+               AND r2.rating >= 4
+          `,
+          [userName, topNames]
+        )
+        const buckets = new Map()
+        for (const row of overlapResult.rows) {
+          const key = row.their_name_lc
+          const arr = buckets.get(key) || []
+          arr.push({
+            location: row.their_loc || row.my_loc,
+            myRating: Number(row.my_rating),
+            theirRating: Number(row.their_rating),
+          })
+          buckets.set(key, arr)
+        }
+        for (const u of topSlice) {
+          const list = buckets.get(u.userName.toLowerCase()) || []
+          // Dedupe by location (case-insensitive), keep the highest combined score
+          const dedup = new Map()
+          for (const item of list) {
+            const k = item.location.toLowerCase().trim()
+            const prev = dedup.get(k)
+            const combined = item.myRating + item.theirRating
+            if (!prev || combined > (prev.myRating + prev.theirRating)) dedup.set(k, item)
+          }
+          u.sharedPlaces = [...dedup.values()]
+            .sort((a, b) => (b.myRating + b.theirRating) - (a.myRating + a.theirRating))
+            .slice(0, 2)
+        }
+      } catch (overlapError) {
+        // Non-fatal — the rec list still ships without the personalized reasons
+        console.error('shared-places overlap failed:', overlapError)
+      }
+    }
+
     console.log(`[similar-users] ${userName} → evaluated ${result.rowCount} candidates, returning ${similarUsers.length}`)
     const payload = { similarUsers }
     recsCacheSet(cacheKey, payload)

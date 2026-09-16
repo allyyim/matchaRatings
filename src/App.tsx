@@ -402,7 +402,7 @@ function App() {
   const [exploreUsers, setExploreUsers] = useState<ExploreUser[]>([])
   const [exploreActiveTab, setExploreActiveTab] = useState<'places' | 'users'>('places')
   const [communityActiveTab, setCommunityActiveTab] = useState<'search' | 'following' | 'recommendations'>('recommendations')
-  const [similarUsers, setSimilarUsers] = useState<Array<{ userName: string; flavors: string[]; sharedFlavors?: string[]; body?: string; matchScore: number }>>([])
+  const [similarUsers, setSimilarUsers] = useState<Array<{ userName: string; flavors: string[]; sharedFlavors?: string[]; body?: string; matchScore: number; sharedPlaces?: Array<{ location: string; myRating: number; theirRating: number }> }>>([])
   const [isLoadingSimilarUsers, setIsLoadingSimilarUsers] = useState(false)
   const [similarPlaces, setSimilarPlaces] = useState<Array<{ location: string; flavors: string[]; body?: string; matchScore: number; avgGreenness?: number | null }>>([])
   const [isLoadingSimilarPlaces, setIsLoadingSimilarPlaces] = useState(false)
@@ -1488,7 +1488,7 @@ function App() {
       setIsLoadingSimilarPlaces(true)
 
       Promise.all([
-        apiFetch<{ similarUsers: Array<{ userName: string; flavors: string[]; sharedFlavors?: string[]; body?: string; matchScore: number }> }>(`/similar-users?userName=${encodeURIComponent(currentUserName)}&_r=${recsRefreshKey}`),
+        apiFetch<{ similarUsers: Array<{ userName: string; flavors: string[]; sharedFlavors?: string[]; body?: string; matchScore: number; sharedPlaces?: Array<{ location: string; myRating: number; theirRating: number }> }> }>(`/similar-users?userName=${encodeURIComponent(currentUserName)}&_r=${recsRefreshKey}`),
         apiFetch<{ similarPlaces: Array<{ location: string; flavors: string[]; body?: string; matchScore: number; avgGreenness?: number }> }>(`/similar-places?userName=${encodeURIComponent(currentUserName)}&flavors=${encodeURIComponent(userFlavors.join(','))}&body=${encodeURIComponent(userBodyPref)}&shade=${userShade}&_r=${recsRefreshKey}`)
       ])
         .then(([usersData, placesData]) => {
@@ -5676,8 +5676,24 @@ function App() {
                                           myBody={userBodyPref}
                                           theirBody={user.body}
                                           kind="user"
+                                          sharedPlaces={user.sharedPlaces}
                                         />
                                       </div>
+                                      {user.sharedPlaces && user.sharedPlaces.length > 0 && (
+                                        <div className="mb-2" style={{ fontSize: '0.72rem', color: 'var(--text-body, #334155)', lineHeight: 1.35 }}>
+                                          <span aria-hidden="true" style={{ marginRight: '0.35rem' }}>🤝</span>
+                                          You both love{' '}
+                                          {user.sharedPlaces.map((p, i) => (
+                                            <span key={p.location + i}>
+                                              {i > 0 ? ' · ' : ''}
+                                              <strong style={{ color: 'var(--primary-green, #2f855a)' }}>{p.location}</strong>
+                                              <span className="tabular" style={{ marginLeft: '0.2rem', color: 'var(--text-muted)' }}>
+                                                ({Number.isInteger(p.myRating) ? p.myRating.toFixed(0) : p.myRating.toFixed(1)}/{Number.isInteger(p.theirRating) ? p.theirRating.toFixed(0) : p.theirRating.toFixed(1)})
+                                              </span>
+                                            </span>
+                                          ))}
+                                        </div>
+                                      )}
                                       {(() => {
                                         // Archetype chip renders from user.flavors (full set).
                                         // "Shared flavors" section renders from sharedFlavors —
