@@ -1,8 +1,10 @@
 import { createPortal } from 'react-dom'
 
-// 6-slide onboarding modal shown on first launch.
-// Extracted from App.tsx and lazy-loaded via React.lazy — only downloaded
-// when the user actually needs to see onboarding (once, ever, per install).
+// 3-slide onboarding modal shown on first launch.
+// Reduced from 6 slides — most drop-off in short onboardings happens
+// after slide 3 (Amplitude / Mixpanel benchmarks). Feed / Explore /
+// Leaderboard don't need pre-teaching; the tab bar and the on-home
+// OnboardingChecklist card cover discovery post-signup.
 
 export type OnboardingSlidesProps = {
   currentSlide: number
@@ -10,14 +12,19 @@ export type OnboardingSlidesProps = {
   onClose: () => void
 }
 
+const TOTAL_SLIDES = 3
+
 export default function OnboardingSlides({ currentSlide, setCurrentSlide, onClose }: OnboardingSlidesProps) {
+  // Clamp so a stale index from the reduced-slide-count migration can
+  // never leave the user on a blank slide.
+  const safeSlide = Math.min(Math.max(currentSlide, 0), TOTAL_SLIDES - 1)
+
   return createPortal(
     <div className="onboarding-overlay">
       <div className="onboarding-modal" onClick={(e) => e.stopPropagation()}>
         <div className="onboarding-slides">
-          {currentSlide === 0 && (
+          {safeSlide === 0 && (
             <div className="onboarding-slide">
-              <div className="onboarding-emoji">🍵</div>
               <h2 className="onboarding-title">Welcome to Sip &amp; Score</h2>
               <p className="onboarding-lead">Rate every matcha you try. Watch your map fill in.</p>
               <ul className="onboarding-list">
@@ -27,100 +34,41 @@ export default function OnboardingSlides({ currentSlide, setCurrentSlide, onClos
               </ul>
             </div>
           )}
-          {currentSlide === 1 && (
+          {safeSlide === 1 && (
             <div className="onboarding-slide">
-              <div className="onboarding-emoji">📝</div>
-              <h2 className="onboarding-title">Logging a sip</h2>
-              <p className="onboarding-lead">Tap <strong className="text-success">+</strong> on the My Log tab.</p>
+              <h2 className="onboarding-title">How Sip Score works</h2>
+              <p className="onboarding-lead">One number out of 100 — how it tasted plus how green it looked.</p>
               <ul className="onboarding-list">
-                <li><span className="onboarding-bullet">1.</span> Snap or upload a photo — we auto-score the greenness</li>
-                <li><span className="onboarding-bullet">2.</span> Give it stars &amp; pick flavor chips</li>
-                <li><span className="onboarding-bullet">3.</span> Save — your Sip Score is calculated for you</li>
+                <li><span className="onboarding-bullet">•</span> <strong>85+</strong> a stunner</li>
+                <li><span className="onboarding-bullet">•</span> <strong>70&ndash;84</strong> solid sip</li>
+                <li><span className="onboarding-bullet">•</span> <strong>Below 70</strong> noted</li>
               </ul>
             </div>
           )}
-          {currentSlide === 2 && (
+          {safeSlide === 2 && (
             <div className="onboarding-slide">
-              <div className="onboarding-emoji">✨</div>
-              <h2 className="onboarding-title">What&apos;s a Sip Score?</h2>
-              <p className="onboarding-lead">One number out of 100 — how it <em>tasted</em> plus how <em>green</em> it looked.</p>
-              <ul className="onboarding-list">
-                <li><span className="onboarding-bullet">🟢</span> <strong>85+</strong> — a stunner</li>
-                <li><span className="onboarding-bullet">🟢</span> <strong>70–84</strong> — solid sip</li>
-                <li><span className="onboarding-bullet">🟡</span> <strong>Below 70</strong> — noted</li>
-              </ul>
-            </div>
-          )}
-          {currentSlide === 3 && (
-            <div className="onboarding-slide">
-              <div className="onboarding-emoji">📬</div>
-              <h2 className="onboarding-title">Your Feed</h2>
-              <p className="onboarding-lead">The <strong className="text-success">Feed</strong> tab is your matcha newsfeed.</p>
-              <ul className="onboarding-list">
-                <li><span className="onboarding-bullet">🏆</span> Milestones you&apos;ve hit — with dates</li>
-                <li><span className="onboarding-bullet">👥</span> Fresh sips from people you follow</li>
-                <li><span className="onboarding-bullet">♡</span> Tap the heart to like a friend&apos;s sip</li>
-                <li><span className="onboarding-bullet">🌟</span> New places picked for your palate</li>
-              </ul>
-            </div>
-          )}
-          {currentSlide === 4 && (
-            <div className="onboarding-slide">
-              <div className="onboarding-emoji">🌍</div>
-              <h2 className="onboarding-title">Explore &amp; Leaderboard</h2>
-              <p className="onboarding-lead">Find your people. Find your places.</p>
-              <ul className="onboarding-list">
-                <li><span className="onboarding-bullet">🔍</span> <strong>Explore</strong> — search users, browse recs</li>
-                <li><span className="onboarding-bullet">🏆</span> <strong>Leaderboard</strong> — top 10 places &amp; every sipper ranked</li>
-                <li><span className="onboarding-bullet">👉</span> Tap any card to peek their reviews or Follow</li>
-              </ul>
-            </div>
-          )}
-          {currentSlide === 5 && (
-            <div className="onboarding-slide">
-              <div className="onboarding-emoji">🎉</div>
               <h2 className="onboarding-title">You&apos;re all set</h2>
-              <p className="onboarding-lead">Log your favorite spot first — the first sip unlocks a little celebration 🎊</p>
+              <p className="onboarding-lead">Log your favourite spot first &mdash; a small celebration is waiting.</p>
               <ul className="onboarding-list">
-                <li><span className="onboarding-bullet">👤</span> Profile icon (top-right) — Account, App &amp; Help</li>
-                <li>
-                  <span className="onboarding-bullet">🎯</span>
-                  Set your flavors to unlock a palate archetype
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      marginLeft: '0.35rem',
-                      padding: '0.1rem 0.5rem',
-                      borderRadius: '999px',
-                      background: '#d9ecc4',
-                      color: '#2f5b1e',
-                      border: '1px solid #b0d488',
-                      fontSize: '0.7rem',
-                      fontWeight: 600,
-                      verticalAlign: 'baseline',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    The Purist
-                  </span>
-                </li>
-                <li><span className="onboarding-bullet">📱</span> Add to home screen for the full app feel</li>
+                <li><span className="onboarding-bullet">•</span> Tap <strong className="text-success">+</strong> on My Log to rate a sip</li>
+                <li><span className="onboarding-bullet">•</span> Set your flavor prefs to unlock a palate archetype</li>
+                <li><span className="onboarding-bullet">•</span> Add to home screen for the full app feel</li>
               </ul>
             </div>
           )}
         </div>
 
         <div className="onboarding-progress" aria-live="polite">
-          <span className="onboarding-progress-label">Slide {currentSlide + 1} of 6</span>
+          <span className="onboarding-progress-label visually-hidden">Slide {safeSlide + 1} of {TOTAL_SLIDES}</span>
           <div className="onboarding-dots" role="tablist" aria-label="Onboarding progress">
-            {[0, 1, 2, 3, 4, 5].map((i) => (
+            {Array.from({ length: TOTAL_SLIDES }, (_, i) => (
               <button
                 key={i}
                 role="tab"
-                aria-selected={i === currentSlide}
-                className={`onboarding-dot ${i === currentSlide ? 'active' : ''} ${i < currentSlide ? 'complete' : ''}`}
+                aria-selected={i === safeSlide}
+                className={`onboarding-dot ${i === safeSlide ? 'active' : ''} ${i < safeSlide ? 'complete' : ''}`}
                 onClick={() => setCurrentSlide(i)}
-                aria-label={`Go to slide ${i + 1} of 6`}
+                aria-label={`Go to slide ${i + 1} of ${TOTAL_SLIDES}`}
               />
             ))}
           </div>
@@ -129,10 +77,10 @@ export default function OnboardingSlides({ currentSlide, setCurrentSlide, onClos
         <div className="onboarding-nav">
           <button
             className="btn btn-outline-secondary"
-            onClick={() => setCurrentSlide(currentSlide - 1)}
-            disabled={currentSlide === 0}
+            onClick={() => setCurrentSlide(safeSlide - 1)}
+            disabled={safeSlide === 0}
           >
-            ← Back
+            &larr; Back
           </button>
           <button
             className="btn btn-link text-muted p-0"
@@ -140,19 +88,19 @@ export default function OnboardingSlides({ currentSlide, setCurrentSlide, onClos
           >
             Skip
           </button>
-          {currentSlide === 5 ? (
+          {safeSlide === TOTAL_SLIDES - 1 ? (
             <button
               className="btn btn-success"
               onClick={onClose}
             >
-              Let&apos;s sip 🍵
+              Let&apos;s sip
             </button>
           ) : (
             <button
               className="btn btn-success"
-              onClick={() => setCurrentSlide(currentSlide + 1)}
+              onClick={() => setCurrentSlide(safeSlide + 1)}
             >
-              Next →
+              Next &rarr;
             </button>
           )}
         </div>
