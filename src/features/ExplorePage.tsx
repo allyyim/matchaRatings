@@ -4,13 +4,10 @@
 // React.lazy()'d in the App shell. All state, fetches, and modals stay in
 // App.tsx; this file only owns the JSX and immediate event wiring.
 //
-// Local UI state: `archetypeFilter` — when the user taps a palate chip on
-// any row, we filter the leaderboard to only show users whose archetype
-// matches. Purely presentational; nothing else in the app cares about it.
+// Palate archetype chips render on each user row for context only —
+// tapping doesn't filter the list (users found the auto-filter confusing).
 
-import { useState, useMemo } from 'react'
 import { PalateChip } from '../lib/PalateChip'
-import { palateArchetype } from '../lib/palateSummary'
 import { EmptyState } from '../lib/EmptyState'
 
 export type ExplorePlace = {
@@ -60,23 +57,9 @@ export default function ExplorePage(props: ExplorePageProps) {
     apiFetch
   } = props
 
-  // Which archetype label the user has filtered to (null = show everyone).
-  // Toggled by tapping any PalateChip on a row.
-  const [archetypeFilter, setArchetypeFilter] = useState<string | null>(null)
-
-  const filteredExploreUsers = useMemo(() => {
-    if (!archetypeFilter) return exploreUsers
-    return exploreUsers.filter(u => palateArchetype(u.flavors || []) === archetypeFilter)
-  }, [exploreUsers, archetypeFilter])
-
-  const filterChipFlavors = useMemo(() => {
-    if (!archetypeFilter) return null
-    // Find one representative user to derive palette from — chip is purely
-    // decorative in the banner, we just need any flavors[] that yields the
-    // same archetype so the color matches the chips on the rows.
-    const sample = exploreUsers.find(u => palateArchetype(u.flavors || []) === archetypeFilter)
-    return sample?.flavors || null
-  }, [archetypeFilter, exploreUsers])
+  // Archetype chips render on each row for visual context only. Tapping
+  // no longer narrows the leaderboard — users found the auto-filter
+  // confusing ("where did everyone go?"). Clean list, always.
 
   return (
     <main id="main-content" className="container py-3 py-md-5 px-3 px-md-4" tabIndex={-1}>
@@ -168,52 +151,21 @@ export default function ExplorePage(props: ExplorePageProps) {
                 </p>
               </div>
 
-              {archetypeFilter && filterChipFlavors && (
-                <div
-                  className="motion-filter-banner d-flex align-items-center gap-2 mb-3 p-2 rounded"
-                  style={{
-                    background: 'rgba(139, 195, 74, 0.08)',
-                    border: '1px solid rgba(139, 195, 74, 0.2)',
-                  }}
-                >
-                  <span className="small text-muted" style={{ fontWeight: 500 }}>Showing:</span>
-                  <PalateChip
-                    flavors={filterChipFlavors}
-                    size="sm"
-                    active
-                    onClick={() => setArchetypeFilter(null)}
-                    title="Clear filter"
-                  />
-                  <span className="small text-muted ms-auto">
-                    {filteredExploreUsers.length} {filteredExploreUsers.length === 1 ? 'sipper' : 'sippers'}
-                  </span>
-                </div>
+              {exploreUsers.length === 0 && (
+                <EmptyState
+                  emoji="👥"
+                  headline="No sippers on the board yet."
+                  subtext="Be the first to log a rating — you'll show up here right after."
+                />
               )}
 
-              {filteredExploreUsers.length === 0 && (
-                archetypeFilter ? (
-                  <EmptyState
-                    emoji="🦄"
-                    headline={`No other ${archetypeFilter}s — yet.`}
-                    subtext="You're the pioneer. Invite a friend who tastes matcha like you do."
-                  />
-                ) : (
-                  <EmptyState
-                    emoji="👥"
-                    headline="No sippers on the board yet."
-                    subtext="Be the first to log a rating — you'll show up here right after."
-                  />
-                )
-              )}
-
-              {filteredExploreUsers.length > 0 && (
+              {exploreUsers.length > 0 && (
                 <div className="d-flex flex-column gap-2">
-                  {filteredExploreUsers.map((user, index) => {
+                  {exploreUsers.map((user, index) => {
                     const rank = exploreUsers.indexOf(user) + 1
                     const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : null
                     const isSelf = user.userName.toLowerCase() === (currentUserName || '').toLowerCase()
                     const isFollowing = followingSet.has(user.userName)
-                    const userArchetype = palateArchetype(user.flavors || [])
                     return (
                       <article
                         key={`${user.userName}-${index}`}
@@ -240,15 +192,11 @@ export default function ExplorePage(props: ExplorePageProps) {
                             <span className="explore-user-link">{user.userName}</span>
                             {isSelf && <span className="explore-user-you-badge">you</span>}
                           </div>
-                          {user.flavors && user.flavors.length > 0 && userArchetype && (
+                          {user.flavors && user.flavors.length > 0 && (
                             <div style={{ marginTop: '0.25rem' }}>
                               <PalateChip
                                 flavors={user.flavors}
                                 size="xs"
-                                active={archetypeFilter === userArchetype}
-                                onClick={() => setArchetypeFilter(
-                                  archetypeFilter === userArchetype ? null : userArchetype
-                                )}
                               />
                             </div>
                           )}

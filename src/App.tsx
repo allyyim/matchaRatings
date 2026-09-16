@@ -2057,7 +2057,7 @@ function App() {
       // fresh network fetch, no SW-cached staleness.
       const nonce = Date.now().toString(36)
       const [ratingsResp, prefsResp] = await Promise.all([
-        apiFetch<{ friendName: string; ratings: RatingEntry[] }>(`/friends/${encodeURIComponent(friendName)}/ratings`),
+        apiFetch<{ friendName: string; ratings: RatingEntry[] }>(`/friends/${encodeURIComponent(friendName)}/ratings?_v=${nonce}`),
         apiFetch<{ userName: string; flavors: string[]; body: string; avatarUrl: string | null }>(`/users/${encodeURIComponent(friendName)}/preferences?_v=${nonce}`).catch(() => ({ userName: friendName, flavors: [], body: '', avatarUrl: null })),
       ])
       setFriendModalEntries(ratingsResp.ratings)

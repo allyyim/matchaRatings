@@ -1,6 +1,6 @@
 import express from 'express'
 import { pool } from '../db.js'
-import { sanitizeText, sanitizeUserName } from '../lib/sanitize.js'
+import { sanitizeText } from '../lib/sanitize.js'
 import { getWeightedScore } from '../lib/scoring.js'
 import { mapRatingRow } from '../lib/mappers.js'
 import { requireSession } from '../lib/session.js'
@@ -40,7 +40,13 @@ router.get('/api/friends/search', async (req, res) => {
 })
 
 router.get('/api/friends/:friendName/ratings', async (req, res) => {
-  const friendName = sanitizeUserName(String(req.params.friendName || '').trim())
+  // Don't run through sanitizeUserName here — it strips characters that
+  // *were* allowed at registration time on older seeds and would silently
+  // return zero rows for those legitimate accounts ("I see they rated a
+  // place but the modal is empty"). The DB comparison is case-insensitive
+  // and the query is parameterized, so a length-clamped raw value is safe.
+  const raw = String(req.params.friendName || '').trim().slice(0, 80)
+  const friendName = raw
   if (!friendName) {
     return res.status(400).json({ error: 'friendName is required' })
   }
@@ -61,6 +67,11 @@ router.get('/api/friends/:friendName/ratings', async (req, res) => {
     [friendName]
   )
 
+  // Never allow a proxy or the service worker to cache another user's
+  // ratings — a stale response from before a rename/new rating causes
+  // the "empty modal" bug even when the leaderboard shows a nonzero
+  // place count.
+  res.setHeader('Cache-Control', 'no-store')
   return res.json({
     friendName,
     ratings: result.rows.map(mapRatingRow)

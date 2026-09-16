@@ -176,7 +176,9 @@ router.get('/api/account/me', async (req, res) => {
 })
 
 router.get('/api/users/:userName/preferences', async (req, res) => {
-  const userName = sanitizeUserName(String(req.params.userName || '').trim())
+  // See friend-ratings note: don't over-sanitize on lookup, or older
+  // seeded/renamed accounts return 400 and the modal shows no chip.
+  const userName = String(req.params.userName || '').trim().slice(0, 80)
   if (!userName) {
     return res.status(400).json({ error: 'userName is required' })
   }
