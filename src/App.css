@@ -1553,10 +1553,11 @@ textarea.form-control {
   box-shadow: 0 1px 2px rgba(15,23,42,0.06);
 }
 
-/* Duotone ice-matcha texture. Grayscale + boosted contrast turns the
-   photo into a pure tonal mask. Overlay works cleanly in the middle
-   of the ramp; the extremes need different blend math (see below) so
-   ice cubes / bubbles don't blow out or crush. */
+/* Duotone ice-matcha texture with hex-preserving math.
+   overlay at ~0.4 opacity keeps the base hex color dominant while
+   still adding ice highlights (lighter patches) and bubble shadows
+   (darker patches). Contrast on the source photo is bumped so the
+   subtle 40% overlay still reads as distinct texture, not mud. */
 .shade-swatch::before {
   content: "";
   position: absolute;
@@ -1564,32 +1565,31 @@ textarea.form-control {
   background-image: url("/matcha-texture.jpg");
   background-size: cover;
   background-position: center;
-  filter: grayscale(1) contrast(1.55) brightness(1.05);
+  filter: grayscale(1) contrast(1.75) brightness(1);
   mix-blend-mode: overlay;
-  opacity: 0.92;
+  opacity: 0.42;
   z-index: 0;
   pointer-events: none;
 }
 
-/* Lightest 3 shades: use soft-light with low opacity so the base
-   green (#dcedb9 / #d2e59e / #ddf093) stays fully vivid and the ice
-   cubes only add a subtle highlight/shadow texture on top. */
+/* Lightest 3 shades — light base + overlay tends to blow highlights
+   to pure white. Nudge opacity down and shift the source darker so
+   the ice reads as delicate highlight variation, not glare. */
 .shade-swatch[data-shade="1"]::before,
 .shade-swatch[data-shade="2"]::before,
 .shade-swatch[data-shade="3"]::before {
-  filter: grayscale(1) contrast(1.35) brightness(1.05);
-  mix-blend-mode: soft-light;
-  opacity: 0.7;
+  filter: grayscale(1) contrast(1.4) brightness(0.9);
+  opacity: 0.3;
 }
 
-/* Darkest 2 shades: soft-light again so the deep green base stays
-   dominant. Boost the texture brightness so the ice cubes still
-   appear as faint highlights against the near-black base. */
+/* Darkest 2 shades — dark base + overlay crushes shadows to black.
+   Bump texture brightness and use a slightly higher opacity so the
+   ice cubes appear as visible lighter highlights against the near-
+   black base. */
 .shade-swatch[data-shade="8"]::before,
 .shade-swatch[data-shade="9"]::before {
-  filter: grayscale(1) contrast(1.4) brightness(1.6);
-  mix-blend-mode: soft-light;
-  opacity: 1;
+  filter: grayscale(1) contrast(1.5) brightness(1.55);
+  opacity: 0.55;
 }
 
 /* Readability gradient behind the label. Adapts to swatch lightness:
