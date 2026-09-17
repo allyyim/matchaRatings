@@ -111,7 +111,10 @@ export default function OnboardingSlides({ currentSlide, setCurrentSlide, onClos
           {safeSlide > 0 ? (
             <button
               className="btn btn-outline-secondary"
-              onClick={() => setCurrentSlide(safeSlide - 1)}
+              onClick={(e) => {
+                e.currentTarget.blur()
+                setCurrentSlide(safeSlide - 1)
+              }}
             >
               &larr; Back
             </button>
@@ -136,7 +139,10 @@ export default function OnboardingSlides({ currentSlide, setCurrentSlide, onClos
           ) : (
             <button
               className="btn btn-success"
-              onClick={() => setCurrentSlide(safeSlide + 1)}
+              onClick={(e) => {
+                e.currentTarget.blur()
+                setCurrentSlide(safeSlide + 1)
+              }}
             >
               Next &rarr;
             </button>
