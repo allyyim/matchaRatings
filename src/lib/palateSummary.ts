@@ -220,19 +220,39 @@ export function summarizePalate({ flavors, body, shade }: PalateInput): string {
       : archetype
   }
 
-  // Body / shade addenda. Prefer a body clause; only add shade note if
-  // there's no body clause AND the shade is at an extreme.
+  const tail = describePalate({ flavors, body, shade })
+
+  if (!head && !tail) return ''
+  if (!head) return tail
+  if (!tail) return head
+  return `${head}. ${tail}`
+}
+
+// Description-only: body + shade addenda without the archetype head.
+// Used by surfaces that render the archetype as a chip and want the
+// remaining palate context as a subtitle underneath.
+export function describePalate({ flavors, body, shade }: PalateInput): string {
+  const ranked = rankClusters(flavors)
+  if (ranked.length === 0 && !body && !shade) return ''
+
   const tail: string[] = []
+  // Streak line — surfaced here so the description carries the "secondary
+  // flavor" nuance that would otherwise be hidden inside the chip.
+  if (ranked.length >= 1) {
+    const [top, second] = ranked
+    const archetype = archetypeFromRanked(ranked)
+    const isSoloPrimary = archetype === PRIMARY_ARCHETYPE[top[0]]
+    const hasModestStreak = isSoloPrimary && second && second[1] >= Math.max(1, Math.ceil(top[1] / 2))
+    if (hasModestStreak) {
+      tail.push(`With a ${SECONDARY_STREAK[second[0]]} streak.`)
+    }
+  }
   if (body) {
     tail.push(BODY_TAIL[body])
   } else if (typeof shade === 'number') {
     if (shade <= 3) tail.push('Drawn to pale-jade shades.')
     else if (shade >= 7) tail.push('Drawn to deep, vivid greens.')
   }
-
-  if (!head && tail.length === 0) return ''
-  if (!head) return tail.join(' ')
-  if (tail.length === 0) return head
-  return `${head}. ${tail.join(' ')}`
+  return tail.join(' ')
 }
 

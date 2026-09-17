@@ -2963,11 +2963,37 @@ h1, h2, h3, h4, h5, h6 {
   line-height: 1.4;
 }
 
+/* Bullet rendered as a CSS pseudo-element so it can't double up with a
+   browser default marker (source of the "weird bullet" seen on some
+   engines when list-style: none was overridden by inherited resets). */
+.onboarding-list li::before {
+  content: "";
+  flex-shrink: 0;
+  width: 0.4rem;
+  height: 0.4rem;
+  margin-top: 0.42rem;
+  border-radius: 50%;
+  background: #146c43;
+}
+
 .onboarding-bullet {
   flex-shrink: 0;
   color: #146c43;
   font-weight: 700;
   min-width: 1.2rem;
+}
+
+.onboarding-image {
+  display: block;
+  margin: 0 auto 0.75rem;
+  max-height: 150px;
+  width: auto;
+  max-width: 60%;
+  background: #ffffff;
+  /* PNGs are pre-flattened to pure white so no matter what the
+     surrounding modal background is, the image edges never show a
+     visible seam. Keep the CSS background as a belt-and-braces guard
+     in case a future image is exported with transparency. */
 }
 
 .onboarding-progress {
@@ -3154,6 +3180,15 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0.45rem 0.65rem;
     line-height: 1.32;
     border-radius: 0.55rem;
+  }
+  .onboarding-list li::before {
+    width: 0.35rem;
+    height: 0.35rem;
+    margin-top: 0.38rem;
+  }
+  .onboarding-image {
+    max-height: 110px;
+    margin-bottom: 0.5rem;
   }
   .onboarding-progress {
     gap: 0.35rem;

@@ -33,7 +33,7 @@ import {
   flavorDescription,
 } from './lib/flavors'
 import { TruncatedThought } from './lib/TruncatedThought'
-import { summarizePalate } from './lib/palateSummary'
+import { describePalate, palateArchetype } from './lib/palateSummary'
 import { PalateChip } from './lib/PalateChip'
 import { EmptyState } from './lib/EmptyState'
 import { MatchBadge } from './lib/MatchBadge'
@@ -3098,23 +3098,35 @@ function App() {
             </div>
 
             {(() => {
-              const summary = summarizePalate({ flavors: userFlavors, body: userBodyPref, shade: userShade })
-              if (!summary) return null
+              const archetype = palateArchetype(userFlavors)
+              const desc = describePalate({ flavors: userFlavors, body: userBodyPref, shade: userShade })
+              if (!archetype && !desc) return null
               return (
                 <div
                   className="palate-summary-band"
                   style={{
-                    padding: '0.65rem 0.9rem',
+                    padding: '0.75rem 0.9rem',
                     background: 'linear-gradient(135deg, #f4faf1 0%, #eaf5e4 100%)',
                     borderBottom: '1px solid #e2eedb',
-                    fontSize: 'var(--fs-sm)',
-                    color: '#2f5b3a',
-                    lineHeight: 1.35,
-                    fontStyle: 'italic',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.45rem',
+                    alignItems: 'flex-start',
                     flexShrink: 0,
                   }}
                 >
-                  {summary}
+                  {archetype && <PalateChip flavors={userFlavors} size="sm" />}
+                  {desc && (
+                    <div
+                      style={{
+                        fontSize: 'var(--fs-sm)',
+                        color: '#2f5b3a',
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {desc}
+                    </div>
+                  )}
                 </div>
               )
             })()}
@@ -3210,7 +3222,7 @@ function App() {
                     setShowOnboarding(true)
                   }}
                 >
-                  <span>How to <strong>Use</strong> App</span>
+                  <span>How to Use App</span>
                   <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
                 </button>
                 {!isStandaloneApp && (
@@ -3221,8 +3233,8 @@ function App() {
                   >
                     <span>
                       {deferredInstallPrompt !== null
-                        ? <><strong>Install</strong> App</>
-                        : <>How to <strong>Install</strong> App</>}
+                        ? <>Install App</>
+                        : <>How to Install App</>}
                     </span>
                     <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
                   </button>
