@@ -108,13 +108,18 @@ export default function OnboardingSlides({ currentSlide, setCurrentSlide, onClos
         </div>
 
         <div className="onboarding-nav">
-          <button
-            className="btn btn-outline-secondary"
-            onClick={() => setCurrentSlide(safeSlide - 1)}
-            disabled={safeSlide === 0}
-          >
-            &larr; Back
-          </button>
+          {safeSlide > 0 ? (
+            <button
+              className="btn btn-outline-secondary"
+              onClick={() => setCurrentSlide(safeSlide - 1)}
+            >
+              &larr; Back
+            </button>
+          ) : (
+            /* Placeholder keeps Skip centered and Next/Let's sip parked
+               right on slide 0 where there's nothing to go back to. */
+            <span aria-hidden="true" />
+          )}
           <button
             className="btn btn-link text-muted p-0"
             onClick={onClose}
