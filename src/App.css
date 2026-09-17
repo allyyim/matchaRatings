@@ -3198,6 +3198,61 @@ h1, h2, h3, h4, h5, h6 {
 .picked-for-you-score-num { font-size: 1rem; font-weight: 800; }
 .picked-for-you-score-lbl { font-size: 0.55rem; font-weight: 600; opacity: 0.88; margin-top: 0.1rem; letter-spacing: 0.03em; }
 
+/* Compact "Try next" chip that sits below My Ratings on the My Log
+   page. A single tap-through row that stays out of the way of the
+   primary logging surface — no card shell, no gradient, minimal
+   footprint. Truncates the place name so long names don't push the
+   score/arrow off-screen. */
+.try-next-chip {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.55rem 0.85rem;
+  background: #f6faf1;
+  border: 1px solid #dfe9d1;
+  border-radius: 999px;
+  cursor: pointer;
+  text-align: left;
+  font-size: 0.82rem;
+  color: #1f3b1f;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+}
+.try-next-chip:hover {
+  background: #eef6e2;
+  border-color: #cbdcb8;
+}
+.try-next-chip:active { transform: scale(0.99); }
+.try-next-chip-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #2f7a44;
+  flex-shrink: 0;
+}
+.try-next-chip-place {
+  font-weight: 700;
+  color: #1f3b1f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.try-next-chip-score {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #146c43;
+  flex-shrink: 0;
+}
+.try-next-chip-arrow {
+  color: #146c43;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
 /* My Log first-run empty state — watercolor cup hero over an inviting
    welcome message. Kept vertically compact so the tab bar and rest of
    the home layout still fit without scrolling on short viewports. */

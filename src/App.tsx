@@ -5089,50 +5089,10 @@ function App() {
             server has returned at least 1 match. "See all" jumps to
             Explore where the Recs sub-tab is already the default.
           */}
-          {!isDemoAccount && userFlavors.filter((f) => !f.startsWith('__')).length > 0 && similarPlaces.length > 0 && (
-            <div className="picked-for-you card border-0 shadow-sm mb-4">
-              <div className="card-body p-3 p-md-4">
-                <div className="d-flex align-items-start justify-content-between mb-2 gap-2">
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: '#2f7a44' }}>
-                      For you
-                    </div>
-                    <h2 className="h6 fw-bold mb-0 mt-1 text-success">Picked for you</h2>
-                  </div>
-                  <button
-                    type="button"
-                    className="picked-for-you-see-all"
-                    onClick={() => setActivePage('explore')}
-                  >
-                    See all →
-                  </button>
-                </div>
-                <div className="picked-for-you-list">
-                  {similarPlaces.slice(0, 2).map((place) => (
-                    <button
-                      key={`picked-${place.location}`}
-                      type="button"
-                      className="picked-for-you-card"
-                      onClick={() => void openExplorePlaceRatings(place.location)}
-                    >
-                      <div className="picked-for-you-card-body">
-                        <div className="picked-for-you-place">{place.location}</div>
-                        {place.flavors && place.flavors.length > 0 && (
-                          <div className="picked-for-you-flavors">
-                            {place.flavors.slice(0, 3).join(' · ')}
-                          </div>
-                        )}
-                      </div>
-                      <div className="picked-for-you-score" aria-label={`${Math.round(place.matchScore)}% match`}>
-                        <span className="picked-for-you-score-num">{Math.round(place.matchScore)}</span>
-                        <span className="picked-for-you-score-lbl">match</span>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Picked-for-you chip lives *below* My Ratings on My Log so
+              the primary logging surface is undisturbed — it's a
+              single-line teaser that jumps to Explore for the full
+              rec list. Rendered further down after </section>. */}
 
           <section className="mb-5">
             <div className="d-flex flex-column gap-2 mb-3">
@@ -5416,6 +5376,22 @@ function App() {
               )}
             </div>
           </section>
+
+          {/* Compact one-line "Try next" chip — only render if we
+              have a top rec and the user has palate prefs set. Kept
+              minimal so it never competes with the log surface. */}
+          {!isDemoAccount && userFlavors.filter((f) => !f.startsWith('__')).length > 0 && similarPlaces.length > 0 && (
+            <button
+              type="button"
+              className="try-next-chip mb-4"
+              onClick={() => void openExplorePlaceRatings(similarPlaces[0].location)}
+            >
+              <span className="try-next-chip-label">Try next</span>
+              <span className="try-next-chip-place">{similarPlaces[0].location}</span>
+              <span className="try-next-chip-score">{Math.round(similarPlaces[0].matchScore)}% match</span>
+              <span className="try-next-chip-arrow" aria-hidden="true">→</span>
+            </button>
+          )}
         </main>
       )}
 
