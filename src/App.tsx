@@ -6143,17 +6143,6 @@ function App() {
         </button>
         <button
           type="button"
-          className={`bottom-nav-btn ${activePage === 'feed' ? 'active' : ''}`}
-          onClick={() => setActivePage('feed')}
-          title="Feed"
-        >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2l2.5 5.5L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5L12 2z"/>
-          </svg>
-          <span className="label">Feed</span>
-        </button>
-        <button
-          type="button"
           className={`bottom-nav-btn ${activePage === 'friends' ? 'active' : ''}`}
           onClick={() => setActivePage('friends')}
           title="For You"
@@ -6162,6 +6151,17 @@ function App() {
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
           </svg>
           <span className="label">For You</span>
+        </button>
+        <button
+          type="button"
+          className={`bottom-nav-btn ${activePage === 'feed' ? 'active' : ''}`}
+          onClick={() => setActivePage('feed')}
+          title="Feed"
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 2l2.5 5.5L20 8l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5L12 2z"/>
+          </svg>
+          <span className="label">Feed</span>
         </button>
         <button
           type="button"

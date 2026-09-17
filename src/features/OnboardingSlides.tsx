@@ -84,7 +84,7 @@ export default function OnboardingSlides({ currentSlide, setCurrentSlide, onClos
               <p className="onboarding-lead">Log your favourite spot first &mdash; a small celebration is waiting.</p>
               <ul className="onboarding-list onboarding-list--icons">
                 <li><IconPlusCircle /><span>Tap <strong className="text-success">+</strong> on My Log to rate a sip</span></li>
-                <li><IconSparkles /><span>Set your flavor prefs to unlock a palate archetype</span></li>
+                <li><IconSparkles /><span>Set your flavor prefs to unlock <strong>For You</strong> matches</span></li>
                 <li><IconPhone /><span>Add to home screen for the full app feel</span></li>
               </ul>
             </div>
