@@ -5090,41 +5090,48 @@ function App() {
             Explore where the Recs sub-tab is already the default.
           */}
           {!isDemoAccount && userFlavors.filter((f) => !f.startsWith('__')).length > 0 && similarPlaces.length > 0 && (
-            <section className="picked-for-you mb-4">
-              <div className="d-flex align-items-center justify-content-between mb-2">
-                <h3 className="picked-for-you-title mb-0">Picked for you</h3>
-                <button
-                  type="button"
-                  className="picked-for-you-see-all"
-                  onClick={() => setActivePage('explore')}
-                >
-                  See all →
-                </button>
-              </div>
-              <div className="picked-for-you-list">
-                {similarPlaces.slice(0, 2).map((place) => (
+            <div className="picked-for-you card border-0 shadow-sm mb-4">
+              <div className="card-body p-3 p-md-4">
+                <div className="d-flex align-items-start justify-content-between mb-2 gap-2">
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: '#2f7a44' }}>
+                      For you
+                    </div>
+                    <h2 className="h6 fw-bold mb-0 mt-1 text-success">Picked for you</h2>
+                  </div>
                   <button
-                    key={`picked-${place.location}`}
                     type="button"
-                    className="picked-for-you-card"
-                    onClick={() => void openExplorePlaceRatings(place.location)}
+                    className="picked-for-you-see-all"
+                    onClick={() => setActivePage('explore')}
                   >
-                    <div className="picked-for-you-card-body">
-                      <div className="picked-for-you-place">{place.location}</div>
-                      {place.flavors && place.flavors.length > 0 && (
-                        <div className="picked-for-you-flavors">
-                          {place.flavors.slice(0, 3).join(' · ')}
-                        </div>
-                      )}
-                    </div>
-                    <div className="picked-for-you-score" aria-label={`${Math.round(place.matchScore)}% match`}>
-                      <span className="picked-for-you-score-num">{Math.round(place.matchScore)}</span>
-                      <span className="picked-for-you-score-lbl">match</span>
-                    </div>
+                    See all →
                   </button>
-                ))}
+                </div>
+                <div className="picked-for-you-list">
+                  {similarPlaces.slice(0, 2).map((place) => (
+                    <button
+                      key={`picked-${place.location}`}
+                      type="button"
+                      className="picked-for-you-card"
+                      onClick={() => void openExplorePlaceRatings(place.location)}
+                    >
+                      <div className="picked-for-you-card-body">
+                        <div className="picked-for-you-place">{place.location}</div>
+                        {place.flavors && place.flavors.length > 0 && (
+                          <div className="picked-for-you-flavors">
+                            {place.flavors.slice(0, 3).join(' · ')}
+                          </div>
+                        )}
+                      </div>
+                      <div className="picked-for-you-score" aria-label={`${Math.round(place.matchScore)}% match`}>
+                        <span className="picked-for-you-score-num">{Math.round(place.matchScore)}</span>
+                        <span className="picked-for-you-score-lbl">match</span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </section>
+            </div>
           )}
 
           <section className="mb-5">

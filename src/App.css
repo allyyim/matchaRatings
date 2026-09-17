@@ -3117,18 +3117,12 @@ h1, h2, h3, h4, h5, h6 {
 
 /* "Picked for you" preview strip on the My Log home tab. Surfaces
    the top 2 recs one tap away from the home page instead of hiding
-   them behind the Explore > Recs sub-tab. */
+   them behind the Explore > Recs sub-tab. Uses the same white card
+   language as OnboardingChecklist so the home tab reads as a
+   consistent stack, not a jumble of accent panels. */
 .picked-for-you {
-  padding: 0.85rem 1rem;
-  border-radius: 1rem;
-  background: linear-gradient(135deg, #f6fbf1 0%, #eaf5e4 100%);
-  border: 1px solid #dbeacd;
-}
-.picked-for-you-title {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #146c43;
-  letter-spacing: -0.005em;
+  /* card border-0 shadow-sm handles the shell — no gradient/border
+     of our own so it visually matches the checklist card above. */
 }
 .picked-for-you-see-all {
   appearance: none;
@@ -3139,6 +3133,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
   cursor: pointer;
   padding: 0;
+  flex-shrink: 0;
 }
 .picked-for-you-see-all:hover { text-decoration: underline; }
 .picked-for-you-list {
@@ -3152,18 +3147,18 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   gap: 0.75rem;
   padding: 0.55rem 0.75rem;
-  background: white;
-  border: 1px solid #e2eedb;
+  background: #f8faf5;
+  border: 1px solid #e9efe1;
   border-radius: 0.65rem;
   cursor: pointer;
   text-align: left;
-  transition: transform 0.1s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-  box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+  transition: transform 0.1s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
 .picked-for-you-card:hover {
+  background: #f1f7ea;
+  border-color: #cbdcb8;
   transform: translateY(-1px);
-  border-color: #146c43;
-  box-shadow: 0 3px 8px rgba(20,108,67,0.12);
+  box-shadow: 0 2px 6px rgba(20,108,67,0.08);
 }
 .picked-for-you-card:active { transform: scale(0.99); }
 .picked-for-you-card-body {
