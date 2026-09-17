@@ -1572,14 +1572,18 @@ textarea.form-control {
   pointer-events: none;
 }
 
-/* Lightest 3 shades — light base + overlay tends to blow highlights
-   to pure white. Nudge opacity down and shift the source darker so
-   the ice reads as delicate highlight variation, not glare. */
+/* Lightest 3 shades — overlay only nudges near-white highlights on a
+   near-white base = invisible ice. Switch to multiply so the ice cube
+   OUTLINES and bubble specks (dark grayscale values) darken the base
+   into clearly-visible detail while the base green stays dominant
+   (multiply by white ≈ no change, so the color reads as-is between
+   the darker specks). */
 .shade-swatch[data-shade="1"]::before,
 .shade-swatch[data-shade="2"]::before,
 .shade-swatch[data-shade="3"]::before {
-  filter: grayscale(1) contrast(1.4) brightness(0.9);
-  opacity: 0.3;
+  filter: grayscale(1) contrast(1.6) brightness(1);
+  mix-blend-mode: multiply;
+  opacity: 0.55;
 }
 
 /* Darkest 2 shades — dark base + overlay crushes shadows to black.
