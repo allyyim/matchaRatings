@@ -2964,9 +2964,9 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Bullet rendered as a CSS pseudo-element so it can't double up with a
-   browser default marker (source of the "weird bullet" seen on some
-   engines when list-style: none was overridden by inherited resets). */
-.onboarding-list li::before {
+   browser default marker. Only applied when no icon or badge child
+   replaces the marker (base list without a variant modifier). */
+.onboarding-list:not(.onboarding-list--icons):not(.onboarding-list--scores) li::before {
   content: "";
   flex-shrink: 0;
   width: 0.4rem;
@@ -2975,6 +2975,31 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 50%;
   background: #146c43;
 }
+
+.onboarding-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  flex-shrink: 0;
+  color: #146c43;
+  margin-top: 0.05rem;
+}
+
+.score-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 3.2rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: 0.01em;
+}
+.score-badge--green { background: #16a34a; }
+.score-badge--yellow { background: #f59e0b; color: #1f2937; }
+.score-badge--red { background: #dc2626; }
 
 .onboarding-bullet {
   flex-shrink: 0;
@@ -2994,6 +3019,14 @@ h1, h2, h3, h4, h5, h6 {
      surrounding modal background is, the image edges never show a
      visible seam. Keep the CSS background as a belt-and-braces guard
      in case a future image is exported with transparency. */
+}
+
+/* Slide 2 bowl+whisk illustration uses the larger variant so it visually
+   fills the space above the shorter "How Sip Score works" headline. */
+.onboarding-image--lg {
+  max-height: 210px;
+  max-width: 75%;
+  margin-bottom: 1rem;
 }
 
 .onboarding-progress {
@@ -3186,9 +3219,22 @@ h1, h2, h3, h4, h5, h6 {
     height: 0.35rem;
     margin-top: 0.38rem;
   }
+  .onboarding-icon {
+    width: 1.05rem;
+    height: 1.05rem;
+  }
+  .score-badge {
+    min-width: 2.8rem;
+    font-size: 0.72rem;
+    padding: 0.1rem 0.45rem;
+  }
   .onboarding-image {
     max-height: 110px;
     margin-bottom: 0.5rem;
+  }
+  .onboarding-image--lg {
+    max-height: 150px;
+    margin-bottom: 0.7rem;
   }
   .onboarding-progress {
     gap: 0.35rem;
