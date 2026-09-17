@@ -18,6 +18,7 @@ const TOTAL_SLIDES = 3
 // PNGs seamlessly blend into the modal without a visible seam.
 const CUP_IMG = `${import.meta.env.BASE_URL}onboarding/cup.png`
 const BOWL_IMG = `${import.meta.env.BASE_URL}onboarding/bowl.png`
+const TEAPOT_IMG = `${import.meta.env.BASE_URL}onboarding/teapot.png`
 
 export default function OnboardingSlides({ currentSlide, setCurrentSlide, onClose }: OnboardingSlidesProps) {
   // Clamp so a stale index from the reduced-slide-count migration can
@@ -30,7 +31,7 @@ export default function OnboardingSlides({ currentSlide, setCurrentSlide, onClos
         <div className="onboarding-slides">
           {safeSlide === 0 && (
             <div className="onboarding-slide">
-              <img className="onboarding-image" src={CUP_IMG} alt="" aria-hidden="true" />
+              <img className="onboarding-image" src={TEAPOT_IMG} alt="" aria-hidden="true" />
               <h2 className="onboarding-title">Welcome to Sip &amp; Score</h2>
               <p className="onboarding-lead">Rate every matcha you try. Watch your map fill in.</p>
               <ul className="onboarding-list">
