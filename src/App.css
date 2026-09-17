@@ -1571,25 +1571,25 @@ textarea.form-control {
   pointer-events: none;
 }
 
-/* Lightest 3 shades: overlay pushes highlights to pure white. Switch
-   to multiply with reduced contrast so ice cubes read as a soft
-   darker tint of the base and bubbles as gentle shadow specks. */
+/* Lightest 3 shades: use soft-light with low opacity so the base
+   green (#dcedb9 / #d2e59e / #ddf093) stays fully vivid and the ice
+   cubes only add a subtle highlight/shadow texture on top. */
 .shade-swatch[data-shade="1"]::before,
 .shade-swatch[data-shade="2"]::before,
 .shade-swatch[data-shade="3"]::before {
-  filter: grayscale(1) contrast(0.9) brightness(1.05);
-  mix-blend-mode: multiply;
-  opacity: 0.55;
+  filter: grayscale(1) contrast(1.35) brightness(1.05);
+  mix-blend-mode: soft-light;
+  opacity: 0.7;
 }
 
-/* Darkest 2 shades: overlay crushes highlights toward black on a
-   near-black base. Switch to screen so ice cubes light up as bright
-   highlights against the deep base, keeping the icy texture visible. */
+/* Darkest 2 shades: soft-light again so the deep green base stays
+   dominant. Boost the texture brightness so the ice cubes still
+   appear as faint highlights against the near-black base. */
 .shade-swatch[data-shade="8"]::before,
 .shade-swatch[data-shade="9"]::before {
-  filter: grayscale(1) contrast(1.15) brightness(1.35);
-  mix-blend-mode: screen;
-  opacity: 0.75;
+  filter: grayscale(1) contrast(1.4) brightness(1.6);
+  mix-blend-mode: soft-light;
+  opacity: 1;
 }
 
 /* Readability gradient behind the label. Adapts to swatch lightness:
