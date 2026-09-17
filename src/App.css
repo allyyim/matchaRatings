@@ -3019,6 +3019,16 @@ h1, h2, h3, h4, h5, h6 {
      surrounding modal background is, the image edges never show a
      visible seam. Keep the CSS background as a belt-and-braces guard
      in case a future image is exported with transparency. */
+  animation: onboardingImageIn 220ms ease-out both;
+}
+
+@keyframes onboardingImageIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-image { animation: none; }
 }
 
 /* Slide 2 bowl+whisk illustration uses the larger variant so it visually

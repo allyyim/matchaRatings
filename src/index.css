@@ -1,3 +1,11 @@
+html {
+  /* Belt-and-braces guard against pinch-zoom on Android Chrome. iOS
+     Safari ignores this (Apple removed the ability to disable pinch as
+     an accessibility feature) so we also install gesturestart /
+     touchmove listeners in main.tsx to preventDefault multi-touch. */
+  touch-action: pan-x pan-y;
+}
+
 body {
   margin: 0;
   min-height: 100vh;
@@ -7,6 +15,11 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   color: #1a1a1a;
+  touch-action: pan-x pan-y;
+  /* Kills the elastic scroll-bounce that also visually detaches the
+     fixed bottom tab bar on iOS when the user overscrolls. */
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
 }
 
 button, input, select, textarea {
