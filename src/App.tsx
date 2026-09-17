@@ -3342,6 +3342,7 @@ function App() {
               flexDirection: 'column',
               overflow: 'hidden'
             }}
+            className="prefs-modal-compact"
           >
             <div style={{ padding: '0.75rem 1.25rem', borderBottom: '1px solid #e9ecef', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
               <h6 className="fw-bold text-success mb-0">My Matcha Preferences</h6>
@@ -3356,13 +3357,13 @@ function App() {
               </button>
             </div>
 
-            <div style={{ padding: '0.85rem 1.25rem 1rem', overflowY: 'auto', flex: 1 }}>
+            <div style={{ padding: '0.65rem 1rem 0.85rem', overflowY: 'auto', flex: 1 }}>
               <section className="mb-2">
-                <div className="d-flex align-items-baseline justify-content-between mb-2">
+                <div className="d-flex align-items-baseline justify-content-between mb-1">
                   <label className="form-label fw-semibold text-success mb-0" style={{ fontSize: 'var(--fs-md)' }}>Flavors</label>
                   <span className="text-muted" style={{ fontSize: 'var(--fs-sm)' }}>Pick any that fit</span>
                 </div>
-                <div className="pref-chip-grid pref-chip-grid-2">
+                <div className="pref-chip-grid pref-chip-grid-flow">
                 {/*
                   Ordered by color group to match the new-rating flavor
                   grid — same left-to-right rainbow (brown → pink → green
@@ -3391,7 +3392,7 @@ function App() {
               </section>
 
               <section className="mb-2 pt-2" style={{ borderTop: '1px solid #f1f3f5' }}>
-                <div className="d-flex align-items-center justify-content-between mb-2">
+                <div className="d-flex align-items-center justify-content-between mb-1">
                   <label className="form-label fw-semibold text-success mb-0 d-inline-flex align-items-center gap-2" style={{ fontSize: 'var(--fs-md)' }}>
                     Body
                     <BodyInfoIcon />
@@ -3429,7 +3430,7 @@ function App() {
                     {userShade === 0 ? 'No preference' : 'Clear'}
                   </button>
                 </div>
-                <p className="text-muted mb-2" style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.3 }}>
+                <p className="text-muted mb-1" style={{ fontSize: 'var(--fs-sm)', lineHeight: 1.25 }}>
                   Tap the shade closest to your ideal cup.
                 </p>
                 <div className="shade-grid">
@@ -3459,7 +3460,7 @@ function App() {
               </section>
             </div>
 
-            <div style={{ padding: '0.7rem 1.25rem', borderTop: '1px solid #e9ecef', background: '#fafbfc' }}>
+            <div style={{ padding: '0.55rem 1rem', borderTop: '1px solid #e9ecef', background: '#fafbfc' }}>
                 <button
                   type="button"
                   className="btn btn-success w-100 fw-semibold"

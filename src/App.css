@@ -1529,6 +1529,39 @@ textarea.form-control {
 .pref-chip-grid-2 { grid-template-columns: repeat(2, 1fr); }
 .pref-chip-grid-3 { grid-template-columns: repeat(3, 1fr); }
 
+/* Flow-wrap variant: chips size to their own text length and wrap
+   naturally instead of forcing every row to N equal columns. Used in
+   the flavors picker so 14 short chips flow across ~3 rows instead of
+   filling 7 rows in the fixed 2-col grid. */
+.pref-chip-grid-flow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.pref-chip-grid-flow .pref-chip {
+  flex: 0 0 auto;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+}
+
+/* Vertical-density overrides that only apply inside the preferences
+   modal, so the whole thing fits on one mobile viewport (~640-700dvh)
+   without scrolling. Preserves the desktop-style paddings elsewhere. */
+.prefs-modal-compact section { margin-bottom: 0.5rem !important; }
+.prefs-modal-compact .form-label { font-size: 0.9rem !important; }
+.prefs-modal-compact .shade-swatch {
+  min-height: 50px;
+  padding: 0.35rem 0.3rem;
+  border-radius: 9px;
+}
+.prefs-modal-compact .shade-swatch-label { font-size: 0.6rem; }
+.prefs-modal-compact .shade-grid { gap: 0.35rem; }
+.prefs-modal-compact .pref-chip-grid { gap: 0.4rem; }
+.prefs-modal-compact .pref-chip {
+  padding: 0.4rem 0.7rem;
+  font-size: 0.8rem;
+}
+
 /* 3x3 grid of matcha shade swatches, used in My Matcha Preferences. */
 .shade-grid {
   display: grid;
