@@ -3115,6 +3115,94 @@ h1, h2, h3, h4, h5, h6 {
   min-width: 1.2rem;
 }
 
+/* "Picked for you" preview strip on the My Log home tab. Surfaces
+   the top 2 recs one tap away from the home page instead of hiding
+   them behind the Explore > Recs sub-tab. */
+.picked-for-you {
+  padding: 0.85rem 1rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, #f6fbf1 0%, #eaf5e4 100%);
+  border: 1px solid #dbeacd;
+}
+.picked-for-you-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #146c43;
+  letter-spacing: -0.005em;
+}
+.picked-for-you-see-all {
+  appearance: none;
+  background: none;
+  border: none;
+  color: #146c43;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+.picked-for-you-see-all:hover { text-decoration: underline; }
+.picked-for-you-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.picked-for-you-card {
+  appearance: none;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  background: white;
+  border: 1px solid #e2eedb;
+  border-radius: 0.65rem;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.1s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.03);
+}
+.picked-for-you-card:hover {
+  transform: translateY(-1px);
+  border-color: #146c43;
+  box-shadow: 0 3px 8px rgba(20,108,67,0.12);
+}
+.picked-for-you-card:active { transform: scale(0.99); }
+.picked-for-you-card-body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.picked-for-you-place {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1f3b1f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.picked-for-you-flavors {
+  font-size: 0.72rem;
+  color: #55665c;
+  text-transform: capitalize;
+  margin-top: 0.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.picked-for-you-score {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 3rem;
+  padding: 0.25rem 0.5rem;
+  background: linear-gradient(135deg, #146c43 0%, #14a05a 100%);
+  color: white;
+  border-radius: 0.55rem;
+  line-height: 1;
+}
+.picked-for-you-score-num { font-size: 1rem; font-weight: 800; }
+.picked-for-you-score-lbl { font-size: 0.55rem; font-weight: 600; opacity: 0.88; margin-top: 0.1rem; letter-spacing: 0.03em; }
+
 /* My Log first-run empty state — watercolor cup hero over an inviting
    welcome message. Kept vertically compact so the tab bar and rest of
    the home layout still fit without scrolling on short viewports. */

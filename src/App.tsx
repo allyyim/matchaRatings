@@ -1473,7 +1473,13 @@ function App() {
   }, [activePage])
 
   useEffect(() => {
-    if (communityActiveTab !== 'recommendations' || !currentUserName) {
+    // Recs are consumed in two places now: the Explore > Recs sub-tab
+    // AND the "Picked for you" preview strip on the My Log home tab.
+    // Fetch whenever either surface is visible so the home strip is
+    // populated even before the user opens Explore.
+    const homeVisible = activePage === 'home'
+    const recsSubTab = communityActiveTab === 'recommendations'
+    if ((!homeVisible && !recsSubTab) || !currentUserName) {
       return
     }
     if (userFlavors.length === 0 && !userBodyPref) {
@@ -1519,7 +1525,7 @@ function App() {
       cancelled = true
       if (retryTimer !== null) window.clearTimeout(retryTimer)
     }
-  }, [communityActiveTab, currentUserName, userFlavors, userBodyPref, recsRefreshKey])
+  }, [activePage, communityActiveTab, currentUserName, userFlavors, userBodyPref, recsRefreshKey])
 
   useEffect(() => {
     let mounted = true
@@ -5074,6 +5080,52 @@ function App() {
             onGoToNewLog={() => setIsNewLogOpen(true)}
             onGoToExplore={() => setActivePage('explore')}
           />
+
+          {/*
+            Picked-for-you preview strip. Surfaces the top 2 recs directly
+            on the home tab so the value prop is 1 tap away instead of
+            hidden behind the Explore > Recs sub-tab. Only renders when the
+            user has palate prefs set (so recs are meaningful) and the
+            server has returned at least 1 match. "See all" jumps to
+            Explore where the Recs sub-tab is already the default.
+          */}
+          {!isDemoAccount && userFlavors.filter((f) => !f.startsWith('__')).length > 0 && similarPlaces.length > 0 && (
+            <section className="picked-for-you mb-4">
+              <div className="d-flex align-items-center justify-content-between mb-2">
+                <h3 className="picked-for-you-title mb-0">Picked for you</h3>
+                <button
+                  type="button"
+                  className="picked-for-you-see-all"
+                  onClick={() => setActivePage('explore')}
+                >
+                  See all →
+                </button>
+              </div>
+              <div className="picked-for-you-list">
+                {similarPlaces.slice(0, 2).map((place) => (
+                  <button
+                    key={`picked-${place.location}`}
+                    type="button"
+                    className="picked-for-you-card"
+                    onClick={() => void openExplorePlaceRatings(place.location)}
+                  >
+                    <div className="picked-for-you-card-body">
+                      <div className="picked-for-you-place">{place.location}</div>
+                      {place.flavors && place.flavors.length > 0 && (
+                        <div className="picked-for-you-flavors">
+                          {place.flavors.slice(0, 3).join(' · ')}
+                        </div>
+                      )}
+                    </div>
+                    <div className="picked-for-you-score" aria-label={`${Math.round(place.matchScore)}% match`}>
+                      <span className="picked-for-you-score-num">{Math.round(place.matchScore)}</span>
+                      <span className="picked-for-you-score-lbl">match</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </section>
+          )}
 
           <section className="mb-5">
             <div className="d-flex flex-column gap-2 mb-3">
