@@ -863,7 +863,26 @@ function App() {
         }
       }
 
-      return () => clearInterval(updateInterval)
+      // When a new SW takes control (clients.claim in the SW), the
+      // page still has the *old* lazy chunks in memory — any
+      // <Suspense>-loaded route (FeedPage, etc.) was fetched through
+      // the previous SW and is now out of sync with the fresh App
+      // shell. Reload once so the browser re-requests every chunk
+      // through the new SW and everything is on the same commit.
+      // The __reloadedForSwUpdate flag prevents an infinite loop if
+      // the new SW claims control mid-startup on a fresh install.
+      let hasReloaded = false
+      const onControllerChange = () => {
+        if (hasReloaded) return
+        hasReloaded = true
+        window.location.reload()
+      }
+      navigator.serviceWorker.addEventListener('controllerchange', onControllerChange)
+
+      return () => {
+        clearInterval(updateInterval)
+        navigator.serviceWorker.removeEventListener('controllerchange', onControllerChange)
+      }
     }
   }, [])
 
