@@ -1539,6 +1539,7 @@ textarea.form-control {
 .shade-swatch {
   appearance: none;
   position: relative;
+  overflow: hidden;
   border: 2px solid rgba(0,0,0,0.08);
   border-radius: 10px;
   padding: 0.5rem 0.4rem;
@@ -1552,53 +1553,58 @@ textarea.form-control {
   box-shadow: 0 1px 2px rgba(15,23,42,0.06);
 }
 
+/* Ice-matcha texture layer. Same base photo on every swatch, but the
+   per-shade CSS filter (set via --tex-filter inline) tints it from
+   milky/creamy through ceremonial green to deep emerald, so all 9
+   options are visually distinct. */
+.shade-swatch::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/matcha-texture.jpg");
+  background-size: cover;
+  background-position: center;
+  filter: var(--tex-filter, none);
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Readability gradient behind the label. Adapts to swatch lightness:
+   dark shades get a subtle bottom shadow so white text reads; light
+   shades get a bottom highlight so the dark text reads. */
+.shade-swatch::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 55%;
+  z-index: 1;
+  pointer-events: none;
+}
+.shade-swatch.is-dark::after {
+  background: linear-gradient(to top, rgba(0,0,0,0.55), transparent);
+}
+.shade-swatch.is-light::after {
+  background: linear-gradient(to top, rgba(255,255,255,0.55), transparent);
+}
+
 .shade-swatch:hover {
   transform: translateY(-1px);
 }
 
 .shade-swatch.is-active {
   border-color: #0d6b32;
-  box-shadow: 0 0 0 2px rgba(13,107,50,0.28), 0 2px 6px rgba(15,23,42,0.12);
-}
-
-/* When a swatch is picked, layer the ice-matcha texture on top of the
-   flat shade color at low opacity so the commitment feels premium
-   without hurting the at-a-glance color comparison across unselected
-   options. background-blend-mode: multiply keeps the base hue intact
-   while letting the highlights and bubbles of the photo read through. */
-.shade-swatch.is-active::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background-image: url("/matcha-texture.jpg");
-  background-size: cover;
-  background-position: center;
-  /* multiply keeps the ice cube highlights crisp — overlay was
-     blowing them out to near-white. Filter bumps the source photo's
-     saturation and contrast so the bubbles/ice edges read clearly
-     even under the multiply blend. */
-  mix-blend-mode: multiply;
-  filter: saturate(1.35) contrast(1.15);
-  opacity: 0.95;
-  pointer-events: none;
-  animation: shadeTextureIn 220ms ease-out both;
-}
-
-@keyframes shadeTextureIn {
-  from { opacity: 0; }
-  to { opacity: 0.95; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .shade-swatch.is-active::before { animation: none; }
+  box-shadow: 0 0 0 2px rgba(13,107,50,0.35), 0 3px 8px rgba(15,23,42,0.15);
 }
 
 .shade-swatch-label {
+  position: relative;
+  z-index: 2;
   font-size: 0.65rem;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.15;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.12);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -1606,13 +1612,18 @@ textarea.form-control {
   -webkit-box-orient: vertical;
 }
 
+.shade-swatch.is-light .shade-swatch-label {
+  text-shadow: 0 1px 2px rgba(255,255,255,0.7);
+}
+
 .shade-swatch-check {
   position: absolute;
   top: 4px;
   right: 6px;
+  z-index: 2;
   font-size: 0.75rem;
   font-weight: 700;
-  background: rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.9);
   color: #0d6b32;
   border-radius: 999px;
   width: 18px;
