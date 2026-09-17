@@ -1574,15 +1574,20 @@ textarea.form-control {
   background-image: url("/matcha-texture.jpg");
   background-size: cover;
   background-position: center;
-  mix-blend-mode: overlay;
-  opacity: 0.55;
+  /* multiply keeps the ice cube highlights crisp — overlay was
+     blowing them out to near-white. Filter bumps the source photo's
+     saturation and contrast so the bubbles/ice edges read clearly
+     even under the multiply blend. */
+  mix-blend-mode: multiply;
+  filter: saturate(1.35) contrast(1.15);
+  opacity: 0.95;
   pointer-events: none;
   animation: shadeTextureIn 220ms ease-out both;
 }
 
 @keyframes shadeTextureIn {
   from { opacity: 0; }
-  to { opacity: 0.55; }
+  to { opacity: 0.95; }
 }
 
 @media (prefers-reduced-motion: reduce) {
