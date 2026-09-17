@@ -5183,7 +5183,18 @@ function App() {
                       </div>
                     </div>
                   )
-                  : <div className="alert alert-light border">Your matcha journey starts here 🍵</div>
+                  : (
+                    <div className="my-log-empty" role="status">
+                      <img
+                        className="my-log-empty-illustration"
+                        src={`${import.meta.env.BASE_URL}illustrations/watercolor-cup.png`}
+                        alt=""
+                        aria-hidden="true"
+                      />
+                      <div className="my-log-empty-title">Your matcha journey starts here</div>
+                      <div className="my-log-empty-sub">Tap the + button to log your first sip.</div>
+                    </div>
+                  )
               )}
 
               {filteredMine.slice(0, myLogsVisibleCount).map((entry, index) => {

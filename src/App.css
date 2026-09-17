@@ -3078,6 +3078,42 @@ h1, h2, h3, h4, h5, h6 {
   min-width: 1.2rem;
 }
 
+/* My Log first-run empty state — watercolor cup hero over an inviting
+   welcome message. Kept vertically compact so the tab bar and rest of
+   the home layout still fit without scrolling on short viewports. */
+.my-log-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.5rem 1rem 1.75rem;
+  border-radius: 1rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fbf1 100%);
+  border: 1px solid #e2eedb;
+}
+.my-log-empty-illustration {
+  display: block;
+  width: auto;
+  max-height: 200px;
+  max-width: 55%;
+  margin-bottom: 0.85rem;
+  animation: onboardingImageIn 260ms ease-out both;
+}
+.my-log-empty-title {
+  font-size: var(--fs-md);
+  font-weight: 700;
+  color: #146c43;
+  margin-bottom: 0.25rem;
+}
+.my-log-empty-sub {
+  font-size: var(--fs-sm);
+  color: #55665c;
+  line-height: 1.4;
+}
+@media (max-width: 480px) {
+  .my-log-empty-illustration { max-height: 160px; }
+}
+
 .onboarding-image {
   display: block;
   margin: 0 auto 0.75rem;
