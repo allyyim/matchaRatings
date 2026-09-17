@@ -45,6 +45,17 @@ type FeedEvent =
   | { kind: 'friend'; ts: number; entry: RatingEntry }
   | { kind: 'rec'; ts: number; location: string; matchScore: number; flavors: string[] }
 
+// Sort priority so milestones always surface at the top of the feed
+// regardless of when they were achieved. Without this, an old milestone
+// (say your 1st sip from 3 months ago) gets buried under fresh friend
+// ratings that have brand-new timestamps and never renders in view.
+// Higher = surfaces first.
+const FEED_KIND_PRIORITY: Record<FeedEvent['kind'], number> = {
+  milestone: 2,
+  rec: 1,
+  friend: 0,
+}
+
 function FeedThought({ text }: { text: string }) {
   return <TruncatedThought text={text} as="div" className="feed-item-thought" quote />
 }
@@ -155,7 +166,12 @@ export default function FeedPage(props: {
       })
     }
 
-    return out.sort((a, b) => b.ts - a.ts)
+    return out.sort((a, b) => {
+      const pa = FEED_KIND_PRIORITY[a.kind]
+      const pb = FEED_KIND_PRIORITY[b.kind]
+      if (pa !== pb) return pb - pa
+      return b.ts - a.ts
+    })
   }, [myEntries, friendRatings, recPlaces])
 
   // Note: demo previously short-circuited here with an upsell; we now let
