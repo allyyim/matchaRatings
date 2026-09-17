@@ -4,23 +4,6 @@ import { createPortal } from 'react-dom'
 import { useGoogleLogin } from '@react-oauth/google'
 import './App.css'
 import { SHADE_OPTIONS, shadeColorForGreenness } from './lib/shade'
-
-// Per-shade CSS filter recipes for the ice-matcha texture background on
-// each preferred-shade swatch. Interpolates from milky/creamy (bright,
-// desaturated, warm hue-shift) through ceremonial (neutral) to deep
-// emerald / stone-ground umami (dark, high-saturation, high-contrast)
-// so all 9 options are visually distinct in the picker.
-const SHADE_TEXTURE_FILTERS: Record<number, string> = {
-  1: 'brightness(1.55) saturate(0.35) hue-rotate(18deg)',
-  2: 'brightness(1.32) saturate(0.55) hue-rotate(10deg)',
-  3: 'brightness(1.18) saturate(0.75)',
-  4: 'brightness(1.05) saturate(0.9)',
-  5: 'brightness(1) saturate(1.05)',
-  6: 'brightness(0.88) saturate(1.2)',
-  7: 'brightness(0.72) saturate(1.35) contrast(1.05)',
-  8: 'brightness(0.58) saturate(1.5) contrast(1.15)',
-  9: 'brightness(0.42) saturate(1.65) contrast(1.25)',
-}
 import { analyzeGreennessFromDataUrl, loadRandomForest } from './lib/greenness'
 import type { RatingEntry } from './lib/types'
 import { useDemoCleanup } from './hooks/useDemoCleanup'
@@ -3452,13 +3435,9 @@ function App() {
                 <div className="shade-grid">
                 {SHADE_OPTIONS.map((opt) => {
                   const active = userShade === opt.value
-                  const isDark = opt.value >= 6
-                  // Per-shade filter recipe applied to the ice-matcha texture.
-                  // Interpolates from creamy/milky (bright, desaturated, warm)
-                  // through ceremonial green (neutral) to deep emerald / stone-
-                  // ground (dark, high-sat, high-contrast) so each swatch is
-                  // instantly distinguishable at a glance.
-                  const shadeFilter = SHADE_TEXTURE_FILTERS[opt.value] ?? 'none'
+                  // With the recalibrated hex ramp, values 4+ are dark
+                  // enough that white label text reads best.
+                  const isDark = opt.value >= 4
                   return (
                     <button
                       key={`pref-shade-${opt.value}`}
@@ -3468,7 +3447,7 @@ function App() {
                       aria-pressed={active}
                       className={`shade-swatch ${active ? 'is-active' : ''} ${isDark ? 'is-dark' : 'is-light'}`}
                       onClick={() => setUserShade(active ? 0 : opt.value)}
-                      style={{ background: opt.color, color: isDark ? '#fff' : '#1f3b1f', ['--tex-filter' as string]: shadeFilter }}
+                      style={{ background: opt.color, color: isDark ? '#fff' : '#1f3b1f' }}
                     >
                       <span className="shade-swatch-label">{opt.label}</span>
                       {active && <span className="shade-swatch-check" aria-hidden="true">✓</span>}

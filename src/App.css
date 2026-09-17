@@ -1553,10 +1553,13 @@ textarea.form-control {
   box-shadow: 0 1px 2px rgba(15,23,42,0.06);
 }
 
-/* Ice-matcha texture layer. Same base photo on every swatch, but the
-   per-shade CSS filter (set via --tex-filter inline) tints it from
-   milky/creamy through ceremonial green to deep emerald, so all 9
-   options are visually distinct. */
+/* Duotone ice-matcha texture. Grayscale + boosted contrast turns the
+   photo into a pure tonal mask (ice cubes = highlights, bubbles =
+   shadows). Overlay-blended on top of the swatch's base hex, the mask
+   paints bright versions of the shade color into the ice highlights
+   and dark versions into the bubbles / cracks — so every shade from
+   milky #DCEDB9 to near-black #051000 keeps the ice and bubbles
+   clearly visible without washing out or crushing. */
 .shade-swatch::before {
   content: "";
   position: absolute;
@@ -1564,7 +1567,9 @@ textarea.form-control {
   background-image: url("/matcha-texture.jpg");
   background-size: cover;
   background-position: center;
-  filter: var(--tex-filter, none);
+  filter: grayscale(1) contrast(1.55) brightness(1.05);
+  mix-blend-mode: overlay;
+  opacity: 0.92;
   z-index: 0;
   pointer-events: none;
 }
@@ -1578,15 +1583,15 @@ textarea.form-control {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 55%;
+  height: 60%;
   z-index: 1;
   pointer-events: none;
 }
 .shade-swatch.is-dark::after {
-  background: linear-gradient(to top, rgba(0,0,0,0.55), transparent);
+  background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.35) 40%, transparent 100%);
 }
 .shade-swatch.is-light::after {
-  background: linear-gradient(to top, rgba(255,255,255,0.55), transparent);
+  background: linear-gradient(to top, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.35) 40%, transparent 100%);
 }
 
 .shade-swatch:hover {
@@ -1604,7 +1609,6 @@ textarea.form-control {
   font-size: 0.65rem;
   font-weight: 700;
   line-height: 1.15;
-  text-shadow: 0 1px 2px rgba(0,0,0,0.35);
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
@@ -1612,8 +1616,12 @@ textarea.form-control {
   -webkit-box-orient: vertical;
 }
 
+.shade-swatch.is-dark .shade-swatch-label {
+  text-shadow: 0 1px 3px rgba(0,0,0,0.85), 0 0 6px rgba(0,0,0,0.5);
+}
+
 .shade-swatch.is-light .shade-swatch-label {
-  text-shadow: 0 1px 2px rgba(255,255,255,0.7);
+  text-shadow: 0 1px 2px rgba(255,255,255,0.9), 0 0 4px rgba(255,255,255,0.6);
 }
 
 .shade-swatch-check {
