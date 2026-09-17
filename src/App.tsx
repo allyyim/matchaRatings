@@ -5089,10 +5089,9 @@ function App() {
             server has returned at least 1 match. "See all" jumps to
             Explore where the Recs sub-tab is already the default.
           */}
-          {/* Picked-for-you chip lives *below* My Ratings on My Log so
-              the primary logging surface is undisturbed — it's a
-              single-line teaser that jumps to Explore for the full
-              rec list. Rendered further down after </section>. */}
+          {/* Picked-for-you moved inline: sits between the New Log
+              button header row and the search/filter controls inside
+              the My Ratings section (see chip below). */}
 
           <section className="mb-5">
             <div className="d-flex flex-column gap-2 mb-3">
@@ -5120,6 +5119,19 @@ function App() {
                   <span>New Log</span>
                 </button>
               </div>
+
+              {!isDemoAccount && userFlavors.filter((f) => !f.startsWith('__')).length > 0 && similarPlaces.length > 0 && (
+                <button
+                  type="button"
+                  className="try-next-chip"
+                  onClick={() => void openExplorePlaceRatings(similarPlaces[0].location)}
+                >
+                  <span className="try-next-chip-label">Try next</span>
+                  <span className="try-next-chip-place">{similarPlaces[0].location}</span>
+                  <span className="try-next-chip-score">{Math.round(similarPlaces[0].matchScore)}% match</span>
+                  <span className="try-next-chip-arrow" aria-hidden="true">→</span>
+                </button>
+              )}
 
               <div className="my-ratings-controls d-flex gap-2 align-items-center">
                 <div className="search-bar-wrapper flex-grow-1">
@@ -5376,22 +5388,6 @@ function App() {
               )}
             </div>
           </section>
-
-          {/* Compact one-line "Try next" chip — only render if we
-              have a top rec and the user has palate prefs set. Kept
-              minimal so it never competes with the log surface. */}
-          {!isDemoAccount && userFlavors.filter((f) => !f.startsWith('__')).length > 0 && similarPlaces.length > 0 && (
-            <button
-              type="button"
-              className="try-next-chip mb-4"
-              onClick={() => void openExplorePlaceRatings(similarPlaces[0].location)}
-            >
-              <span className="try-next-chip-label">Try next</span>
-              <span className="try-next-chip-place">{similarPlaces[0].location}</span>
-              <span className="try-next-chip-score">{Math.round(similarPlaces[0].matchScore)}% match</span>
-              <span className="try-next-chip-arrow" aria-hidden="true">→</span>
-            </button>
-          )}
         </main>
       )}
 
