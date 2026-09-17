@@ -1561,6 +1561,34 @@ textarea.form-control {
   box-shadow: 0 0 0 2px rgba(13,107,50,0.28), 0 2px 6px rgba(15,23,42,0.12);
 }
 
+/* When a swatch is picked, layer the ice-matcha texture on top of the
+   flat shade color at low opacity so the commitment feels premium
+   without hurting the at-a-glance color comparison across unselected
+   options. background-blend-mode: multiply keeps the base hue intact
+   while letting the highlights and bubbles of the photo read through. */
+.shade-swatch.is-active::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-image: url("/matcha-texture.jpg");
+  background-size: cover;
+  background-position: center;
+  mix-blend-mode: overlay;
+  opacity: 0.55;
+  pointer-events: none;
+  animation: shadeTextureIn 220ms ease-out both;
+}
+
+@keyframes shadeTextureIn {
+  from { opacity: 0; }
+  to { opacity: 0.55; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shade-swatch.is-active::before { animation: none; }
+}
+
 .shade-swatch-label {
   font-size: 0.65rem;
   font-weight: 600;
