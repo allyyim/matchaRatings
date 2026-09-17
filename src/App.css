@@ -1554,12 +1554,9 @@ textarea.form-control {
 }
 
 /* Duotone ice-matcha texture. Grayscale + boosted contrast turns the
-   photo into a pure tonal mask (ice cubes = highlights, bubbles =
-   shadows). Overlay-blended on top of the swatch's base hex, the mask
-   paints bright versions of the shade color into the ice highlights
-   and dark versions into the bubbles / cracks — so every shade from
-   milky #DCEDB9 to near-black #051000 keeps the ice and bubbles
-   clearly visible without washing out or crushing. */
+   photo into a pure tonal mask. Overlay works cleanly in the middle
+   of the ramp; the extremes need different blend math (see below) so
+   ice cubes / bubbles don't blow out or crush. */
 .shade-swatch::before {
   content: "";
   position: absolute;
@@ -1572,6 +1569,27 @@ textarea.form-control {
   opacity: 0.92;
   z-index: 0;
   pointer-events: none;
+}
+
+/* Lightest 3 shades: overlay pushes highlights to pure white. Switch
+   to multiply with reduced contrast so ice cubes read as a soft
+   darker tint of the base and bubbles as gentle shadow specks. */
+.shade-swatch[data-shade="1"]::before,
+.shade-swatch[data-shade="2"]::before,
+.shade-swatch[data-shade="3"]::before {
+  filter: grayscale(1) contrast(0.9) brightness(1.05);
+  mix-blend-mode: multiply;
+  opacity: 0.55;
+}
+
+/* Darkest 2 shades: overlay crushes highlights toward black on a
+   near-black base. Switch to screen so ice cubes light up as bright
+   highlights against the deep base, keeping the icy texture visible. */
+.shade-swatch[data-shade="8"]::before,
+.shade-swatch[data-shade="9"]::before {
+  filter: grayscale(1) contrast(1.15) brightness(1.35);
+  mix-blend-mode: screen;
+  opacity: 0.75;
 }
 
 /* Readability gradient behind the label. Adapts to swatch lightness:

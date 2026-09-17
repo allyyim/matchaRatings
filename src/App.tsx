@@ -3417,12 +3417,12 @@ function App() {
               </section>
 
               <section className="pt-2" style={{ borderTop: '1px solid #f1f3f5' }}>
-                <div className="d-flex align-items-center justify-content-between mb-1">
+                <div className="d-flex align-items-center justify-content-between mb-1" style={{ gap: '0.75rem' }}>
                   <label className="form-label fw-semibold text-success mb-0" style={{ fontSize: 'var(--fs-md)' }}>Preferred shade</label>
                   <button
                     type="button"
-                    className="btn btn-link btn-sm p-0 text-muted"
-                    style={{ fontSize: 'var(--fs-sm)', textDecoration: 'none' }}
+                    className="btn btn-link btn-sm p-0 text-muted ms-auto"
+                    style={{ fontSize: 'var(--fs-sm)', textDecoration: 'none', whiteSpace: 'nowrap' }}
                     onClick={() => setUserShade(0)}
                     disabled={userShade === 0}
                   >
@@ -3445,6 +3445,7 @@ function App() {
                       title={opt.label}
                       aria-label={opt.label}
                       aria-pressed={active}
+                      data-shade={opt.value}
                       className={`shade-swatch ${active ? 'is-active' : ''} ${isDark ? 'is-dark' : 'is-light'}`}
                       onClick={() => setUserShade(active ? 0 : opt.value)}
                       style={{ background: opt.color, color: isDark ? '#fff' : '#1f3b1f' }}
