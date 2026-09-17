@@ -5120,19 +5120,6 @@ function App() {
                 </button>
               </div>
 
-              {!isDemoAccount && userFlavors.filter((f) => !f.startsWith('__')).length > 0 && similarPlaces.length > 0 && (
-                <button
-                  type="button"
-                  className="try-next-chip"
-                  onClick={() => void openExplorePlaceRatings(similarPlaces[0].location)}
-                >
-                  <span className="try-next-chip-label">Try next</span>
-                  <span className="try-next-chip-place">{similarPlaces[0].location}</span>
-                  <span className="try-next-chip-score">{Math.round(similarPlaces[0].matchScore)}% match</span>
-                  <span className="try-next-chip-arrow" aria-hidden="true">→</span>
-                </button>
-              )}
-
               <div className="my-ratings-controls d-flex gap-2 align-items-center">
                 <div className="search-bar-wrapper flex-grow-1">
                   <span className="search-bar-icon" aria-hidden="true">
@@ -5429,7 +5416,7 @@ function App() {
         <main id="main-content" className="container py-3 py-md-5 px-3 px-md-4" tabIndex={-1}>
           <section className="card border-0 shadow-sm matcha-shell mb-4">
             <div className="card-body p-3 p-md-4">
-              <h2 className="h3 fw-bold text-success mb-4">Explore</h2>
+              <h2 className="h3 fw-bold text-success mb-4">For You</h2>
 
               {/* Navigation Tabs */}
               <div className="segmented-tabs segmented-tabs-full mb-4" role="tablist" aria-label="Community sections">
@@ -6169,14 +6156,12 @@ function App() {
           type="button"
           className={`bottom-nav-btn ${activePage === 'friends' ? 'active' : ''}`}
           onClick={() => setActivePage('friends')}
-          title="Explore"
+          title="For You"
         >
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <circle cx="12" cy="12" r="10"></circle>
-            <path d="M2 12h20"></path>
-            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
           </svg>
-          <span className="label">Explore</span>
+          <span className="label">For You</span>
         </button>
         <button
           type="button"

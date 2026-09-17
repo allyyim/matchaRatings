@@ -199,7 +199,7 @@ export default function FeedPage(props: {
             {friendRatings.length === 0 && !isLoading && (
               <div className="feed-notice" role="status">
                 <span aria-hidden="true">👥</span>
-                <span>Nothing new from your circle. Follow more sippers in <strong>Explore</strong> to keep the feed pouring.</span>
+                <span>Nothing new from your circle. Follow more sippers in <strong>For You</strong> to keep the feed pouring.</span>
               </div>
             )}
           <ul className="feed-list" role="list">
