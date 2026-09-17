@@ -1843,13 +1843,13 @@ function App() {
       //     regardless of whether that specific save added a new location.
       const MILESTONES: Record<number, { headline: string; subtext: (place: string) => string }> = {
         1:   { headline: 'First sip logged 🍵',   subtext: (p) => `${p} kicked off your matcha journey.` },
-        10:  { headline: '10 places rated 🎉',    subtext: (p) => `${p} makes it 10 — your log is officially rolling.` },
-        25:  { headline: '25 spots scored 🍵',    subtext: (p) => `${p} is #25 on your matcha map.` },
-        50:  { headline: '50 places whisked ✨',  subtext: (p) => `Half a hundred — ${p} lands you at 50.` },
-        100: { headline: '100 places rated 🎉🍵', subtext: (p) => `Certified sipper status unlocked at ${p}.` },
-        125: { headline: '125 places deep 🍃',    subtext: (p) => `${p} rounds you out at 125 spots.` },
-        150: { headline: '150 places rated 🍵',   subtext: (p) => `The whisk masters approve — ${p} is #150.` },
-        200: { headline: '200 places! 🎊',        subtext: (p) => `Living-legend status. ${p} is your 200th.` }
+        10:  { headline: '10 sips logged 🎉',     subtext: (p) => `${p} makes it 10 — your log is officially rolling.` },
+        25:  { headline: '25 sips scored 🍵',     subtext: (p) => `${p} is rating #25 on your log.` },
+        50:  { headline: '50 sips whisked ✨',    subtext: (p) => `Half a hundred — ${p} lands you at 50.` },
+        100: { headline: '100 sips rated 🎉🍵',   subtext: (p) => `Certified sipper status unlocked at ${p}.` },
+        125: { headline: '125 sips deep 🍃',      subtext: (p) => `${p} rounds you out at 125 ratings.` },
+        150: { headline: '150 sips rated 🍵',     subtext: (p) => `The whisk masters approve — ${p} is #150.` },
+        200: { headline: '200 sips! 🎊',          subtext: (p) => `Living-legend status. ${p} is your 200th.` }
       }
       const normalizePlace = (loc: string) => loc.trim().toLowerCase().replace(/\s+/g, ' ')
       const currentPlaces = new Set(updated.ratings.map((e) => normalizePlace(e.location || '')).filter(Boolean))

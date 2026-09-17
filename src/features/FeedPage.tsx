@@ -9,18 +9,18 @@ import { TruncatedThought } from '../lib/TruncatedThought'
 import { EmptyState } from '../lib/EmptyState'
 
 // Thresholds that trigger a milestone card in the Feed's "Milestone recap"
-// row. Kept in sync with the identically-shaped map inside saveEntry() so the
-// feed replays the exact same celebrations the user saw when they first hit
-// each threshold.
+// row. Counts *total ratings logged* (not unique places), so re-rating the
+// same spot still moves you toward the next milestone. Copy calls them
+// "sips" / "ratings" rather than "places" to match that semantic.
 const FEED_MILESTONE_THRESHOLDS: Array<{ count: number; headline: string; subtext: (place: string) => string }> = [
   { count: 1,   headline: 'First sip logged 🍵',   subtext: (p) => `${p} kicked off your matcha journey.` },
-  { count: 10,  headline: '10 places rated 🎉',    subtext: (p) => `${p} makes it 10 — your log was officially rolling.` },
-  { count: 25,  headline: '25 spots scored 🍵',    subtext: (p) => `${p} became #25 on your matcha map.` },
-  { count: 50,  headline: '50 places whisked ✨',  subtext: (p) => `Half a hundred — ${p} landed you at 50.` },
-  { count: 100, headline: '100 places rated 🎉🍵', subtext: (p) => `Certified sipper status unlocked at ${p}.` },
-  { count: 125, headline: '125 places deep 🍃',    subtext: (p) => `${p} rounded you out at 125 spots.` },
-  { count: 150, headline: '150 places rated 🍵',   subtext: (p) => `The whisk masters approve — ${p} was #150.` },
-  { count: 200, headline: '200 places! 🎊',        subtext: (p) => `Living-legend status. ${p} was your 200th.` }
+  { count: 10,  headline: '10 sips logged 🎉',     subtext: (p) => `${p} makes it 10 — your log was officially rolling.` },
+  { count: 25,  headline: '25 sips scored 🍵',     subtext: (p) => `${p} became rating #25 on your log.` },
+  { count: 50,  headline: '50 sips whisked ✨',    subtext: (p) => `Half a hundred — ${p} landed you at 50.` },
+  { count: 100, headline: '100 sips rated 🎉🍵',   subtext: (p) => `Certified sipper status unlocked at ${p}.` },
+  { count: 125, headline: '125 sips deep 🍃',      subtext: (p) => `${p} rounded you out at 125 ratings.` },
+  { count: 150, headline: '150 sips rated 🍵',     subtext: (p) => `The whisk masters approve — ${p} was #150.` },
+  { count: 200, headline: '200 sips! 🎊',          subtext: (p) => `Living-legend status. ${p} was your 200th.` }
 ]
 
 function feedRelativeTime(iso: string): string {
@@ -126,15 +126,13 @@ export default function FeedPage(props: {
     const out: FeedEvent[] = []
 
     // 1) Milestone recap — walk the user's log chronologically (earliest first)
-    // and record the entry that pushed each unique-place count onto a threshold.
+    // and record the entry whose ordinal (1-based) matches a threshold. Counts
+    // *total ratings* now, not unique places, so re-rating the same spot still
+    // pushes you toward the next milestone.
     const sortedForMilestones = [...myEntries].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-    const seenPlaces = new Set<string>()
-    const normalize = (loc: string) => loc.trim().toLowerCase().replace(/\s+/g, ' ')
-    for (const entry of sortedForMilestones) {
-      const key = normalize(entry.location || '')
-      if (!key || seenPlaces.has(key)) continue
-      seenPlaces.add(key)
-      const count = seenPlaces.size
+    for (let i = 0; i < sortedForMilestones.length; i += 1) {
+      const entry = sortedForMilestones[i]
+      const count = i + 1
       const threshold = FEED_MILESTONE_THRESHOLDS.find((m) => m.count === count)
       if (!threshold) continue
       out.push({
