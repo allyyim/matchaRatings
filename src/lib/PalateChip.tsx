@@ -1,4 +1,4 @@
-// Small pill showing a user's palate archetype (e.g. "The Dessert Sipper").
+// Small pill showing a user's palate archetype (e.g. "The Purist").
 // Rendered next to usernames across the app — Explore leaderboard, "People
 // like you" cards, friend modal. Hidden entirely when the target user has
 // no flavor preferences, so we never show an empty chip.
