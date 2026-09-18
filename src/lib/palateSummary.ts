@@ -33,7 +33,7 @@ const CLUSTER_MAP: Record<string, ClusterKey> = {
 // Single-cluster archetypes. Fires when one cluster clearly dominates.
 const PRIMARY_ARCHETYPE: Record<ClusterKey, string> = {
   dessert: 'The Dessert Head',
-  sweet:   'The Sweet Head',
+  sweet:   'The Creamy Dreamer',
   earthy:  'The Purist',
   bracing: 'The Bitter End',
   silky:   'The Smooth Operator',
@@ -167,7 +167,7 @@ const ARCHETYPE_PALETTE: Record<string, { bg: string; fg: string; border: string
   // Solo — each on its own distinct hue, roughly aligned to its cluster
   // family but pushed for max separation from the combo pastels below.
   'The Dessert Head':    { bg: '#efdcc8', fg: '#5c3a1f', border: '#d6b78e' }, // cocoa tan
-  'The Sweet Head':      { bg: '#fadbe8', fg: '#6a1f47', border: '#f0aecc' }, // rose pink
+  'The Creamy Dreamer':  { bg: '#fadbe8', fg: '#6a1f47', border: '#f0aecc' }, // rose pink
   'The Purist':          { bg: '#d9ecc4', fg: '#2f5b1e', border: '#b0d488' }, // sage green
   'The Bitter End':      { bg: '#f0f4b8', fg: '#5c5d10', border: '#d9de78' }, // chartreuse
   'The Smooth Operator': { bg: '#d3e9f7', fg: '#123c58', border: '#93c9e9' }, // sky blue
