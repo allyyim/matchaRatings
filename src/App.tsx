@@ -5254,7 +5254,7 @@ function App() {
                           className="entry-action-btn entry-action-danger"
                           onClick={(e) => {
                             e.stopPropagation()
-                            if (window.confirm(getDeleteQuip(entry.id))) {
+                            if (window.confirm(getDeleteQuip(String(entry.id)))) {
                               void deleteEntry(entry.id)
                             }
                           }}
@@ -5332,7 +5332,7 @@ function App() {
                             type="button"
                             className="btn btn-danger btn-sm flex-grow-1"
                             onClick={() => {
-                              if (window.confirm(getDeleteQuip(entry.id))) {
+                              if (window.confirm(getDeleteQuip(String(entry.id)))) {
                                 void deleteEntry(entry.id)
                               }
                             }}
