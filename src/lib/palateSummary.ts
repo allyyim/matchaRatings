@@ -52,12 +52,12 @@ const COMBO_ARCHETYPE: Record<string, string> = {
   'dessert+earthy':  'The Hojicha Head',   // roasted green — sweet + earthy
   'bracing+dessert': 'The Koicha Kid',     // thick ceremonial matcha — rich + bracing
   'dessert+silky':   'The Latte Artist',   // sweet + silky = latte territory
-  'earthy+sweet':    'The Wildflower',     // sweet + earthy — florals in a green field
+  'earthy+sweet':    'The Wildflower Picker',  // sweet + earthy — florals in a green field, picker = tea harvester
   'bracing+sweet':   'The Yuzu Snap',      // bright citrus + green sharpness
   'silky+sweet':     'The Foam Chaser',    // frothy sweet foam vibes
   'bracing+earthy':  'The Stone Milled',   // traditional ishiusu-ground matcha
-  'earthy+silky':    'The Ceremonial',     // classic matcha meditation vibe, no cliches
-  'bracing+silky':   'The Gyokuro',        // shade-grown umami + bright edge
+  'earthy+silky':    'The Ceremonial Host',    // chado tea-ceremony host — earthy + silky ritual vibe
+  'bracing+silky':   'The Gyokuro Snob',       // shade-grown umami purist with an edge
 }
 
 // Three-plus-cluster balanced palates get their own label so we don't
@@ -178,12 +178,12 @@ const ARCHETYPE_PALETTE: Record<string, { bg: string; fg: string; border: string
   'The Hojicha Head':    { bg: '#f4c9a8', fg: '#5a2a10', border: '#dd9866' }, // rust          (dessert+earthy)
   'The Koicha Kid':      { bg: '#f5deb0', fg: '#5b3b0a', border: '#e0b96a' }, // amber gold    (dessert+bracing)
   'The Latte Artist':    { bg: '#e6ccc3', fg: '#4a2822', border: '#c99b8c' }, // mocha rose    (dessert+silky)
-  'The Wildflower':      { bg: '#cceecc', fg: '#1e5533', border: '#8fd4a2' }, // mint          (sweet+earthy)
+  'The Wildflower Picker':  { bg: '#cceecc', fg: '#1e5533', border: '#8fd4a2' }, // mint          (sweet+earthy)
   'The Yuzu Snap':       { bg: '#fbf4b1', fg: '#6b5c0a', border: '#e8db6f' }, // lemon         (sweet+bracing)
   'The Foam Chaser':     { bg: '#e2d0f0', fg: '#3a1e5c', border: '#c19cdd' }, // lavender      (sweet+silky)
   'The Stone Milled':    { bg: '#dde0a4', fg: '#454819', border: '#b8bd63' }, // olive         (earthy+bracing)
-  'The Ceremonial':      { bg: '#b8e0dd', fg: '#103a3a', border: '#7bbfbb' }, // teal          (earthy+silky)
-  'The Gyokuro':         { bg: '#b4e6cf', fg: '#0e4a34', border: '#6ec7a1' }, // seafoam       (bracing+silky)
+  'The Ceremonial Host':    { bg: '#b8e0dd', fg: '#103a3a', border: '#7bbfbb' }, // teal          (earthy+silky)
+  'The Gyokuro Snob':       { bg: '#b4e6cf', fg: '#0e4a34', border: '#6ec7a1' }, // seafoam       (bracing+silky)
   // Balanced 3+ — periwinkle, its own corner of the wheel so nobody
   // confuses it with Foam Chaser (lavender) or Smooth Operator (sky).
   'The Cloud Whisker':   { bg: '#d5d4f2', fg: '#22235c', border: '#a1a1e0' }, // periwinkle
