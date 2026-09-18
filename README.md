@@ -71,10 +71,11 @@ Sip & Score is a personal + social matcha log. Every sip you log gets:
 - 🌿 Optional flavor picks + body profile + shade preference
 - ✨ A single **Sip Score** out of 100 combining taste + look
 
-You get a growing personal log, a Feed of friends' sips + milestones,
-an Explore leaderboard of top places and top sippers, and a
-tea-themed palate archetype (like *The Purist*, *The Cloud Whisker*,
-*The Foam Chaser*) that updates as your flavor picks evolve.
+You get a growing personal log, a For You page with personalized
+place recs and the community leaderboard, a Feed of friends' sips
++ milestones, and a tea-themed palate archetype (like *The Purist*,
+*The Cloud Whisker*, *The Foam Chaser*) that updates as your flavor
+picks evolve.
 
 **Non-goals:** matcha grade certification, chemistry testing, café
 reviews for non-matcha drinks.
@@ -102,15 +103,21 @@ Then classified into one of **16 archetypes**, each with its own
 distinct pastel chip color:
 
 **Solo (single dominant cluster):**
-- 🟤 The Dessert Sipper &nbsp;·&nbsp; 🌸 The Creamy Dreamer &nbsp;·&nbsp; 🌿 The Purist &nbsp;·&nbsp; 🌾 The Grown-Up &nbsp;·&nbsp; 💧 The Smooth Operator
+- 🟤 The Dessert Sipper &nbsp;·&nbsp; 🌸 The Creamy Dreamer &nbsp;·&nbsp; 🌿 The Purist &nbsp;·&nbsp; 🌾 The Bitter End &nbsp;·&nbsp; 💧 The Smooth Operator
 
 **Combo (two competitive clusters):**
 - The Wagashi Pair (dessert+sweet) &nbsp;·&nbsp; The Hojicha Head (dessert+earthy) &nbsp;·&nbsp; The Koicha Kid (dessert+bracing) &nbsp;·&nbsp; The Latte Artist (dessert+silky)
-- The Meadow Sipper (sweet+earthy) &nbsp;·&nbsp; The Yuzu Sipper (sweet+bracing) &nbsp;·&nbsp; The Foam Chaser (sweet+silky)
-- The Stone Milled (earthy+bracing) &nbsp;·&nbsp; The Zen Master (earthy+silky) &nbsp;·&nbsp; The Gyokuro (bracing+silky)
+- The Wildflower Picker (sweet+earthy) &nbsp;·&nbsp; The Yuzu Snap (sweet+bracing) &nbsp;·&nbsp; The Foam Chaser (sweet+silky)
+- The Stone Milled (earthy+bracing) &nbsp;·&nbsp; The Ceremonial Host (earthy+silky) &nbsp;·&nbsp; The Gyokuro Snob (bracing+silky)
 
 **Balanced (3+ close clusters):**
 - The Cloud Whisker
+
+**How the archetype is chosen** (all thresholds relative to the top cluster's count):
+1. If **3+ clusters** all have ≥ 66% of the leader → **The Cloud Whisker**.
+2. Else if the **second cluster** has ≥ 66% of the leader → one of the 10 combo names (lookup by cluster pair).
+3. Else → the solo primary for the top cluster.
+4. On a solo primary, if a runner-up has ≥ 50% of the leader, the summary tacks on a *"with a [flavor] streak"* tail.
 
 All logic lives in [`src/lib/palateSummary.ts`](./src/lib/palateSummary.ts) —
 `palateArchetype()` returns the label, `palateArchetypePaletteFor()`
