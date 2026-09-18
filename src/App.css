@@ -2025,9 +2025,8 @@ textarea.form-control {
   color: #1f2937;
   font-size: 0.98rem;
   line-height: 1.25;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .explore-place-meta {

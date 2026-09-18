@@ -3220,20 +3220,6 @@ function App() {
                   <span>Profile Picture</span>
                   <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
                 </button>
-                <button
-                  type="button"
-                  className="profile-drawer-row"
-                  onClick={() => {
-                    setChangeUsernameInput(currentUserName)
-                    setChangeUsernameError(null)
-                    setIsChangeUsernameOpen(true)
-                  }}
-                  disabled={isDemoAccount}
-                  title={isDemoAccount ? 'Not available on the demo account' : undefined}
-                >
-                  <span>Change Username</span>
-                  <span className="profile-drawer-row-arrow" aria-hidden="true">›</span>
-                </button>
               </div>
 
               <div className="profile-drawer-section">
