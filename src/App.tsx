@@ -34,6 +34,7 @@ import {
 } from './lib/flavors'
 import { TruncatedThought } from './lib/TruncatedThought'
 import { describePalate, palateArchetype } from './lib/palateSummary'
+import { getSaveQuip, getDeleteQuip } from './lib/quips'
 import { PalateChip } from './lib/PalateChip'
 import { EmptyState } from './lib/EmptyState'
 import { MatchBadge } from './lib/MatchBadge'
@@ -1838,15 +1839,14 @@ function App() {
       const updated = await apiFetch<{ ratings: RatingEntry[] }>(`/ratings?userName=${encodeURIComponent(currentUserName)}`)
       setMyEntries(updated.ratings)
 
-      // Personalized "new entry logged" toast — same UI as the welcome toast,
-      // wording tuned to the rating so it feels alive without being cheesy.
+      // Personalized "new entry logged" toast — the prefix is a
+      // score-tiered one-liner drawn from a rotating pool (see
+      // lib/quips) so every save has a bit of matcha personality
+      // without repeating on consecutive logs.
       const sipScore = Number((getWeightedScore(currentRating, resolvedGreenness) / 2).toFixed(1))
       const placeLabel = trimmedLocation
-      let toastPrefix = 'Sip logged'
-      if (sipScore >= 85) toastPrefix = 'A stunner'
-      else if (sipScore >= 70) toastPrefix = 'Solid sip'
-      else if (sipScore >= 50) toastPrefix = 'Sip logged'
-      else toastPrefix = 'Noted the miss'
+      const quipSeed = (updated.ratings[0]?.id || `${trimmedLocation}-${Date.now()}`).toString()
+      const toastPrefix = getSaveQuip(sipScore, quipSeed)
       const headline = `${toastPrefix} · Sip Score of ${sipScore} at`
       setSavedEntryToast({ headline, highlight: placeLabel })
       window.setTimeout(() => setSavedEntryToast(null), 3500)
@@ -5254,7 +5254,7 @@ function App() {
                           className="entry-action-btn entry-action-danger"
                           onClick={(e) => {
                             e.stopPropagation()
-                            if (window.confirm('Delete this rating entry?')) {
+                            if (window.confirm(getDeleteQuip(entry.id))) {
                               void deleteEntry(entry.id)
                             }
                           }}
@@ -5332,7 +5332,7 @@ function App() {
                             type="button"
                             className="btn btn-danger btn-sm flex-grow-1"
                             onClick={() => {
-                              if (window.confirm('Delete this rating entry?')) {
+                              if (window.confirm(getDeleteQuip(entry.id))) {
                                 void deleteEntry(entry.id)
                               }
                             }}
