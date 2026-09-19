@@ -33,7 +33,7 @@ import {
   flavorDescription,
 } from './lib/flavors'
 import { TruncatedThought } from './lib/TruncatedThought'
-import { describePalate, palateArchetype } from './lib/palateSummary'
+import { describePalate, palateArchetype, palateArchetypeCluster, palateArchetypePaletteFor } from './lib/palateSummary'
 import { getSaveQuip, getDeleteQuip } from './lib/quips'
 import { PalateChip } from './lib/PalateChip'
 import { EmptyState } from './lib/EmptyState'
@@ -1652,6 +1652,27 @@ function App() {
       setIsPreferencesModalOpen(true)
     }
   }, [activePage, communityActiveTab, isUserReady, userFlavors.length])
+
+  // Palate-matched color theme. Reads the user's current archetype label
+  // (or falls back to the leading flavor cluster) and paints a very subtle
+  // tint into the app shell + top nav gradients. The effect is deliberately
+  // small — ~14% mix into one gradient stop — so a Foam Chaser sees a
+  // whisker of lavender in the cream and a Bitter End sees a slightly
+  // deeper green, without ever leaving the "matcha green" identity of the
+  // app. --palate-tint stays `transparent` until the user has enough
+  // flavors picked to resolve to an archetype, so first-run screens keep
+  // the untinted default.
+  useEffect(() => {
+    const root = document.documentElement
+    const archetype = palateArchetype(userFlavors)
+    const cluster = palateArchetypeCluster(userFlavors)
+    if (!archetype && !cluster) {
+      root.style.setProperty('--palate-tint', 'transparent')
+      return
+    }
+    const palette = palateArchetypePaletteFor(archetype, cluster || 'earthy')
+    root.style.setProperty('--palate-tint', palette.bg)
+  }, [userFlavors])
 
   // Whenever the user navigates AWAY from the Recs tab, close any stale
   // prefs drawer/modal so it doesn't linger behind the next page (e.g.
