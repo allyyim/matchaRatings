@@ -357,7 +357,9 @@ body {
 }
 
 body {
-  background: var(--bg-light);
+  background-color: var(--bg-light);
+  background-image: linear-gradient(160deg, color-mix(in oklab, var(--palate-tint, transparent) 55%, transparent) 0%, transparent 65%);
+  background-attachment: fixed;
   color: var(--text-primary);
   font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   font-size: 1rem;
@@ -390,7 +392,7 @@ body {
 
 .matcha-shell {
   background:
-    linear-gradient(135deg, color-mix(in oklab, var(--palate-tint, transparent) 32%, transparent) 0%, transparent 72%),
+    linear-gradient(135deg, color-mix(in oklab, var(--palate-tint, transparent) 60%, transparent) 0%, transparent 78%),
     linear-gradient(135deg, #fbfef8 0%, #f1fbe6 46%, #eaf8df 100%);
   border-radius: 1.25rem;
   border: 1px solid rgba(170, 204, 153, 0.7);
@@ -400,7 +402,7 @@ body {
 .soft-nav {
   backdrop-filter: none;
   background:
-    linear-gradient(135deg, color-mix(in oklab, var(--palate-tint, transparent) 28%, transparent) 0%, transparent 78%),
+    linear-gradient(135deg, color-mix(in oklab, var(--palate-tint, transparent) 55%, transparent) 0%, transparent 82%),
     linear-gradient(135deg, #fbfef8 0%, #f1fbe6 46%, #eaf8df 100%);
   border-bottom: 1px solid rgba(170, 204, 153, 0.7);
   box-shadow: none;
