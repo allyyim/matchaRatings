@@ -1654,24 +1654,31 @@ function App() {
   }, [activePage, communityActiveTab, isUserReady, userFlavors.length])
 
   // Palate-matched color theme. Reads the user's current archetype label
-  // (or falls back to the leading flavor cluster) and paints a very subtle
-  // tint into the app shell + top nav gradients. The effect is deliberately
-  // small — ~14% mix into one gradient stop — so a Foam Chaser sees a
-  // whisker of lavender in the cream and a Bitter End sees a slightly
-  // deeper green, without ever leaving the "matcha green" identity of the
-  // app. --palate-tint stays `transparent` until the user has enough
-  // flavors picked to resolve to an archetype, so first-run screens keep
-  // the untinted default.
+  // (or falls back to the leading flavor cluster) and paints the palette
+  // bg color as a semi-transparent wash directly onto <body>, plus into
+  // a --palate-tint CSS var for .matcha-shell and .soft-nav. We paint the
+  // body inline (not via CSS) because index.css already owns the body
+  // gradient with a `background:` shorthand and would fight any CSS-var
+  // approach on the cascade.
   useEffect(() => {
     const root = document.documentElement
     const archetype = palateArchetype(userFlavors)
     const cluster = palateArchetypeCluster(userFlavors)
     if (!archetype && !cluster) {
       root.style.setProperty('--palate-tint', 'transparent')
+      document.body.style.backgroundImage = ''
       return
     }
     const palette = palateArchetypePaletteFor(archetype, cluster || 'earthy')
     root.style.setProperty('--palate-tint', palette.bg)
+    // Overlay a diagonal wash of the palette color on top of index.css's
+    // base green gradient. cc = ~80% alpha so the tint reads clearly on
+    // phones without wiping the underlying matcha green identity.
+    document.body.style.backgroundImage = [
+      `linear-gradient(160deg, ${palette.bg}cc 0%, ${palette.bg}55 45%, transparent 85%)`,
+      `linear-gradient(135deg, #f8fdf5 0%, #f2fbeb 50%, #eff9e8 100%)`,
+    ].join(', ')
+    document.body.style.backgroundAttachment = 'fixed'
   }, [userFlavors])
 
   // Whenever the user navigates AWAY from the Recs tab, close any stale
