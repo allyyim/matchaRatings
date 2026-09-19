@@ -22,6 +22,7 @@ Jump straight to the section you care about.
 | --- | --- |
 | Why this exists | [Problem & Opportunity](#-problem--opportunity) |
 | What the app does at a glance | [Overview](#-overview) |
+| Product principles we ship by | [Design Principles](#-design-principles) |
 | Palate archetypes (the tea-themed personality quiz) | [Palate System](#-palate-system) |
 | Flavor vocabulary + descriptors | [Flavor Language](#-flavor-language) |
 | How the ML greenness score works | [ML - Drink-Area Segmentation](#-ml--drink-area-segmentation) |
@@ -33,6 +34,7 @@ Jump straight to the section you care about.
 | PWA + offline behavior | [PWA & Offline](#-pwa--offline) |
 | Rate limits, sanitization, headers | [Security](#-security) |
 | Bundle splits, caching, motion tokens | [Performance](#-performance) |
+| WCAG-AA, keyboard-first, reduced-motion | [Accessibility](#-accessibility) |
 | File tree | [File Map](#-file-map) |
 
 ---
@@ -79,6 +81,32 @@ picks evolve.
 
 **Non-goals:** matcha grade certification, chemistry testing, café
 reviews for non-matcha drinks.
+
+</details>
+
+---
+
+## 🧭 Design Principles
+
+<details>
+<summary><strong>The five rules every feature has to answer to</strong></summary>
+
+Every screen, copy line, and API decision in Sip & Score gets weighed
+against these five. When two of them fight, the earlier one wins.
+
+1. **Vertical, opinionated, one job.** Rate the matcha — not the café,
+   not the barista, not the pastry. If a feature would make sense on a
+   general restaurant app, it doesn't belong here.
+2. **Delightful over exhaustive.** Every screen answers one question,
+   not five. If a settings toggle isn't earning its rent, it's cut.
+3. **Voice-y over neutral.** Copy has attitude. Save toasts, delete
+   confirms, empty states, and milestones all get the tea-nerdy voice
+   — never a generic "Action completed successfully."
+4. **On-device first.** Photos never leave the phone. Archetype
+   inference runs client-side. Server calls are for social state, not
+   personal analysis.
+5. **PWA, not App Store.** One URL, one codebase, iOS + Android +
+   desktop. Instant updates. No 30% tax. No gatekeeping.
 
 </details>
 
@@ -597,6 +625,61 @@ Setup (all dashboard, no code changes):
 Expected win: median first-hit latency drops from ~600 ms to ~120 ms;
 cold-start pain no longer bubbles up to the user because the edge holds
 the TLS session while Render wakes.
+
+</details>
+
+---
+
+## ♿ Accessibility
+
+<details>
+<summary><strong>WCAG-AA, keyboard-first, reduced-motion respected</strong></summary>
+
+Accessibility is treated as a shipping requirement, not a P2.
+
+**Contrast + color**
+- Every text/background pair meets WCAG-AA (4.5:1 for body, 3:1 for
+  large / bold). The palette tokens in `App.css` were tuned against
+  the darkest primary text color so no shade fails audit.
+- Never *just* color to convey meaning: score chips also carry a
+  label, rank badges also carry a number, palate tint is layered on
+  top of the same gradient so it's a delight signal, not a
+  correctness signal.
+
+**Semantic HTML**
+- `<nav>`, `<main>`, `<section>`, `<article>`, `<button>` used for
+  their real purpose. No `<div onClick>` masquerading as a button.
+- Icon-only buttons carry `aria-label`. Modals get `role="dialog"` +
+  `aria-modal="true"` + focus trap on open.
+- The custom star rating exposes value + range to screen readers via
+  `role="slider"` + `aria-valuenow/min/max`.
+
+**Keyboard-first**
+- Skip-to-content link at the top of the layout.
+- Every interactive element is reachable in tab order and shows a
+  visible `:focus-visible` ring (`3px` outline in accent green, not
+  the browser default).
+- Modals return focus to the trigger on close. Onboarding Back/Next
+  buttons `blur()` after click so sticky Bootstrap focus rings don't
+  read as "disabled."
+- No keyboard trap outside intentional modals.
+
+**Motion**
+- Every transition / animation respects `@media (prefers-reduced-
+  motion: reduce)`. Palate tint fades, milestone confetti, and the
+  cup-fill loader all collapse to instant swaps.
+
+**Live regions**
+- Save toast, milestone celebration, and network error banner use
+  `aria-live="polite"` so screen-reader users hear the same voice
+  copy sighted users see.
+
+**Zoom + touch**
+- Body copy uses `rem` throughout so browser text-size preferences
+  apply. Tap targets are ≥ 44 × 44 CSS px per iOS HIG.
+- Pinch-zoom is blocked *only on the app chrome* to keep the fixed
+  bottom nav from detaching. Photos in the review modal open in a
+  zoomable overlay.
 
 </details>
 
