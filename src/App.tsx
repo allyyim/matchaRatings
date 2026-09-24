@@ -2149,6 +2149,8 @@ function App() {
     setEditThoughts(entry.thoughts)
     setEditEntryPhoto(entry.photo)
     setOriginalEntryPhoto(entry.photo)
+    setMatchaGreenness(null)
+    setIsAnalyzingGreenness(false)
     const prefs: Record<string, number> = {}
     if (entry.flavorPreferences && typeof entry.flavorPreferences === 'object') {
       for (const [k, v] of Object.entries(entry.flavorPreferences)) {
@@ -3396,6 +3398,15 @@ function App() {
               </button>
             </div>
 
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '0.75rem 1rem 0.25rem' }}>
+              <img
+                src={`${import.meta.env.BASE_URL}illustrations/watercolor-tin.jpg`}
+                alt=""
+                aria-hidden="true"
+                style={{ maxHeight: '110px', width: 'auto', objectFit: 'contain' }}
+              />
+            </div>
+
             <div style={{ padding: '0.65rem 1rem 0.85rem', overflowY: 'auto', flex: 1 }}>
               <section className="mb-2">
                 <div className="d-flex align-items-baseline justify-content-between mb-1">
@@ -4340,12 +4351,23 @@ function App() {
                       <button
                         type="button"
                         className="btn btn-outline-secondary btn-sm"
-                        onClick={() => setEditEntryPhoto(originalEntryPhoto)}
+                        onClick={() => {
+                          setEditEntryPhoto(originalEntryPhoto)
+                          setMatchaGreenness(null)
+                          setIsAnalyzingGreenness(false)
+                        }}
                       >
                         Revert to original
                       </button>
                     )}
                   </div>
+                  {(isAnalyzingGreenness || matchaGreenness !== null) && (
+                    <div className="mt-2 text-success fw-semibold text-center">
+                      {isAnalyzingGreenness
+                        ? 'How green is your matcha?'
+                        : `Matcha Greenness: ${matchaGreenness!.toFixed(0)}%`}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -4450,6 +4472,8 @@ function App() {
               <button type="button" className="btn btn-outline-secondary flex-grow-1" disabled={isSavingEntry} onClick={() => {
                 setIsEditingEntry(false)
                 setEditEntryPhoto('')
+                setMatchaGreenness(null)
+                setIsAnalyzingGreenness(false)
               }}>
                 Cancel
               </button>
@@ -5103,6 +5127,7 @@ function App() {
           <OnboardingChecklist
             currentUserName={currentUserName}
             isDemoAccount={isDemoAccount}
+            isLoading={isMyRatingsLoading}
             ratingCount={myEntries.length}
             flavorCount={userFlavors.filter((f) => !f.startsWith('__')).length}
             followingCount={followingSet.size}
@@ -5239,7 +5264,7 @@ function App() {
                     <div className="my-log-empty" role="status">
                       <img
                         className="my-log-empty-illustration"
-                        src={`${import.meta.env.BASE_URL}illustrations/watercolor-cup.png`}
+                        src={`${import.meta.env.BASE_URL}illustrations/watercolor-cup.jpg`}
                         alt=""
                         aria-hidden="true"
                       />

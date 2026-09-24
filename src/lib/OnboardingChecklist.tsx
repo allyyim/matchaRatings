@@ -14,6 +14,7 @@ import { useMemo, useState } from 'react'
 type OnboardingChecklistProps = {
   currentUserName: string
   isDemoAccount: boolean
+  isLoading: boolean
   ratingCount: number
   flavorCount: number
   followingCount: number
@@ -40,10 +41,14 @@ export function OnboardingChecklist(props: OnboardingChecklistProps) {
     if (props.isDemoAccount) return false
     if (dismissed) return false
     if (completed) return false
+    // Suppress until the user's own data has loaded — otherwise on login
+    // we flash "log your first rating / follow someone" before the
+    // /ratings and /following fetches resolve.
+    if (props.isLoading) return false
     // If they've already got several ratings, they're not a new user
     if (props.ratingCount >= 3) return false
     return true
-  }, [props.isDemoAccount, dismissed, completed, props.ratingCount])
+  }, [props.isDemoAccount, dismissed, completed, props.ratingCount, props.isLoading])
 
   if (!shouldRender) return null
 

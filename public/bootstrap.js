@@ -4,6 +4,31 @@
 // then SPA route restoration, then the 404-redirect stash, then service
 // worker registration. All original semantics preserved verbatim.
 
+// -- Viewport reset --
+// Installed iOS PWAs can pick up a stale visual-viewport scale from
+// Safari at install time and render the whole app shrunk (~80%). Force
+// a clean scale by re-injecting the viewport meta after boot. Kept
+// simple (width=device-width, initial-scale=1) because pinning
+// maximum-scale/minimum-scale/user-scalable=no is what triggered the
+// stale-scale bug in the first place; the gesture handlers below
+// enforce no-zoom instead.
+(function resetViewport() {
+  var apply = function () {
+    var meta = document.querySelector('meta[name="viewport"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.name = 'viewport';
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute(
+      'content',
+      'width=device-width, initial-scale=1, viewport-fit=cover'
+    );
+  };
+  apply();
+  window.addEventListener('pageshow', apply);
+  window.addEventListener('orientationchange', apply);
+})();
 // -- iOS pinch/double-tap block --
 // iOS Safari ignores user-scalable=no in the viewport meta tag, so
 // block pinch/double-tap zoom gestures explicitly for the PWA.
